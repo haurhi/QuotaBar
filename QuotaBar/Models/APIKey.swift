@@ -46,9 +46,9 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             case .serpapi:
                 return "SerpAPI 搜索"
             case .serper:
-                return "Serper 搜索"
+                return "Serper"
             case .exa:
-                return "Exa 搜索"
+                return "Exa"
             case .bocha:
                 return "博查"
             case .anysearch:
