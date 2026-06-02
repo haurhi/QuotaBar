@@ -1,0 +1,21 @@
+name: Behavior Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  behavior-tests:
+    runs-on: macos-14
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Python test dependencies
+        run: python3 -m pip install --user pillow
+
+      - name: Run behavior tests
+        run: bash Tests/run_behavior_tests.sh
