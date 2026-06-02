@@ -662,18 +662,33 @@ assert_match 'supportsDashboardReauthentication' \
 assert_match 'cookieDomains' \
   "QuotaBar/Models/APIKey.swift" \
   "Dashboard-cookie Coding Plan providers should declare the domains whose cookies can be saved"
+assert_match 'dashboardAuthenticationCookieNames' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Dashboard-cookie providers should declare authentication cookie names for automatic saving"
 assert_match 'DashboardReauthConfig' \
   "QuotaBar/Services/DashboardReauth.swift" \
   "Dashboard reauthentication should have a provider-specific configuration model"
 assert_match 'DashboardCookieBuilder' \
   "QuotaBar/Services/DashboardReauth.swift" \
   "Dashboard reauthentication should build Cookie headers through a testable helper"
+assert_match 'containsRequiredCookie' \
+  "QuotaBar/Services/DashboardReauth.swift" \
+  "Dashboard reauthentication should wait for provider authentication cookies before auto-saving"
 assert_match 'import WebKit' \
   "QuotaBar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should use an in-app WebKit login window"
 assert_match 'WKWebView' \
   "QuotaBar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should embed WKWebView"
+assert_match 'WKNavigationDelegate' \
+  "QuotaBar/Views/DashboardReauthView.swift" \
+  "Dashboard reauthentication should observe dashboard navigation so it can auto-save cookies after login"
+assert_match 'webView\(_ webView: WKWebView, didFinish navigation: WKNavigation!\)' \
+  "QuotaBar/Views/DashboardReauthView.swift" \
+  "Dashboard reauthentication should check cookies when the WebView finishes loading a dashboard page"
+assert_match 'onCookiesAvailable' \
+  "QuotaBar/Views/DashboardReauthView.swift" \
+  "Dashboard reauthentication should expose an automatic cookie-save callback"
 assert_match 'WKWebsiteDataStore\.default\(\)\.httpCookieStore' \
   "QuotaBar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should read only cookies from the in-app WebKit data store"
@@ -692,6 +707,9 @@ assert_match 'Credential expired' \
 assert_match '凭据已过期' \
   "QuotaBar/Models/AppLanguage.swift" \
   "Expired dashboard credentials should have a Simplified Chinese localized label"
+assert_match 'autoCookieSaveHint' \
+  "QuotaBar/Models/AppLanguage.swift" \
+  "Dashboard reauthentication should explain that cookies will be saved automatically after login"
 assert_match 'QuotaError\.unauthorized' \
   "QuotaBar/Models/QuotaMonitor.swift" \
   "Unauthorized quota refreshes should mark dashboard credentials as expired"
@@ -1242,6 +1260,8 @@ let header = DashboardCookieBuilder.cookieHeader(
 )
 require(header == "auth=opencode-auth; oc_locale=zh", "DashboardCookieBuilder should filter by domain and sort cookies by name")
 require(DashboardCookieBuilder.cookieHeader(from: [unrelated], domains: ["opencode.ai"]).isEmpty, "DashboardCookieBuilder should ignore unrelated cookies")
+require(DashboardCookieBuilder.containsRequiredCookie(from: [opencodeLocale], domains: ["opencode.ai"], requiredNames: ["auth"]) == false, "DashboardCookieBuilder should not treat preference cookies as a logged-in session")
+require(DashboardCookieBuilder.containsRequiredCookie(from: [opencodeLocale, opencodeCookie], domains: ["opencode.ai"], requiredNames: ["auth"]), "DashboardCookieBuilder should detect provider authentication cookies")
 
 require(Provider.xfyunCodingPlan.supportsDashboardReauthentication, "XFYun should support dashboard reauthentication")
 require(Provider.volcengineCodingPlan.supportsDashboardReauthentication, "Volcengine should support dashboard reauthentication")
@@ -1249,9 +1269,11 @@ require(Provider.opencodeGo.supportsDashboardReauthentication, "OpenCode Go shou
 require(Provider.querit.supportsDashboardReauthentication, "Querit should support dashboard-cookie reauthentication")
 require(!Provider.brave.supportsDashboardReauthentication, "Brave should not use dashboard-cookie reauthentication")
 require(DashboardReauthConfig(provider: .opencodeGo)?.cookieDomains == ["opencode.ai"], "OpenCode Go should capture only opencode.ai cookies")
-require(DashboardReauthConfig(provider: .xfyunCodingPlan)?.cookieDomains == ["maas.xfyun.cn"], "XFYun should capture only maas.xfyun.cn cookies")
-require(DashboardReauthConfig(provider: .volcengineCodingPlan)?.cookieDomains == ["console.volcengine.com"], "Volcengine should capture only console.volcengine.com cookies")
+require(DashboardReauthConfig(provider: .xfyunCodingPlan)?.cookieDomains == ["xfyun.cn", "maas.xfyun.cn"], "XFYun should capture maas.xfyun.cn and domain-wide xfyun.cn cookies")
+require(DashboardReauthConfig(provider: .volcengineCodingPlan)?.cookieDomains == ["volcengine.com", "console.volcengine.com"], "Volcengine should capture console.volcengine.com and domain-wide volcengine.com cookies")
 require(DashboardReauthConfig(provider: .querit)?.cookieDomains == ["querit.ai"], "Querit should capture querit.ai dashboard cookies")
+require(DashboardReauthConfig(provider: .opencodeGo)?.requiredCookieNames == ["auth"], "OpenCode Go should auto-save only after auth cookies exist")
+require(DashboardReauthConfig(provider: .querit)?.requiredCookieNames.contains("osduss") == true, "Querit should auto-save only after account cookies exist")
 SWIFT
 
 swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift QuotaBar/Services/DashboardReauth.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/dashboard-reauth-test"

@@ -123,6 +123,8 @@ enum L10n {
         case noCookiesFound
         case reauthTitle
         case reauthDescription
+        case autoCookieSaveHint
+        case autoSavingCookie
         case close
         case unlimited
         case noKeyValue
@@ -399,7 +401,9 @@ enum L10n {
         .cookieSaved: "Cookie saved",
         .noCookiesFound: "No matching cookies found",
         .reauthTitle: "Re-authenticate %@",
-        .reauthDescription: "Log in to the provider dashboard, then save the current WebView cookies.",
+        .reauthDescription: "Log in to the provider dashboard. QuotaBar will save matching WebView cookies automatically after login.",
+        .autoCookieSaveHint: "Waiting for dashboard login. You can still save manually if needed.",
+        .autoSavingCookie: "Saving dashboard Cookie...",
         .close: "Close",
         .unlimited: "Unlimited",
         .noKeyValue: "No key value",
@@ -521,7 +525,9 @@ enum L10n {
         .cookieSaved: "Cookie 已保存",
         .noCookiesFound: "没有找到匹配的 Cookie",
         .reauthTitle: "重新认证 %@",
-        .reauthDescription: "登录服务商控制台后，保存当前 WebView Cookie。",
+        .reauthDescription: "登录服务商控制台后，QuotaBar 会自动保存匹配的 WebView Cookie。",
+        .autoCookieSaveHint: "等待后台登录完成；需要时仍可手动保存。",
+        .autoSavingCookie: "正在保存控制台 Cookie...",
         .close: "关闭",
         .unlimited: "无限",
         .noKeyValue: "没有密钥值",

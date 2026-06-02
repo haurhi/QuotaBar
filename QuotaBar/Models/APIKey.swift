@@ -155,13 +155,28 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
     var cookieDomains: [String] {
         switch self {
         case .xfyunCodingPlan:
-            return ["maas.xfyun.cn"]
+            return ["xfyun.cn", "maas.xfyun.cn"]
         case .volcengineCodingPlan:
-            return ["console.volcengine.com"]
+            return ["volcengine.com", "console.volcengine.com"]
         case .opencodeGo:
             return ["opencode.ai"]
         case .querit:
             return ["querit.ai"]
+        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .deepseek:
+            return []
+        }
+    }
+
+    var dashboardAuthenticationCookieNames: [String] {
+        switch self {
+        case .querit:
+            return ["osduss", "passOsRefreshTk", "osfuid"]
+        case .xfyunCodingPlan:
+            return ["ssoSessionId", "tenantToken", "atp-auth-token", "account_id"]
+        case .volcengineCodingPlan:
+            return ["digest", "userInfo", "AccountID", "csrfToken"]
+        case .opencodeGo:
+            return ["auth"]
         case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .deepseek:
             return []
         }
