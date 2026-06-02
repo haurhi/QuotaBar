@@ -74,7 +74,7 @@ class QuotaMonitor: ObservableObject {
         lastError = nil
         if mode == .manual {
             if let provider = targetProviders?.first, targetProviders?.count == 1 {
-                refreshMessage = L10n.format(.refreshingProvider, provider.rawValue)
+                refreshMessage = L10n.format(.refreshingProvider, provider.displayName())
             } else {
                 refreshMessage = L10n.t(.refreshing)
             }
@@ -130,9 +130,9 @@ class QuotaMonitor: ObservableObject {
                         key.remaining = nil
                         key.limit = nil
                         key.resetAt = nil
-                        key.quotaLabel = key.provider.unsupportedQuotaLabel
+                        key.quotaLabel = key.provider.localizedUnsupportedQuotaLabel()
                         key.lastHTTPStatus = nil
-                        key.lastDiagnosticMessage = error.localizedDescription
+                        key.lastDiagnosticMessage = key.provider.unsupportedQuotaDiagnosticMessage()
                         key.lastUpdated = Date()
                     } else if case QuotaError.unauthorized = error {
                         key.remaining = nil

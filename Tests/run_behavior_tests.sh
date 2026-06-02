@@ -62,6 +62,12 @@ assert_match 'case simplifiedChinese' \
 assert_match 'AppLanguageStore' \
   "QuotaBar/Models/AppLanguage.swift" \
   "QuotaBar should persist the selected app language"
+assert_match 'func displayName\(language: AppLanguage = AppLanguageStore\.shared\.language\)' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Providers should expose localized display names instead of rendering raw persistence values"
+assert_no_match 'Text\(.*(stat\.)?provider\.rawValue|Label\(.*rawValue|provider\.rawValue\) \(L10n\.t' \
+  "QuotaBar/Views" \
+  "Visible provider labels should use localized display names instead of raw persistence values"
 assert_match '简体中文' \
   "QuotaBar/Models/AppLanguage.swift" \
   "The language picker should expose Simplified Chinese as a user-facing option"
@@ -188,6 +194,18 @@ assert_match 'lastHTTPStatus' \
 assert_match 'lastDiagnosticMessage' \
   "QuotaBar/Models/APIKey.swift" \
   "API keys should persist the last diagnostic message"
+assert_match 'httpNotRequested' \
+  "QuotaBar/Models/AppLanguage.swift" \
+  "Diagnostics should distinguish unsupported or unrequested checks from failed HTTP requests"
+assert_no_match 'key\.lastHTTPStatus\.map\(String\.init\) \?\? "N/A"' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Diagnostics should not show N/A when no HTTP request was made"
+assert_match 'unsupportedQuotaDiagnosticMessage' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Unsupported providers should explain why quota checks cannot be monitored"
+assert_match 'Querit 没有公开可用 API Key 认证查询的额度接口' \
+  "QuotaBar/Models/AppLanguage.swift" \
+  "Querit diagnostics should explain that dashboard usage is not an API-key quota endpoint"
 assert_match 'isUsableWithUnknownQuota' \
   "QuotaBar/Models/APIKey.swift" \
   "API keys should distinguish usable credentials whose quota is not exposed"
@@ -1130,9 +1148,15 @@ require(L10n.t(.settingsTab, language: .simplifiedChinese) == "语言与外观",
 require(L10n.t(.provider, language: .simplifiedChinese) == "服务商", "Chinese provider form label should be fully translated")
 require(L10n.t(.language, language: .simplifiedChinese) == "语言", "Chinese language label should be available")
 require(L10n.t(.statusBarTransparency, language: .simplifiedChinese) == "状态栏透明度", "Chinese status bar transparency label should be available")
+require(L10n.t(.httpNotRequested, language: .english) == "Not requested", "English diagnostics should distinguish skipped HTTP checks")
+require(L10n.t(.httpNotRequested, language: .simplifiedChinese) == "未请求", "Chinese diagnostics should distinguish skipped HTTP checks")
+require(Provider.bocha.displayName(language: .simplifiedChinese) == "博查", "Bocha should have a Simplified Chinese provider display name")
+require(Provider.wxmp.displayName(language: .english) == "WeChat Search", "WeChat Search should have an English provider display name")
+require(Provider.deepseek.displayName(language: .simplifiedChinese) == "深度求索", "DeepSeek should have a Simplified Chinese provider display name")
+require(Provider.querit.unsupportedQuotaDiagnosticMessage(language: .simplifiedChinese).contains("没有公开可用 API Key 认证查询的额度接口"), "Querit unsupported diagnostics should explain that no API-key usage endpoint is available")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
+swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
 "$TMP_DIR/language-test"
 
 echo "== Dashboard reauthentication behavior =="

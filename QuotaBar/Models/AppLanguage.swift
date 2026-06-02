@@ -137,6 +137,7 @@ enum L10n {
         case diagnosticsDescription
         case healthStatus
         case lastHTTPStatus
+        case httpNotRequested
         case diagnosticMessage
         case notChecked
         case usableUnknownQuota
@@ -147,6 +148,10 @@ enum L10n {
         case healthFailed
         case healthUnknown
         case braveQuotaUnknownDiagnostic
+        case queritDashboardOnlyDiagnostic
+        case exaServiceKeyDiagnostic
+        case anthropicDashboardOnlyDiagnostic
+        case quotaCheckNotSupportedDiagnostic
         case quotaConsumingRefreshWarning
     }
 
@@ -317,6 +322,7 @@ enum L10n {
         .diagnosticsDescription: "Review each credential's latest check result, HTTP status, and provider-specific diagnostic note.",
         .healthStatus: "Health",
         .lastHTTPStatus: "HTTP",
+        .httpNotRequested: "Not requested",
         .diagnosticMessage: "Diagnostic",
         .notChecked: "Not checked",
         .usableUnknownQuota: "Usable · quota unknown",
@@ -327,6 +333,10 @@ enum L10n {
         .healthFailed: "Check failed",
         .healthUnknown: "Unknown",
         .braveQuotaUnknownDiagnostic: "Search works, but Brave did not expose monthly quota for this key.",
+        .queritDashboardOnlyDiagnostic: "Querit does not expose a public API-key usage endpoint. Open the usage dashboard to check quota.",
+        .exaServiceKeyDiagnostic: "Exa usage requires an Admin API service key; a plain search API key cannot query quota.",
+        .anthropicDashboardOnlyDiagnostic: "Anthropic does not expose this quota through a standard API-key usage endpoint. Open the dashboard to check usage.",
+        .quotaCheckNotSupportedDiagnostic: "This provider does not expose a supported quota-check endpoint.",
         .quotaConsumingRefreshWarning: "Manual refresh for this provider consumes one real search request.",
     ]
 
@@ -421,6 +431,7 @@ enum L10n {
         .diagnosticsDescription: "查看每个凭据最近一次检查结果、HTTP 状态和服务商诊断信息。",
         .healthStatus: "健康状态",
         .lastHTTPStatus: "HTTP",
+        .httpNotRequested: "未请求",
         .diagnosticMessage: "诊断信息",
         .notChecked: "尚未检查",
         .usableUnknownQuota: "可用 · 额度未知",
@@ -431,6 +442,10 @@ enum L10n {
         .healthFailed: "检查失败",
         .healthUnknown: "未知",
         .braveQuotaUnknownDiagnostic: "搜索可用，但 Brave 没有公开这个 key 的月度额度。",
+        .queritDashboardOnlyDiagnostic: "Querit 没有公开可用 API Key 认证查询的额度接口；请打开用量控制台查看。",
+        .exaServiceKeyDiagnostic: "Exa 用量查询需要 Admin API service key，普通搜索 API Key 不能查询额度。",
+        .anthropicDashboardOnlyDiagnostic: "Anthropic 没有通过标准 API Key 用量接口公开该额度；请打开控制台查看。",
+        .quotaCheckNotSupportedDiagnostic: "该服务商没有公开受支持的额度查询接口。",
         .quotaConsumingRefreshWarning: "手动刷新该服务商会消耗 1 次真实搜索请求。",
     ]
 }

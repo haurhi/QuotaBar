@@ -22,6 +22,43 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    func displayName(language: AppLanguage = AppLanguageStore.shared.language) -> String {
+        switch language {
+        case .english:
+            switch self {
+            case .wxmp:
+                return "WeChat Search"
+            case .xfyunCodingPlan:
+                return "XFYun Spark"
+            case .volcengineCodingPlan:
+                return "Volcengine"
+            case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .querit, .anthropic, .deepseek, .opencodeGo:
+                return rawValue
+            }
+        case .simplifiedChinese:
+            switch self {
+            case .brave:
+                return "Brave 搜索"
+            case .serpapi:
+                return "SerpAPI 搜索"
+            case .serper:
+                return "Serper 搜索"
+            case .exa:
+                return "Exa 搜索"
+            case .bocha:
+                return "博查"
+            case .anysearch:
+                return "AnySearch 搜索"
+            case .querit:
+                return "Querit 搜索"
+            case .deepseek:
+                return "深度求索"
+            case .tavily, .wxmp, .anthropic, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+                return rawValue
+            }
+        }
+    }
+
     /// Asset catalog name for custom icon
     var iconAssetName: String {
         "ProviderIcons/\(self)"
@@ -175,6 +212,30 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return dashboardURL == nil ? "Quota unavailable" : "Check dashboard"
         case .tavily, .brave, .serpapi, .serper, .bocha, .anysearch, .wxmp, .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
             return "Quota unavailable"
+        }
+    }
+
+    func localizedUnsupportedQuotaLabel(language: AppLanguage = AppLanguageStore.shared.language) -> String {
+        switch self {
+        case .querit, .anthropic:
+            return dashboardURL == nil ? L10n.t(.quotaUnavailable, language: language) : L10n.t(.openDashboard, language: language)
+        case .exa:
+            return L10n.t(.quotaUnavailable, language: language)
+        case .tavily, .brave, .serpapi, .serper, .bocha, .anysearch, .wxmp, .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+            return L10n.t(.quotaUnavailable, language: language)
+        }
+    }
+
+    func unsupportedQuotaDiagnosticMessage(language: AppLanguage = AppLanguageStore.shared.language) -> String {
+        switch self {
+        case .querit:
+            return L10n.t(.queritDashboardOnlyDiagnostic, language: language)
+        case .exa:
+            return L10n.t(.exaServiceKeyDiagnostic, language: language)
+        case .anthropic:
+            return L10n.t(.anthropicDashboardOnlyDiagnostic, language: language)
+        case .tavily, .brave, .serpapi, .serper, .bocha, .anysearch, .wxmp, .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+            return L10n.t(.quotaCheckNotSupportedDiagnostic, language: language)
         }
     }
 

@@ -425,7 +425,7 @@ struct MenuProviderBanner: View {
                     ProviderIcon(provider: stat.provider, size: 32)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(stat.provider.rawValue)
+                        Text(stat.provider.displayName())
                             .font(.system(size: 14, weight: .semibold))
 
                         Text(stat.headerSubtitle)

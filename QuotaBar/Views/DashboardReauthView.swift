@@ -21,7 +21,7 @@ struct DashboardReauthSheet: View {
                 ProviderIcon(provider: provider, size: 34)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.format(.reauthTitle, provider.rawValue))
+                    Text(L10n.format(.reauthTitle, provider.displayName()))
                         .font(.headline)
 
                     Text(L10n.t(.reauthDescription))

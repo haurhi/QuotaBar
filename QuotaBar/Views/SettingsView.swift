@@ -627,7 +627,7 @@ struct APIKeyProviderBanner: View {
                 ProviderIcon(provider: provider, size: 28)
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(provider.rawValue)
+                    Text(provider.displayName())
                         .font(.system(size: 14, weight: .semibold))
                     Text(L10n.categoryTitle(provider.statusBarCategoryTitle))
                         .font(.caption2)
@@ -769,7 +769,7 @@ struct AddKeySheet: View {
             Form {
                 Picker(L10n.t(.provider), selection: $provider) {
                     ForEach(Provider.allCases) { p in
-                        Label(p.rawValue, systemImage: p.icon)
+                        Label(p.displayName(), systemImage: p.icon)
                             .tag(p)
                     }
                 }
@@ -791,7 +791,7 @@ struct AddKeySheet: View {
 
                 Button(L10n.t(.add)) {
                     let newKey = APIKey(
-                        name: name.isEmpty ? "\(provider.rawValue) \(L10n.t(.keys))" : name,
+                        name: name.isEmpty ? "\(provider.displayName()) \(L10n.t(.keys))" : name,
                         key: key,
                         provider: provider,
                         note: note.isEmpty ? nil : note
@@ -1115,7 +1115,7 @@ struct ProviderCardBanner: View {
                     ProviderIcon(provider: provider, size: 36)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(provider.rawValue)
+                        Text(provider.displayName())
                             .font(.system(size: 15, weight: .semibold))
 
                         Text(L10n.categoryTitle(provider.statusBarCategoryTitle))
@@ -1270,7 +1270,7 @@ struct CredentialDiagnosticProviderSection: View {
                     ProviderIcon(provider: stat.provider, size: 28)
 
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(stat.provider.rawValue)
+                        Text(stat.provider.displayName())
                             .font(.system(size: 14, weight: .semibold))
                         Text(L10n.categoryTitle(stat.provider.statusBarCategoryTitle))
                             .font(.caption2)
@@ -1305,7 +1305,7 @@ struct CredentialDiagnosticRow: View {
     let key: APIKey
 
     private var httpStatusText: String {
-        key.lastHTTPStatus.map(String.init) ?? "N/A"
+        key.lastHTTPStatus.map(String.init) ?? L10n.t(.httpNotRequested)
     }
 
     var body: some View {
