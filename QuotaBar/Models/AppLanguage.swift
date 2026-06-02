@@ -447,7 +447,7 @@ enum L10n {
 
     private static let simplifiedChinese: [Key: String] = [
         .apiKeysTab: "配置凭据",
-        .providersTab: "观察额度",
+        .providersTab: "额度监控",
         .diagnosticsTab: "诊断",
         .aboutTab: "关于",
         .settingsTab: "语言与外观",
@@ -493,7 +493,7 @@ enum L10n {
         .lastUpdated: "上次更新",
         .delete: "删除",
         .save: "保存",
-        .providersHeader: "观察额度",
+        .providersHeader: "额度监控",
         .providersSupported: "已配置 %d 个 · 支持 %d 个",
         .total: "总量",
         .remaining: "剩余",

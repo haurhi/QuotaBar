@@ -590,7 +590,7 @@ assert_match 'Slider\(value: \$appearanceStore\.statusBarTransparency, in: 0\.10
 assert_no_match '0\.20\.\.\.0\.88|0\.72 \+ \(1 - statusBarTransparency\) \* 0\.20|0\.20 - statusBarTransparency \* 0\.12' \
   "QuotaBar" \
   "Status bar transparency must not keep the old narrow range or barely visible opacity formula"
-assert_match '\.providersTab: "观察额度"' \
+assert_match '\.providersTab: "额度监控"' \
   "QuotaBar/Models/AppLanguage.swift" \
   "Simplified Chinese navigation should name the quota observation page explicitly"
 assert_match '\.apiKeysTab: "配置凭据"' \
@@ -1185,8 +1185,8 @@ require(L10n.t(.providersTab, language: .english) == "Quota Overview", "English 
 require(L10n.t(.providersHeader, language: .english) == "Quota Overview", "English quota overview page title should match the navigation")
 require(L10n.t(.apiKeysTab, language: .english) == "Credentials", "English credentials tab title should be available")
 require(L10n.t(.settingsTab, language: .english) == "Language & Appearance", "English language and appearance tab title should be available")
-require(L10n.t(.providersTab, language: .simplifiedChinese) == "观察额度", "Chinese quota overview tab title should be available")
-require(L10n.t(.providersHeader, language: .simplifiedChinese) == "观察额度", "Chinese quota overview page title should match the navigation")
+require(L10n.t(.providersTab, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring tab title should be available")
+require(L10n.t(.providersHeader, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring page title should match the navigation")
 require(L10n.t(.apiKeysTab, language: .simplifiedChinese) == "配置凭据", "Chinese credentials tab title should be available")
 require(L10n.t(.dashboardSession, language: .simplifiedChinese) == "控制台会话 Cookie", "Chinese dashboard-session credential label should avoid API key wording")
 require(L10n.t(.settingsTab, language: .simplifiedChinese) == "语言与外观", "Chinese language and appearance tab title should be available")
