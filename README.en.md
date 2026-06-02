@@ -20,6 +20,7 @@ QuotaBar currently supports macOS, with macOS 14.0 as the minimum supported vers
 - Supports multiple providers and credentials, with credentials sorted by remaining quota inside each provider.
 - Supports both API keys and dashboard-session cookies.
 - Imports supported credentials from `.env` or `~/.claude/settings.json`.
+- Supports launch at login, configurable automatic refresh intervals, and fully disabling automatic refresh.
 - Stores secrets in `~/Library/Application Support/QuotaBar/secrets.json` with `0600` permissions; preferences store metadata only.
 
 ## Supported Providers
@@ -43,7 +44,6 @@ QuotaBar currently supports macOS, with macOS 14.0 as the minimum supported vers
 | Provider | Credential Type |
 | --- | --- |
 | DeepSeek | API Key |
-| Anthropic | Manual dashboard check |
 | XFYun Spark | Dashboard session cookie |
 | Volcengine | Dashboard session cookie |
 | OpenCode Go | Dashboard session cookie |
@@ -70,6 +70,47 @@ Install into `/Applications`:
 `./install.sh` reuses the existing `build/QuotaBar.app` by default. Use `--rebuild` when you need a fresh build.
 
 See [Quickstart](./QUICKSTART.en.md) for the full flow.
+
+## DMG Packaging And Gatekeeper
+
+Local, self-use, or no-fee unsigned DMG:
+
+```bash
+scripts/package_dmg.sh --rebuild
+open build/QuotaBar.dmg
+```
+
+Manual GitHub Release upload:
+
+```bash
+gh release create v0.1.0 build/QuotaBar.dmg \
+  --title "QuotaBar v0.1.0" \
+  --notes "Unsigned DMG for trusted users. macOS may require removing quarantine on first launch."
+```
+
+You can also push a tag and let GitHub Actions build the unsigned DMG and upload it to the Release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+An unsigned DMG does not require Apple Developer Program membership, but macOS Gatekeeper may block the downloaded app. Install it only if you trust this source repository and release. If macOS says the app is damaged or cannot be opened, move the app into `/Applications` and run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/QuotaBar.app
+open /Applications/QuotaBar.app
+```
+
+For broader distribution to other Macs, the reliable way to avoid "damaged app" Gatekeeper warnings is still Developer ID signing plus Apple notarization:
+
+```bash
+DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
+NOTARYTOOL_PROFILE="notary-profile" \
+scripts/package_dmg.sh --rebuild --notarize
+```
+
+Without Developer ID signing and notarization, the DMG is suitable only for local, source-auditable GitHub, or otherwise trusted environments; downloaded copies may still be blocked by Gatekeeper.
 
 ## Usage
 

@@ -1377,6 +1377,7 @@ struct DiagnosticPill: View {
 struct AppSettingsView: View {
     @ObservedObject private var languageStore = AppLanguageStore.shared
     @ObservedObject private var appearanceStore = AppAppearanceStore.shared
+    @ObservedObject private var launchAtLoginStore = LaunchAtLoginStore.shared
 
     private var transparencyText: String {
         "\(Int((appearanceStore.statusBarTransparency * 100).rounded()))%"
@@ -1407,6 +1408,49 @@ struct AppSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     .font(.subheadline)
+                }
+            }
+
+            MaterialPanel {
+                VStack(alignment: .leading, spacing: 14) {
+                    Toggle(isOn: Binding(
+                        get: { launchAtLoginStore.isEnabled },
+                        set: { launchAtLoginStore.setEnabled($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t(.launchAtLogin))
+                                .font(.system(size: 14, weight: .semibold))
+
+                            Text(L10n.t(.launchAtLoginDescription))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+
+                    if let error = launchAtLoginStore.lastError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+
+                    Divider()
+
+                    Picker(L10n.t(.autoRefreshInterval), selection: $appearanceStore.autoRefreshInterval) {
+                        ForEach(AutoRefreshIntervalOption.allCases) { option in
+                            Text(option.displayName)
+                                .tag(option)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Text(L10n.t(.autoRefreshDescription))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Label(L10n.t(.autoRefreshBraveWarning), systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 

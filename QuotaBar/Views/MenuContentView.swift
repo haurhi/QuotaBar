@@ -16,19 +16,19 @@ struct MenuContentView: View {
     }
 
     private var blurOpacity: Double {
-        0.18 + (1 - statusBarTransparency) * 0.72
+        0.10 + (1 - statusBarTransparency) * 0.82
     }
 
     private var glassOverlayOpacity: Double {
-        0.02 + (1 - statusBarTransparency) * 0.42
+        0.01 + (1 - statusBarTransparency) * 0.52
     }
 
     private var borderOpacity: Double {
-        0.08 + (1 - statusBarTransparency) * 0.28
+        0.04 + (1 - statusBarTransparency) * 0.34
     }
 
     private var shadowOpacity: Double {
-        0.08 + (1 - statusBarTransparency) * 0.18
+        0.06 + (1 - statusBarTransparency) * 0.22
     }
 
     var body: some View {

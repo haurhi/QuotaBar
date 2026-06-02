@@ -1,0 +1,42 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Python test dependencies
+        run: python3 -m pip install --user pillow
+
+      - name: Run behavior tests
+        run: bash Tests/run_behavior_tests.sh
+
+      - name: Build unsigned DMG
+        run: scripts/package_dmg.sh --rebuild
+
+      - name: Upload DMG to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/QuotaBar.dmg
+          body: |
+            QuotaBar macOS build.
+
+            This DMG is unsigned and not notarized because the project does not use a paid Apple Developer ID. macOS Gatekeeper may block the first launch after download. Only install it if you trust this repository and release.
+
+            If macOS reports that the app is damaged or cannot be opened, install the app into /Applications and run:
+
+            ```bash
+            xattr -dr com.apple.quarantine /Applications/QuotaBar.app
+            open /Applications/QuotaBar.app
+            ```

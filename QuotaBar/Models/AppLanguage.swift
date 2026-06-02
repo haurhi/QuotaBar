@@ -63,6 +63,15 @@ enum L10n {
         case appLanguage
         case statusBarTransparency
         case statusBarTransparencyDescription
+        case launchAtLogin
+        case launchAtLoginDescription
+        case autoRefreshInterval
+        case autoRefreshDescription
+        case autoRefreshBraveWarning
+        case autoRefreshFiveMinutes
+        case autoRefreshFifteenMinutes
+        case autoRefreshThirtyMinutes
+        case autoRefreshOneHour
         case apiQuotaTitle
         case noApiKeys
         case noApiKeysMessage
@@ -335,7 +344,7 @@ enum L10n {
         .providersTab: "Quota Overview",
         .diagnosticsTab: "Diagnostics",
         .aboutTab: "About",
-        .settingsTab: "Language & Appearance",
+        .settingsTab: "Settings",
         .apiKeysCount: "%d credentials",
         .apiKeyConfiguration: "Credential Configuration",
         .apiKeyConfigurationDescription: "Add API keys or dashboard session cookies. New credentials appear below by provider.",
@@ -343,10 +352,19 @@ enum L10n {
         .addKey: "Add Credential",
         .language: "Language",
         .languageTitle: "Language",
-        .languageDescription: "Choose the display language and menu bar appearance for QuotaBar.",
+        .languageDescription: "Adjust app behavior, refresh cadence, language, and menu bar appearance.",
         .appLanguage: "App Language",
         .statusBarTransparency: "Status Bar Transparency",
         .statusBarTransparencyDescription: "Adjust the frosted-glass menu transparency.",
+        .launchAtLogin: "Open at Login",
+        .launchAtLoginDescription: "Start QuotaBar automatically after signing in to macOS.",
+        .autoRefreshInterval: "Automatic Refresh",
+        .autoRefreshDescription: "Choose how often QuotaBar refreshes providers in the background.",
+        .autoRefreshBraveWarning: "Automatic refresh skips Brave because each Brave check consumes one real search request.",
+        .autoRefreshFiveMinutes: "Every 5 minutes",
+        .autoRefreshFifteenMinutes: "Every 15 minutes",
+        .autoRefreshThirtyMinutes: "Every 30 minutes",
+        .autoRefreshOneHour: "Every hour",
         .apiQuotaTitle: "API Quota",
         .noApiKeys: "No credentials",
         .noApiKeysMessage: "Import a .env file or add credentials on the Credentials page to show provider quotas here.",
@@ -461,7 +479,7 @@ enum L10n {
         .providersTab: "额度监控",
         .diagnosticsTab: "诊断",
         .aboutTab: "关于",
-        .settingsTab: "语言与外观",
+        .settingsTab: "设置",
         .apiKeysCount: "%d 个凭据",
         .apiKeyConfiguration: "配置凭据",
         .apiKeyConfigurationDescription: "添加 API Key 或控制台会话 Cookie。新增凭据会按服务商显示在下方。",
@@ -469,10 +487,19 @@ enum L10n {
         .addKey: "添加凭据",
         .language: "语言",
         .languageTitle: "语言",
-        .languageDescription: "选择 QuotaBar 的界面语言和状态栏外观。",
+        .languageDescription: "调整应用行为、刷新频率、语言和状态栏外观。",
         .appLanguage: "应用语言",
         .statusBarTransparency: "状态栏透明度",
         .statusBarTransparencyDescription: "调整状态栏弹窗的磨砂玻璃透明程度。",
+        .launchAtLogin: "开机自启动",
+        .launchAtLoginDescription: "登录 macOS 后自动启动 QuotaBar。",
+        .autoRefreshInterval: "自动刷新",
+        .autoRefreshDescription: "选择 QuotaBar 在后台刷新服务商额度的频率。",
+        .autoRefreshBraveWarning: "自动刷新会跳过 Brave，因为每次 Brave 检查都会消耗 1 次真实搜索请求。",
+        .autoRefreshFiveMinutes: "每 5 分钟",
+        .autoRefreshFifteenMinutes: "每 15 分钟",
+        .autoRefreshThirtyMinutes: "每 30 分钟",
+        .autoRefreshOneHour: "每小时",
         .apiQuotaTitle: "API 额度",
         .noApiKeys: "没有凭据",
         .noApiKeysMessage: "导入 .env 文件或在凭据页添加凭据后，这里会显示各服务商的额度。",

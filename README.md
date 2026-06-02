@@ -20,6 +20,7 @@ QuotaBar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM coding
 - 支持多个 provider、多个凭据，并按 provider 内剩余额度排序。
 - 支持 API Key 与控制台会话 Cookie 两类凭据。
 - 可从 `.env` 或 `~/.claude/settings.json` 导入支持的凭据。
+- 支持开机自启动、自动刷新间隔配置，也可以完全关闭自动刷新。
 - 真实凭据存储在 `~/Library/Application Support/QuotaBar/secrets.json`，权限为 `0600`；偏好设置只保存 metadata。
 
 ## 支持的服务商
@@ -69,6 +70,47 @@ open build/QuotaBar.app
 `./install.sh` 默认复用已有 `build/QuotaBar.app`，需要重新构建时使用 `--rebuild`。
 
 更多步骤见 [快速启动](./QUICKSTART.md)。
+
+## DMG 打包与 Gatekeeper
+
+本机自用或不付费发布的未签名 DMG：
+
+```bash
+scripts/package_dmg.sh --rebuild
+open build/QuotaBar.dmg
+```
+
+手动发布到 GitHub Release：
+
+```bash
+gh release create v0.1.0 build/QuotaBar.dmg \
+  --title "QuotaBar v0.1.0" \
+  --notes "Unsigned DMG for trusted users. macOS may require removing quarantine on first launch."
+```
+
+也可以直接推送 tag，仓库的 GitHub Actions 会自动构建未签名 DMG 并上传到 Release：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+未签名 DMG 不需要 Apple Developer Program，但从 GitHub 下载后可能被 macOS Gatekeeper 拦截。只在信任该源码和 release 的情况下安装；如果提示“App 已损坏”或“无法打开”，先把 app 拖到 `/Applications`，再执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/QuotaBar.app
+open /Applications/QuotaBar.app
+```
+
+如果要发给更广泛的 Mac 用户，避免出现“App 已损坏，无法打开”的可靠方式仍然是使用 Apple Developer ID 签名并完成 notarization：
+
+```bash
+DEVELOPER_ID_APPLICATION="Developer ID Application: Your Name (TEAMID)" \
+NOTARYTOOL_PROFILE="notary-profile" \
+scripts/package_dmg.sh --rebuild --notarize
+```
+
+没有 Developer ID 签名和公证的 DMG 只适合本机、GitHub 源码可审计或其他受信任环境使用；跨机器下载后仍可能被 Gatekeeper 拦截。
 
 ## 使用
 

@@ -9,6 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
     var settingsWindow: NSWindow?
     var popoverMouseExitTimer: Timer?
     var cancellables = Set<AnyCancellable>()
+    private var autoRefreshCancellable: AnyCancellable?
     private let preferredSettingsContentSize = NSSize(width: 1040, height: 640)
     private let minimumSettingsWindowSize = NSSize(width: 1040, height: 640)
 
@@ -119,7 +120,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
     private func showStatusPopover(from button: NSStatusBarButton) {
         guard let popover else { return }
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        configurePopoverWindowAppearance()
         startPopoverMouseExitMonitor()
+    }
+
+    private func configurePopoverWindowAppearance() {
+        guard let window = popover?.contentViewController?.view.window else { return }
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = false
+        window.contentView?.wantsLayer = true
+        window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     private func closeStatusPopover() {
@@ -172,16 +183,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
 
     @MainActor
     private func startMonitoring() {
-        // 每 5 分钟刷新一次
-        Timer.publish(every: 300, on: .main, in: .common)
-            .autoconnect()
+        configureAutoRefreshTimer()
+        AppAppearanceStore.shared.$autoRefreshInterval
+            .removeDuplicates()
             .sink { [weak self] _ in
-                self?.quotaMonitor.refreshAll(mode: .automatic)
+                self?.configureAutoRefreshTimer()
             }
             .store(in: &cancellables)
 
         // 首次刷新
         quotaMonitor.refreshAll(mode: .automatic)
+    }
+
+    @MainActor
+    private func configureAutoRefreshTimer() {
+        autoRefreshCancellable?.cancel()
+        autoRefreshCancellable = nil
+
+        guard let interval = AppAppearanceStore.shared.autoRefreshInterval.timeInterval else {
+            return
+        }
+
+        autoRefreshCancellable = Timer.publish(every: interval, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.quotaMonitor.refreshAll(mode: .automatic)
+            }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

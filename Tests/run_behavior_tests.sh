@@ -80,6 +80,39 @@ assert_no_match 'return \.anthropic' \
 assert_no_match '\| Anthropic \|' \
   "README.md" \
   "Anthropic should not be listed as a currently supported provider"
+assert_no_match '\| Anthropic \|' \
+  "README.en.md" \
+  "English README should not list Anthropic as a currently supported provider"
+assert_match '未签名 DMG' \
+  "README.md" \
+  "README should clearly label the no-fee GitHub Release path as an unsigned DMG"
+assert_match 'xattr -dr com\.apple\.quarantine /Applications/QuotaBar\.app' \
+  "README.md" \
+  "README should document how trusted users can remove Gatekeeper quarantine from an unsigned app"
+assert_match 'unsigned DMG' \
+  "README.en.md" \
+  "English README should clearly label the no-fee GitHub Release path as an unsigned DMG"
+assert_match 'xattr -dr com\.apple\.quarantine /Applications/QuotaBar\.app' \
+  "README.en.md" \
+  "English README should document how trusted users can remove Gatekeeper quarantine from an unsigned app"
+assert_match 'gh release create' \
+  "README.md" \
+  "README should document manual GitHub Release upload for unsigned DMGs"
+assert_match 'gh release create' \
+  "README.en.md" \
+  "English README should document manual GitHub Release upload for unsigned DMGs"
+assert_match 'on:' \
+  ".github/workflows/release.yml" \
+  "Repository should include a GitHub Release workflow"
+assert_match 'tags:' \
+  ".github/workflows/release.yml" \
+  "Release workflow should run from version tags"
+assert_match 'scripts/package_dmg.sh --rebuild' \
+  ".github/workflows/release.yml" \
+  "Release workflow should package QuotaBar as a DMG"
+assert_match 'softprops/action-gh-release' \
+  ".github/workflows/release.yml" \
+  "Release workflow should upload the DMG to GitHub Releases"
 assert_no_match 'api\.anthropic\.com' \
   "QuotaBar/Info.plist" \
   "Anthropic API domains should not be whitelisted while Anthropic is not supported"
@@ -242,6 +275,15 @@ assert_match 'mode == \.automatic && key\.provider\.quotaCheckConsumesSearchQuot
 assert_match 'quotaMonitor\.refreshAll\(mode: \.automatic\)' \
   "QuotaBar/AppDelegate.swift" \
   "Background timer refreshes should use automatic mode"
+assert_match 'configureAutoRefreshTimer' \
+  "QuotaBar/AppDelegate.swift" \
+  "Background quota refresh cadence should be configurable instead of hardcoded"
+assert_match 'Timer\.publish\(every: interval' \
+  "QuotaBar/AppDelegate.swift" \
+  "Auto refresh timer should use the configured interval"
+assert_no_match 'Timer\.publish\(every: 300' \
+  "QuotaBar/AppDelegate.swift" \
+  "Auto refresh timer should not be hardcoded to five minutes"
 assert_no_match 'quotaMonitor\.refreshAll\(\)' \
   "QuotaBar/AppDelegate.swift" \
   "AppDelegate must not use manual refresh semantics for background polling"
@@ -263,6 +305,15 @@ assert_match 'popover\.contentSize = MenuContentView\.menuSize' \
 assert_match 'popover\.show\(relativeTo: button\.bounds, of: button, preferredEdge: \.minY\)' \
   "QuotaBar/AppDelegate.swift" \
   "Status bar button should show the glass popover anchored below the menu bar icon"
+assert_match 'configurePopoverWindowAppearance' \
+  "QuotaBar/AppDelegate.swift" \
+  "Status bar transparency should clear the popover window chrome, not only the SwiftUI overlay"
+assert_match 'window\.isOpaque = false' \
+  "QuotaBar/AppDelegate.swift" \
+  "Popover window must be non-opaque for status bar transparency to be visible"
+assert_match 'window\.backgroundColor = \.clear' \
+  "QuotaBar/AppDelegate.swift" \
+  "Popover window background must be clear for status bar transparency to be visible"
 assert_no_match 'statusItem\?\.menu = menu' \
   "QuotaBar/AppDelegate.swift" \
   "Status bar glass surface must not be attached as an NSMenu"
@@ -581,12 +632,33 @@ assert_match 'Picker\(L10n\.t\(\.language' \
 assert_match 'AppAppearanceStore' \
   "QuotaBar/Models/AppAppearance.swift" \
   "QuotaBar should persist appearance settings such as status bar transparency"
+assert_match 'autoRefreshInterval' \
+  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaBar should persist the automatic refresh interval"
+assert_match 'AutoRefreshIntervalOption' \
+  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaBar should expose a finite set of safe automatic refresh intervals"
+assert_match 'LaunchAtLoginStore' \
+  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaBar should expose a launch-at-login setting"
+assert_match 'SMAppService\.mainApp' \
+  "QuotaBar/Models/AppAppearance.swift" \
+  "Launch-at-login should use the modern macOS SMAppService main-app login item API"
 assert_match 'statusBarTransparency' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar glass UI should react to the configured transparency"
 assert_match 'Slider\(value: \$appearanceStore\.statusBarTransparency, in: 0\.10\.\.\.0\.95\)' \
   "QuotaBar/Views/SettingsView.swift" \
   "Language/appearance settings should expose a wider 10%-95% status bar transparency slider"
+assert_match 'Picker\(L10n\.t\(\.autoRefreshInterval' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Settings should let the user configure automatic refresh cadence"
+assert_match 'Toggle\(isOn: Binding' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Settings should expose launch-at-login as a real toggle"
+assert_match 'L10n\.t\(\.autoRefreshBraveWarning' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Auto refresh settings should warn that Brave is skipped because checks consume search quota"
 assert_no_match '0\.20\.\.\.0\.88|0\.72 \+ \(1 - statusBarTransparency\) \* 0\.20|0\.20 - statusBarTransparency \* 0\.12' \
   "QuotaBar" \
   "Status bar transparency must not keep the old narrow range or barely visible opacity formula"
@@ -596,9 +668,9 @@ assert_match '\.providersTab: "额度监控"' \
 assert_match '\.apiKeysTab: "配置凭据"' \
   "QuotaBar/Models/AppLanguage.swift" \
   "Simplified Chinese navigation should avoid implying every credential is an API key"
-assert_match '\.settingsTab: "语言与外观"' \
+assert_match '\.settingsTab: "设置"' \
   "QuotaBar/Models/AppLanguage.swift" \
-  "Simplified Chinese navigation should put language and appearance last"
+  "Simplified Chinese navigation should use the broader Settings label"
 assert_match 'APIKeyConfigurationPanel' \
   "QuotaBar/Views/SettingsView.swift" \
   "API Keys page should expose a visible in-page API key configuration panel"
@@ -909,6 +981,22 @@ assert_match 'Using existing app bundle' \
   "install.sh" \
   "Install script should reuse build/QuotaBar.app by default to preserve local approvals"
 test -f "QuotaBar/Resources/QuotaBar.icns" || fail "QuotaBar.icns must exist for Finder/Application icon"
+test -x "scripts/package_dmg.sh" || fail "scripts/package_dmg.sh must exist and be executable"
+assert_match 'hdiutil create' \
+  "scripts/package_dmg.sh" \
+  "DMG packaging should create a disk image with hdiutil"
+assert_match 'xcrun notarytool submit' \
+  "scripts/package_dmg.sh" \
+  "DMG packaging should support Apple notarization to avoid Gatekeeper damaged-app warnings for distribution"
+assert_match 'xcrun stapler staple' \
+  "scripts/package_dmg.sh" \
+  "DMG packaging should staple successful notarization tickets"
+assert_match 'DEVELOPER_ID_APPLICATION' \
+  "scripts/package_dmg.sh" \
+  "DMG packaging should support Developer ID Application signing"
+assert_match 'xattr -dr com\.apple\.quarantine' \
+  "scripts/package_dmg.sh" \
+  "Local unsigned packaging should clear quarantine attributes for the generated app bundle"
 plutil -lint "QuotaBar/QuotaBar.entitlements" >/dev/null || fail "entitlements plist must be valid"
 
 echo "== Provider icon assets =="
@@ -1223,15 +1311,18 @@ require(AppLanguage.simplifiedChinese.displayName == "简体中文", "Simplified
 require(L10n.t(.providersTab, language: .english) == "Quota Overview", "English quota overview tab title should be available")
 require(L10n.t(.providersHeader, language: .english) == "Quota Overview", "English quota overview page title should match the navigation")
 require(L10n.t(.apiKeysTab, language: .english) == "Credentials", "English credentials tab title should be available")
-require(L10n.t(.settingsTab, language: .english) == "Language & Appearance", "English language and appearance tab title should be available")
+require(L10n.t(.settingsTab, language: .english) == "Settings", "English settings tab title should be available")
 require(L10n.t(.providersTab, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring tab title should be available")
 require(L10n.t(.providersHeader, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring page title should match the navigation")
 require(L10n.t(.apiKeysTab, language: .simplifiedChinese) == "配置凭据", "Chinese credentials tab title should be available")
 require(L10n.t(.dashboardSession, language: .simplifiedChinese) == "控制台会话 Cookie", "Chinese dashboard-session credential label should avoid API key wording")
-require(L10n.t(.settingsTab, language: .simplifiedChinese) == "语言与外观", "Chinese language and appearance tab title should be available")
+require(L10n.t(.settingsTab, language: .simplifiedChinese) == "设置", "Chinese settings tab title should be available")
 require(L10n.t(.provider, language: .simplifiedChinese) == "服务商", "Chinese provider form label should be fully translated")
 require(L10n.t(.language, language: .simplifiedChinese) == "语言", "Chinese language label should be available")
 require(L10n.t(.statusBarTransparency, language: .simplifiedChinese) == "状态栏透明度", "Chinese status bar transparency label should be available")
+require(L10n.t(.autoRefreshInterval, language: .simplifiedChinese) == "自动刷新", "Chinese settings should include an automatic refresh label")
+require(AutoRefreshIntervalOption.off.timeInterval == nil, "Automatic refresh settings should support disabling background refresh")
+require(AutoRefreshIntervalOption.fifteenMinutes.timeInterval == 900, "Automatic refresh settings should expose a 15 minute interval")
 require(L10n.t(.httpNotRequested, language: .english) == "Not requested", "English diagnostics should distinguish skipped HTTP checks")
 require(L10n.t(.httpNotRequested, language: .simplifiedChinese) == "未请求", "Chinese diagnostics should distinguish skipped HTTP checks")
 require(Provider.bocha.displayName(language: .simplifiedChinese) == "博查", "Bocha should have a Simplified Chinese provider display name")
@@ -1245,7 +1336,7 @@ require(Provider.deepseek.displayName(language: .simplifiedChinese) == "Deepseek
 require(Provider.querit.displayName(language: .simplifiedChinese) == "Querit", "Querit should not repeat the generic search category in its Simplified Chinese provider display name")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
+swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/AppAppearance.swift QuotaBar/Models/APIKey.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
 "$TMP_DIR/language-test"
 
 echo "== Dashboard reauthentication behavior =="
