@@ -313,6 +313,121 @@ extension Color {
     }
 }
 
+// MARK: - Quota Presentation
+
+enum QuotaDataSource: String, Equatable {
+    case officialAPI
+    case dashboardAPI
+    case responseHeader
+    case localPolicy
+    case unavailable
+
+    var displayName: String {
+        switch self {
+        case .officialAPI:
+            return AppLanguageStore.shared.language == .simplifiedChinese ? "官方 API" : "Official API"
+        case .dashboardAPI:
+            return AppLanguageStore.shared.language == .simplifiedChinese ? "控制台接口" : "Dashboard API"
+        case .responseHeader:
+            return AppLanguageStore.shared.language == .simplifiedChinese ? "响应 Header" : "Response Header"
+        case .localPolicy:
+            return AppLanguageStore.shared.language == .simplifiedChinese ? "本地规则" : "Local Policy"
+        case .unavailable:
+            return AppLanguageStore.shared.language == .simplifiedChinese ? "未公开" : "Not Exposed"
+        }
+    }
+}
+
+struct QuotaPresentation: Equatable {
+    let primaryText: String
+    let badgeText: String
+    let resetText: String
+    let percentRemaining: Double?
+    let dataSource: QuotaDataSource
+    let diagnosticText: String
+
+    var sourceText: String {
+        dataSource.displayName
+    }
+}
+
+struct MenuQuotaItem: Identifiable, Equatable {
+    let provider: Provider
+    let key: APIKey
+
+    var id: UUID { key.id }
+
+    var presentation: QuotaPresentation {
+        key.quotaPresentation
+    }
+
+    var canRefresh: Bool {
+        key.isActive && !key.key.isEmpty
+    }
+
+    static func topItems(from stats: [ProviderStats], limit: Int = 5) -> [MenuQuotaItem] {
+        Array(
+            stats
+                .flatMap { stat in
+                    stat.keys.map { MenuQuotaItem(provider: stat.provider, key: $0) }
+                }
+                .filter { $0.key.isActive }
+                .sorted(by: shouldRankBefore)
+                .prefix(limit)
+        )
+    }
+
+    private static func shouldRankBefore(_ lhs: MenuQuotaItem, _ rhs: MenuQuotaItem) -> Bool {
+        let lhsKey = lhs.priorityKey
+        let rhsKey = rhs.priorityKey
+
+        if lhsKey.severity != rhsKey.severity {
+            return lhsKey.severity < rhsKey.severity
+        }
+
+        if lhsKey.percentRemaining != rhsKey.percentRemaining {
+            return lhsKey.percentRemaining < rhsKey.percentRemaining
+        }
+
+        if lhsKey.remaining != rhsKey.remaining {
+            return lhsKey.remaining < rhsKey.remaining
+        }
+
+        let lhsProviderIndex = Provider.visibleCases.firstIndex(of: lhs.provider) ?? Int.max
+        let rhsProviderIndex = Provider.visibleCases.firstIndex(of: rhs.provider) ?? Int.max
+        if lhsProviderIndex != rhsProviderIndex {
+            return lhsProviderIndex < rhsProviderIndex
+        }
+
+        return lhs.key.name.localizedStandardCompare(rhs.key.name) == .orderedAscending
+    }
+
+    private var priorityKey: (severity: Int, percentRemaining: Double, remaining: Int) {
+        let severity: Int
+        if key.isCredentialExpired {
+            severity = 0
+        } else if key.isUsageLimitExceeded {
+            severity = 1
+        } else if key.isExhausted {
+            severity = 2
+        } else if key.status == .failed {
+            severity = 3
+        } else if key.quotaPresentation.percentRemaining != nil {
+            severity = 4
+        } else if key.isUsableWithUnknownQuota {
+            severity = 5
+        } else if key.isUnlimitedQuota {
+            severity = 7
+        } else {
+            severity = 6
+        }
+
+        let percent = key.quotaPresentation.percentRemaining ?? Double.greatestFiniteMagnitude
+        let remaining = key.remaining ?? Int.max
+        return (severity, percent, remaining)
+    }
+}
+
 // MARK: - API Key Model
 
 struct APIKey: Identifiable, Codable, Equatable {
@@ -414,6 +529,61 @@ struct APIKey: Identifiable, Codable, Equatable {
         }
 
         return L10n.t(.quotaUnavailable)
+    }
+
+    var quotaPresentation: QuotaPresentation {
+        QuotaPresentation(
+            primaryText: quotaPresentationPrimaryText,
+            badgeText: remainingBadgeText,
+            resetText: resetSummary,
+            percentRemaining: percentRemaining,
+            dataSource: quotaDataSource,
+            diagnosticText: diagnosticSummary
+        )
+    }
+
+    private var quotaPresentationPrimaryText: String {
+        if isUsableWithUnknownQuota {
+            switch AppLanguageStore.shared.language {
+            case .english:
+                return "Search OK · monthly quota not exposed"
+            case .simplifiedChinese:
+                return "搜索可用 · 未公开月度额度"
+            }
+        }
+        return quotaDisplayText
+    }
+
+    private var percentRemaining: Double? {
+        guard isActive,
+              !isUnlimitedQuota,
+              !isUsableWithUnknownQuota,
+              let remaining,
+              let limit,
+              limit > 0,
+              remaining != Int.max,
+              limit != Int.max else {
+            return nil
+        }
+        return max(0, min(1, Double(remaining) / Double(limit)))
+    }
+
+    private var quotaDataSource: QuotaDataSource {
+        guard isActive else { return .unavailable }
+        if isUnlimitedQuota { return .localPolicy }
+
+        switch provider {
+        case .brave:
+            return .responseHeader
+        case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+            return .dashboardAPI
+        case .tavily, .serpapi, .serper, .exa, .bocha, .wxmp, .deepseek:
+            return .officialAPI
+        case .anysearch:
+            return .localPolicy
+        case .anthropic:
+            return .unavailable
+        }
     }
 
     var maskedKey: String {

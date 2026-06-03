@@ -341,6 +341,21 @@ assert_match 'homeCategoryStats' \
 assert_match 'ProviderCategoryStats' \
   "QuotaBar/Models/APIKey.swift" \
   "Status bar category groups should have a model instead of ad hoc view filtering"
+assert_match 'struct QuotaPresentation' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Quota values should have a shared presentation model instead of each view inventing display strings"
+assert_match 'enum QuotaDataSource' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Quota presentation should expose where the number came from"
+assert_match 'var quotaPresentation: QuotaPresentation' \
+  "QuotaBar/Models/APIKey.swift" \
+  "APIKey should expose a numeric-first quota presentation"
+assert_match 'menuTopQuotaItems' \
+  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaMonitor should expose top quota items for the menu bar summary"
+assert_match 'struct MenuQuotaItem' \
+  "QuotaBar/Models/APIKey.swift" \
+  "Menu bar should use ranked quota items instead of rendering the full provider dashboard"
 assert_match 'var id: String \{ provider\.id \}' \
   "QuotaBar/Models/APIKey.swift" \
   "ProviderStats identity should be stable across quota refreshes so expanded sections and scroll position are preserved"
@@ -362,51 +377,45 @@ assert_match 'provider\.homeVisibleWithoutKeys' \
 assert_no_match 'provider.category == "Search"' \
   "QuotaBar/Models/QuotaMonitor.swift" \
   "Home provider stats must include configured LLM providers instead of hiding them"
-assert_match 'monitor.homeProviderStats' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Home view should render all configured provider quota stats"
 assert_no_match 'monitor.providerStats' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Home view should use QuotaMonitor.homeProviderStats as the single home data source"
-assert_match 'ForEach\(monitor\.homeCategoryStats\)' \
+  "Status bar home view should not use the old full provider stats data source"
+assert_no_match 'ScrollView\(showsIndicators' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar home view should group providers by category"
+  "Status bar popover should not be a long scrolling dashboard"
+assert_no_match 'ForEach\(monitor\.homeCategoryStats\)' \
+  "QuotaBar/Views/MenuContentView.swift" \
+  "Status bar popover should not render all provider category sections"
 assert_no_match 'ForEach\(monitor\.homeProviderStats\) \{ stat in' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar home view should not render a flat provider list"
-assert_match 'ProviderCategorySection' \
+assert_match 'MenuSummaryCard' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar home view should provide collapsible category sections"
+  "Status bar popover should show a compact numeric summary"
+assert_match 'TopQuotaItemsView' \
+  "QuotaBar/Views/MenuContentView.swift" \
+  "Status bar popover should show top quota items instead of the full dashboard"
+assert_match 'ForEach\(monitor\.menuTopQuotaItems' \
+  "QuotaBar/Views/MenuContentView.swift" \
+  "Status bar top items should come from QuotaMonitor.menuTopQuotaItems"
 assert_no_match 'spring\(response: 0\.3\)' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar collapsible sections should not use spring animation"
 assert_no_match 'Image\(systemName: "chevron.down"\)' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar collapsible sections should not show triangle/chevron disclosure icons"
-assert_match 'menuCollapseAnimation = Animation\.easeInOut\(duration: 0\.16\)' \
+assert_match 'openDashboard\(\)' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar collapsible sections should use the same calm short animation as the main app"
-assert_match 'MenuCollapsibleBanner' \
+  "Status bar popover should hand off full browsing to the main quota dashboard"
+assert_match 'monitor\.refreshProvider\(item\.provider\)' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar category sections should use clickable banners"
-assert_match 'MenuProviderBanner' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar provider sections should use clickable provider banners"
-assert_match 'ZStack\(alignment: \.trailing\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar provider banners should make the full banner surface a collapse target while overlaying the refresh control"
-assert_match 'trailingControlReserve' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar provider banners should reserve trailing space so the refresh control does not steal the collapse hit target"
-assert_match 'monitor\.refreshProvider\(stat\.provider\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar provider sections should refresh only the selected provider"
+  "Status bar top item rows should refresh only the selected provider"
 assert_no_match 'onRefresh: \{ monitor\.refreshAll\(\) \}' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar home view must not expose only a single global refresh action"
-assert_match 'RefreshButton\(isRefreshing: \.constant\(isRefreshing\), isEnabled: canRefresh' \
+assert_match 'RefreshButton\(isRefreshing: \.constant\(isRefreshing\), isEnabled: item\.canRefresh' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Each status bar provider section should own its refresh button"
+  "Each status bar top item row should own its refresh button"
 assert_match 'AI Search' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar home view should label search providers as AI Search"
@@ -422,9 +431,9 @@ assert_match 'hostingController\.view\.wantsLayer = true' \
 assert_match 'backgroundColor = NSColor\.clear\.cgColor' \
   "QuotaBar/AppDelegate.swift" \
   "Status bar hosting view should not paint an opaque background over the frosted glass"
-assert_match 'menuSize = CGSize\(width: 420, height: 560\)' \
+assert_match 'menuSize = CGSize\(width: 420, height: 460\)' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar home view should be wide enough that the left edge is not covered"
+  "Status bar summary popover should be compact instead of a tall scrolling dashboard"
 assert_match 'contentHorizontalInset' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar home view should reserve an explicit horizontal inset to avoid left-edge clipping"
@@ -449,9 +458,9 @@ assert_no_match 'hostingView\.frame = NSRect\(x: 0, y: 0, width: 340, height: 48
 assert_match 'EmptyQuotaStateView' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar menu must have a first-run empty state"
-assert_match 'quotaSummary' \
+assert_match 'quotaPresentation' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Key rows must expose a quota summary for each API key"
+  "Key rows must use the shared quota presentation model"
 assert_match 'Text\(key\.maskedKey\)' \
   "QuotaBar/Views/MenuContentView.swift" \
   "Status bar key rows should show the actual masked API key, not the environment variable name"
@@ -482,18 +491,18 @@ assert_no_match 'ProviderStats\.sortedByCurrentQuota' \
 assert_match 'return stats' \
   "QuotaBar/Models/QuotaMonitor.swift" \
   "ProviderStats should preserve Provider.allCases order instead of sorting provider sections by quota"
-assert_match 'ForEach\(stat\.sortedKeysByCurrentQuota\)' \
+assert_no_match 'ForEach\(stat\.sortedKeysByCurrentQuota\)' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar provider sections should list keys by current quota descending"
+  "Status bar popover should not list every key inside every provider"
 assert_match 'sortedByCurrentQuota' \
   "QuotaBar/Views/SettingsView.swift" \
   "Settings API key sections should list keys by current quota descending"
-assert_match 'Text\(key\.remainingBadgeText\)' \
+assert_match 'Text\(presentation\.badgeText\)' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar key badges should distinguish exhausted keys from tiny nonzero quotas"
-assert_match 'resetSummary' \
+  "Status bar key badges should come from the shared quota presentation"
+assert_match 'presentation\.resetText' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Key rows must expose reset timing for each API key"
+  "Status bar top item rows must expose reset timing through the shared presentation"
 assert_match 'var resetSummary: String' \
   "QuotaBar/Models/APIKey.swift" \
   "Quota reset timing should be shared by all key row views"
@@ -506,12 +515,9 @@ assert_match 'L10n\.t\(\.resetsMonthlyDay1' \
 assert_match 'L10n\.t\(\.resetNotExposed' \
   "QuotaBar/Models/APIKey.swift" \
   "Providers without reset data should not pretend to know reset timing"
-assert_match 'L10n\.t\(\.openDashboard' \
+assert_match 'ProviderIcon\(provider: item.provider' \
   "QuotaBar/Views/MenuContentView.swift" \
-  "Provider sections should link to provider dashboards when available"
-assert_match 'ProviderIcon\(provider: stat.provider' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Menu provider sections should use official provider icons"
+  "Menu top item rows should use official provider icons"
 assert_match 'ModernPage\(' \
   "QuotaBar/Views/SettingsView.swift" \
   "Providers page must have its own modern header so the first provider card is not hidden under the title area"
@@ -1286,6 +1292,35 @@ let sortedStat = ProviderStats(
 require(
     sortedStat.sortedKeysByCurrentQuota.map { $0.name } == ["high", "low", "usableUnknown", "empty", "usageLimited", "unknown"],
     "ProviderStats.sortedKeysByCurrentQuota should sort known quotas first, keep usable-unknown before exhausted keys, and keep unchecked unknown last"
+)
+let numericPresentation = APIKey(
+    name: "TAVILY_API_KEY",
+    key: "tvly-test-key",
+    provider: .tavily,
+    remaining: 750,
+    limit: 1000,
+    resetAt: localizedResetDate,
+    lastUpdated: localizedResetDate,
+    quotaLabel: "750 / 1000 monthly credits"
+).quotaPresentation
+require(numericPresentation.primaryText == "750 / 1000 monthly credits", "QuotaPresentation should preserve the numeric quota as the primary text")
+require(numericPresentation.badgeText == "75%", "QuotaPresentation should expose the numeric remaining badge")
+require(numericPresentation.percentRemaining == 0.75, "QuotaPresentation should expose normalized remaining percentage")
+require(numericPresentation.dataSource == .officialAPI, "Tavily presentation should identify official API data")
+let braveUnknownPresentation = exposedUnknownKey.quotaPresentation
+require(braveUnknownPresentation.primaryText == "Search OK · monthly quota not exposed", "Usable unknown quota should still explain the numeric gap")
+require(braveUnknownPresentation.percentRemaining == nil, "Unknown quota should not invent a fake remaining percentage")
+require(braveUnknownPresentation.dataSource == .responseHeader, "Brave hidden quota should identify response-header probing")
+let rankedMenuItems = MenuQuotaItem.topItems(from: [
+    ProviderStats(provider: .tavily, keys: [
+        APIKey(name: "TAVILY_LOW", key: "tvly-low", provider: .tavily, remaining: 100, limit: 1000),
+        APIKey(name: "TAVILY_HIGH", key: "tvly-high", provider: .tavily, remaining: 900, limit: 1000),
+    ]),
+    sortedStat
+], limit: 3)
+require(
+    rankedMenuItems.map { $0.key.name } == ["usageLimited", "empty", "low"],
+    "MenuQuotaItem.topItems should rank exhausted and lowest numeric quotas for the compact status bar summary"
 )
 let settingsURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("claude-settings.json")
 try! Data("""
