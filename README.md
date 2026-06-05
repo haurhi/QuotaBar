@@ -18,6 +18,24 @@ QuotaBar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM coding
 
 下一阶段计划见 [TODO / Roadmap](./TODO.md)。
 
+## 界面预览
+
+<p align="center">
+  <img src="./docs/assets/screenshots/quota-overview.png" alt="QuotaBar 主程序额度监控概览" width="920">
+</p>
+
+<p align="center">
+  <em>主窗口以 provider 为单位展示剩余额度、总量和健康状态；截图使用脱敏演示数据。</em>
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/menu-bar-popover.png" alt="QuotaBar 状态栏弹窗" width="620">
+</p>
+
+<p align="center">
+  <em>状态栏弹窗保留最重要的额度信号，适合随手查看而不打断当前工作。</em>
+</p>
+
 ## 功能
 
 - 状态栏磨砂玻璃弹窗，按 `AI Search` 和 `LLM` 分组展示额度。

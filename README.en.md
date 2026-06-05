@@ -18,6 +18,24 @@ Current version: `v0.1.3`.
 
 See [TODO / Roadmap](./TODO.en.md) for the next development plan.
 
+## Screenshots
+
+<p align="center">
+  <img src="./docs/assets/screenshots/quota-overview.png" alt="QuotaBar quota overview window" width="920">
+</p>
+
+<p align="center">
+  <em>The main window summarizes remaining quota, total quota, and health status by provider. Screenshots use sanitized demo data.</em>
+</p>
+
+<p align="center">
+  <img src="./docs/assets/screenshots/menu-bar-popover.png" alt="QuotaBar menu bar popover" width="620">
+</p>
+
+<p align="center">
+  <em>The menu bar popover keeps the most important quota signals visible without interrupting your current work.</em>
+</p>
+
 ## Features
 
 - Frosted-glass menu bar popover grouped by `AI Search` and `LLM`.

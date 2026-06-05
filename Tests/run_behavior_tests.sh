@@ -47,6 +47,26 @@ assert_match 'CFBundleIconFile' \
 assert_no_match 'LSUIElement' \
   "QuotaBar/Info.plist" \
   "QuotaBar must appear in the macOS Dock after launch"
+[[ -s docs/assets/screenshots/quota-overview.png ]] || fail "README quota overview screenshot asset should exist"
+[[ -s docs/assets/screenshots/menu-bar-popover.png ]] || fail "README menu bar popover screenshot asset should exist"
+assert_match 'docs/assets/screenshots/quota-overview\.png' \
+  "README.md" \
+  "Chinese README should show the quota overview screenshot"
+assert_match 'docs/assets/screenshots/menu-bar-popover\.png' \
+  "README.md" \
+  "Chinese README should show the menu bar popover screenshot"
+assert_match '脱敏演示数据' \
+  "README.md" \
+  "Chinese README should clarify that public screenshots use sanitized demo data"
+assert_match 'docs/assets/screenshots/quota-overview\.png' \
+  "README.en.md" \
+  "English README should show the quota overview screenshot"
+assert_match 'docs/assets/screenshots/menu-bar-popover\.png' \
+  "README.en.md" \
+  "English README should show the menu bar popover screenshot"
+assert_match 'sanitized demo data' \
+  "README.en.md" \
+  "English README should clarify that public screenshots use sanitized demo data"
 assert_match 'setActivationPolicy\(\.regular\)' \
   "QuotaBar/AppDelegate.swift" \
   "QuotaBar should explicitly use a regular activation policy so it appears in Dock"
