@@ -42,7 +42,7 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Run screenshot QA for v0.2.0 menu bar transparency and refresh README screenshots.
 - [ ] Fill in the provider capability matrix as the entry point for future provider additions.
 
-## v0.2.0 Fix Queue
+## Fixed In v0.2.0
 
 - [x] LLM coding plans in the menu bar must not always show the `5 hours` cycle. Compare all available cycles such as 5 hours, week, and month, then display the cycle with the lowest remaining percentage so a zero weekly quota is not hidden by a full 5-hour quota.
 - [x] Fix Querit reauthentication when choosing Google login does not open the verification window.
@@ -50,13 +50,14 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Re-investigate why menu bar transparency settings have no visible effect, including the outer popover, inner cards, and macOS material layers.
 - [x] Add more language options, at least Simplified Chinese, Traditional Chinese, Japanese, and Korean, and fully localize descriptions, buttons, diagnostics, dates, period units, and provider configuration copy.
 - [x] Simplify the `Credentials` page title hierarchy so the large title and subtitle do not both repeat "Credentials".
-- [ ] Redesign the frontend UI around established macOS monitoring apps: use iStat Menus / Stats as menu bar references, Activity Monitor as the main-window reference, and Little Snitch Control Center as the diagnostics/action reference.
+
+The broader UI redesign toward iStat Menus / Stats / Activity Monitor remains in P4, instead of being mixed into the v0.2.0 fix queue.
 
 ## P1: Credential Configuration UX
 
 - [ ] Turn `Credentials` into a provider-aware wizard instead of one generic form.
 - [x] Simplify the credential page title hierarchy so the page title and local heading do not repeat the same wording.
-- [ ] Show the expected credential type for each provider:
+- [x] Show the basic expected credential type for each provider:
   - API Key: Tavily, SerpAPI, Serper, Bocha, DeepSeek, and similar providers.
   - Admin Credential: Exa Team Management service key plus target API key id.
   - Dashboard Cookie: Querit, XFYun Spark, Volcengine, and OpenCode Go.
@@ -164,15 +165,18 @@ Acceptance criteria for a new provider:
   - Provider banners collapse on click without relying on triangle icons.
   - Collapse animations compress in place instead of flying in from above.
   - Make the quota overview closer to Activity Monitor: table/grouping plus a side or bottom summary, not repeated card stacks.
-- [ ] Keep the menu bar popover lightweight:
-  - Collapsible AI Search and LLM groups.
-  - Credentials sorted by remaining quota inside each provider.
-  - Keys shown as first four and last four characters, not environment variable names.
-  - Auto-close when the pointer leaves, without activating the main window.
-  - LLM coding plans should show the cycle with the lowest remaining percentage instead of always showing the 5-hour cycle.
-  - Menu bar transparency settings must visibly affect the popover over real desktop backgrounds while preserving readability.
-  - Make the menu bar layout closer to iStat Menus / Stats: compact metrics, fine separators, clear hierarchy, and no long scrolling dashboard.
-  - Redesign the whole menu bar popover toward a Stats / iStat Menus monitoring style: tighter modules, fewer large cards, clearer metric hierarchy, and a cleaner action area.
+- [x] Implement the menu bar popover's baseline monitoring interactions:
+  - AI Search and LLM groups are shown separately.
+  - Providers can collapse.
+  - Credentials are sorted by remaining quota inside each provider.
+  - Keys are shown as first four and last four characters, not environment variable names.
+  - The popover auto-closes when the pointer leaves, without activating the main window.
+  - LLM coding plans show the cycle with the lowest remaining percentage instead of always showing the 5-hour cycle.
+  - Menu bar transparency is wired through and README screenshots have been refreshed from the running app.
+- [ ] Deepen the next menu bar visual pass:
+  - Make the layout closer to iStat Menus / Stats: compact metrics, fine separators, clear hierarchy, and no long scrolling dashboard.
+  - Redesign the overall style toward Stats / iStat Menus monitoring panels: tighter modules, fewer large cards, clearer metric hierarchy, and a cleaner action area.
+  - Keep improving transparency across different desktop backgrounds while preserving text readability.
 - [ ] Continue using the battery/quota metaphor:
   - The app icon should be simpler and readable at distance.
   - The menu bar icon should work on light, dark, and transparent menu bars.

@@ -31,7 +31,7 @@ The Dock icon opens the main window; the menu bar popover gives quick quota visi
 
 Open `Credentials` from the main window sidebar.
 
-Normal providers use API keys. XFYun, Volcengine, and OpenCode Go use dashboard-session cookies, not model invocation API keys.
+Normal providers use API keys. Exa uses an admin credential. Querit, XFYun, Volcengine, and OpenCode Go use dashboard-session cookies, not model invocation API keys.
 
 ## 4. Import From `.env`
 
@@ -58,7 +58,7 @@ The menu bar popover groups providers by `AI Search` and `LLM`, supports collaps
 
 ## 6. Settings
 
-Use `Settings` to switch English/Simplified Chinese, adjust menu bar popover transparency, configure launch at login, and set the automatic refresh interval. Automatic refresh can also be turned off.
+Use `Settings` to switch Simplified Chinese, Traditional Chinese, English, Japanese, and Korean; adjust menu bar popover transparency; configure launch at login; and set the automatic refresh interval. Automatic refresh can also be turned off.
 
 ## 7. Local Data Locations
 

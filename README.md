@@ -42,7 +42,7 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 
 - 状态栏磨砂玻璃弹窗，按 `AI Search` 和 `LLM` 分组展示额度。
 - 支持多个 provider、多个凭据，并按 provider 内剩余额度排序。
-- 支持 API Key 与控制台会话 Cookie 两类凭据。
+- 支持 API Key、Admin Credential 与控制台会话 Cookie 三类凭据。
 - 可从 `.env` 或 `~/.claude/settings.json` 导入支持的凭据。
 - 支持开机自启动、自动刷新间隔配置，也可以完全关闭自动刷新。
 - 真实凭据存储在 `~/Library/Application Support/QuotaRadar/secrets.json`，权限为 `0600`；偏好设置只保存 metadata。
@@ -140,7 +140,7 @@ scripts/package_dmg.sh --rebuild --notarize
 
 1. 点击状态栏电池图标打开额度面板。
 2. 进入 `配置凭据`，添加凭据或从 `.env` 导入。
-3. 普通服务商填写 API Key；讯飞星火、火山引擎、OpenCode Go 填控制台会话 Cookie。
+3. 普通服务商填写 API Key；Exa 填 Admin Credential；Querit、讯飞星火、火山引擎、OpenCode Go 填控制台会话 Cookie。
 4. 点击单个 provider 的刷新按钮更新该 provider。
 
 在 `设置` 页面可以切换语言、调节状态栏透明度、配置开机自启动和自动刷新间隔。自动刷新支持关闭；Brave 这类会消耗真实搜索请求的 provider 会跳过自动刷新。

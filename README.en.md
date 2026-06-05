@@ -42,7 +42,7 @@ See [TODO / Roadmap](./TODO.en.md) for the next development plan.
 
 - Frosted-glass menu bar popover grouped by `AI Search` and `LLM`.
 - Supports multiple providers and credentials, with credentials sorted by remaining quota inside each provider.
-- Supports both API keys and dashboard-session cookies.
+- Supports API keys, admin credentials, and dashboard-session cookies.
 - Imports supported credentials from `.env` or `~/.claude/settings.json`.
 - Supports launch at login, configurable automatic refresh intervals, and fully disabling automatic refresh.
 - Stores secrets in `~/Library/Application Support/QuotaRadar/secrets.json` with `0600` permissions; preferences store metadata only.
@@ -60,7 +60,7 @@ See [TODO / Roadmap](./TODO.en.md) for the next development plan.
 | Exa | Admin API usage cost; search keys do not expose usage directly |
 | Bocha | CNY balance API |
 | AnySearch | Treated as free unlimited usage |
-| Querit | Manual dashboard check |
+| Querit | Dashboard session cookie |
 | WeChat Search | Remaining CNY account balance |
 
 ### LLM / Coding Plan
@@ -140,7 +140,7 @@ Without Developer ID signing and notarization, the DMG is suitable only for loca
 
 1. Click the menu bar battery icon to open the quota panel.
 2. Open `Credentials` to add credentials or import from `.env`.
-3. Use API keys for normal providers; use dashboard-session cookies for XFYun, Volcengine, and OpenCode Go.
+3. Use API keys for normal providers, an admin credential for Exa, and dashboard-session cookies for Querit, XFYun, Volcengine, and OpenCode Go.
 4. Click a provider-level refresh button to update that provider.
 
 Use `Settings` to switch language, tune menu bar transparency, configure launch at login, and choose an automatic refresh interval. Automatic refresh can be disabled; providers such as Brave that consume a real search request are skipped by automatic refresh.
