@@ -38,11 +38,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         guard let button = statusItem?.button else { return }
 
         let icon = makeStatusBarIcon()
-        icon.isTemplate = true
+        icon.isTemplate = false
         button.image = icon
         button.imagePosition = .imageOnly
         button.imageScaling = .scaleProportionallyDown
-        button.contentTintColor = .labelColor
+        button.contentTintColor = nil
         button.toolTip = L10n.t(.apiQuotaTitle)
 
         // 监听点击
@@ -54,59 +54,68 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let image = NSImage(size: NSSize(width: 18, height: 18))
         image.lockFocus()
 
-        drawQuotaCellStatusGlyph(in: NSRect(x: 1.4, y: 4.3, width: 15.0, height: 9.4))
+        drawQuotaRadarStatusGlyph(in: NSRect(x: 2.0, y: 2.2, width: 14.0, height: 14.0))
 
         image.unlockFocus()
         image.accessibilityDescription = L10n.t(.apiQuotaTitle)
         return image
     }
 
-    private func drawQuotaCellStatusGlyph(in rect: NSRect) {
-        NSColor.black.setStroke()
-        NSColor.black.setFill()
-
-        let body = NSRect(
-            x: rect.minX,
-            y: rect.minY + rect.height * 0.06,
-            width: rect.width * 0.790,
-            height: rect.height * 0.880
+    private func drawQuotaRadarStatusGlyph(in rect: NSRect) {
+        let tilePath = NSBezierPath(
+            roundedRect: rect,
+            xRadius: rect.width * 0.24,
+            yRadius: rect.height * 0.24
         )
-        let cap = NSRect(
-            x: body.maxX + rect.width * 0.070,
-            y: body.midY - body.height * 0.210,
-            width: rect.width * 0.105,
-            height: body.height * 0.420
+        NSColor.white.setFill()
+        tilePath.fill()
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.compositingOperation = .clear
+
+        drawStatusIconInnerScreen(in: rect)
+
+        let center = NSPoint(
+            x: rect.minX + rect.width * 0.40,
+            y: rect.minY + rect.height * 0.42
         )
+        drawRadarPulseArc(center: center, radius: rect.width * 0.24, startAngle: 18, endAngle: 122, lineWidth: 1.15)
+        drawRadarPulseArc(center: center, radius: rect.width * 0.39, startAngle: 18, endAngle: 124, lineWidth: 1.15)
 
-        let bodyPath = NSBezierPath(roundedRect: body, xRadius: body.height * 0.30, yRadius: body.height * 0.30)
-        bodyPath.lineWidth = 1.60
-        bodyPath.stroke()
+        let sweep = NSBezierPath()
+        sweep.move(to: center)
+        sweep.line(to: NSPoint(x: rect.maxX - rect.width * 0.22, y: rect.maxY - rect.height * 0.24))
+        sweep.lineWidth = 1.25
+        sweep.lineCapStyle = .round
+        sweep.stroke()
 
-        drawStatusBatteryTerminal(in: cap)
-        drawStatusBatteryFill(in: body)
+        let centerMarkerRect = NSRect(
+            x: center.x - rect.width * 0.085,
+            y: center.y - rect.height * 0.085,
+            width: rect.width * 0.17,
+            height: rect.height * 0.17
+        )
+        NSBezierPath(ovalIn: centerMarkerRect).fill()
+        NSGraphicsContext.restoreGraphicsState()
     }
 
-    private func drawStatusBatteryTerminal(in cap: NSRect) {
-        NSBezierPath(
-            roundedRect: cap,
-            xRadius: cap.height * 0.38,
-            yRadius: cap.height * 0.38
-        ).fill()
+    private func drawStatusIconInnerScreen(in rect: NSRect) {
+        let screenRect = rect.insetBy(dx: rect.width * 0.17, dy: rect.height * 0.17)
+        let screenPath = NSBezierPath(
+            roundedRect: screenRect,
+            xRadius: rect.width * 0.13,
+            yRadius: rect.height * 0.13
+        )
+        screenPath.lineWidth = 1.05
+        screenPath.stroke()
     }
 
-    private func drawStatusBatteryFill(in body: NSRect) {
-        let fillArea = body.insetBy(dx: body.width * 0.155, dy: body.height * 0.285)
-        let fill = NSRect(
-            x: fillArea.minX,
-            y: fillArea.minY,
-            width: fillArea.width * 0.740,
-            height: fillArea.height
-        )
-        NSBezierPath(
-            roundedRect: fill,
-            xRadius: fill.height * 0.42,
-            yRadius: fill.height * 0.42
-        ).fill()
+    private func drawRadarPulseArc(center: NSPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, lineWidth: CGFloat) {
+        let path = NSBezierPath()
+        path.appendArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle)
+        path.lineWidth = lineWidth
+        path.lineCapStyle = .round
+        path.stroke()
     }
 
     private func setupStatusPanel() {

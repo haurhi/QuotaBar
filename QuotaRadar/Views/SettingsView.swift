@@ -118,12 +118,25 @@ struct SettingsSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 11) {
+                QuotaRadarMark(size: 42)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Quota Radar")
+                        .font(.system(size: 17, weight: .semibold))
+                    Text(L10n.t(.apiQuotaTitle))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.top, 24)
+
             VStack(spacing: 4) {
                 ForEach(SettingsDestination.navigationOrder) { destination in
                     SidebarNavigationButton(destination: destination, selection: $selection)
                 }
             }
-            .padding(.top, 36)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text(L10n.t(.apiQuotaTitle))
@@ -258,17 +271,7 @@ struct PageHeader: View {
     let systemImage: String
 
     var body: some View {
-        HStack(spacing: 13) {
-            Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.primary)
-                .frame(width: 36, height: 36)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                )
-
+        HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 24, weight: .semibold))
@@ -1611,10 +1614,7 @@ struct AboutView: View {
         ) {
             MaterialPanel(padding: 22) {
                 HStack(spacing: 18) {
-                    Image(nsImage: NSApp.applicationIconImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 76, height: 76)
+                    QuotaRadarMark(size: 76)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Quota Radar")

@@ -148,7 +148,7 @@ if [ -d "/Applications/${DISPLAY_NAME}.app" ]; then
     echo "  1. Open Applications folder (Cmd+Shift+A in Finder)"
     echo "  open '/Applications/${DISPLAY_NAME}.app'"
     echo ""
-    echo "The app will appear in your menu bar with the quota-cell icon"
+    echo "The app will appear in your menu bar with the white quota-radar icon"
 else
     echo "❌ Installation failed"
     exit 1

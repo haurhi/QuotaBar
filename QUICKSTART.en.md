@@ -23,7 +23,7 @@ Install into `/Applications`:
 
 ## 2. Open The UI
 
-Click the Quota Radar battery icon in the macOS menu bar.
+Click the Quota Radar quota-radar icon in the macOS menu bar.
 
 The Dock icon opens the main window; the menu bar popover gives quick quota visibility.
 

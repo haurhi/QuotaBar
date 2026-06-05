@@ -39,8 +39,15 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Improve Release workflow notes so unsigned DMG users see the Gatekeeper workaround clearly.
 - [x] Keep the current unsigned DMG release path. Developer ID signing and notarization remain optional future work.
 - [x] Keep avoiding Keychain as the default secret path to reduce repeated login-keychain prompts.
-- [x] Run screenshot QA for v0.2.0 menu bar transparency and refresh README screenshots.
+- [x] Run screenshot QA for v0.2.2 menu bar transparency and make Chinese / English README pages use screenshots in their own language.
 - [ ] Fill in the provider capability matrix as the entry point for future provider additions.
+
+## Fixed In v0.2.2
+
+- [x] Changed the menu bar icon to a white filled quota-radar glyph with cut-out radar arcs and pointer, so it is not confused with the macOS battery or power icon.
+- [x] Unified the main-window top-left mark, menu-bar popover top-left mark, and Dock icon around the same app-icon visual; inner page headers no longer repeat the icon.
+- [x] Split README screenshots into Simplified Chinese and English sets, so English docs no longer show Chinese UI captures.
+- [x] Updated Quickstart / README wording from "battery icon" to "quota-radar icon".
 
 ## Fixed In v0.2.0
 
@@ -177,9 +184,9 @@ Acceptance criteria for a new provider:
   - Make the layout closer to iStat Menus / Stats: compact metrics, fine separators, clear hierarchy, and no long scrolling dashboard.
   - Redesign the overall style toward Stats / iStat Menus monitoring panels: tighter modules, fewer large cards, clearer metric hierarchy, and a cleaner action area.
   - Keep improving transparency across different desktop backgrounds while preserving text readability.
-- [ ] Continue using the battery/quota metaphor:
-  - The app icon should be simpler and readable at distance.
-  - The menu bar icon should work on light, dark, and transparent menu bars.
+- [ ] Continue using the quota-radar metaphor:
+  - The app icon and menu bar icon should stay structurally aligned and read as quota monitoring at distance.
+  - The menu bar icon should work on light, dark, and transparent menu bars, without being confused with the macOS battery or power icon.
   - The menu bar popover's top-right action icon should be modern and semantically clear, not another generic grey circular button.
   - Use official provider icons when available; use consistent fallbacks otherwise.
 - [ ] Add a visual QA checklist:

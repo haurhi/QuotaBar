@@ -76,85 +76,88 @@ func drawMonitorTileBackground(in rect: NSRect, pixels: Int) -> NSBezierPath {
     return path
 }
 
-func drawQuotaCellFill(in battery: NSRect, pixels: Int, fraction: CGFloat = 0.72) {
-    let size = CGFloat(pixels)
-    let inner = battery.insetBy(dx: battery.width * 0.095, dy: battery.height * 0.24)
-    let track = rounded(inner, radius: inner.height / 2)
-
-    color(0x111820, alpha: 0.18).setFill()
-    track.fill()
-
-    let fillWidth = max(inner.height, inner.width * min(max(fraction, 0.08), 1.00))
-    let fill = NSRect(
-        x: inner.minX,
-        y: inner.minY,
-        width: fillWidth,
-        height: inner.height
-    )
-
-    NSGraphicsContext.saveGraphicsState()
-    track.addClip()
-    NSGradient(colorsAndLocations:
-        (color(0x31d77d), 0.00),
-        (color(0x3bd5a7), 0.56),
-        (color(0x45b8ff), 1.00)
-    )!.draw(in: rounded(fill, radius: fill.height / 2), angle: 0)
-    NSGraphicsContext.restoreGraphicsState()
-
-    if pixels > 64 {
-        let highlight = NSRect(
-            x: fill.minX + fill.width * 0.08,
-            y: fill.maxY - fill.height * 0.30,
-            width: fill.width * 0.76,
-            height: max(1, size * 0.010)
-        )
-        color(0xffffff, alpha: 0.38).setFill()
-        rounded(highlight, radius: highlight.height / 2).fill()
-    }
+func drawRadarPulseArc(center: NSPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, lineWidth: CGFloat, strokeColor: NSColor) {
+    let path = NSBezierPath()
+    path.appendArc(withCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle)
+    path.lineWidth = lineWidth
+    path.lineCapStyle = .round
+    strokeColor.setStroke()
+    path.stroke()
 }
 
-func drawQuotaCell(in rect: NSRect, pixels: Int) {
+func drawRadarSweep(center: NSPoint, endpoint: NSPoint, lineWidth: CGFloat) {
+    let sweep = NSBezierPath()
+    sweep.move(to: center)
+    sweep.line(to: endpoint)
+    sweep.lineWidth = lineWidth
+    sweep.lineCapStyle = .round
+    color(0x5ef0a4, alpha: 0.92).setStroke()
+    sweep.stroke()
+}
+
+func drawQuotaRadar(in rect: NSRect, pixels: Int) {
     let size = CGFloat(pixels)
     let outer = rect.insetBy(dx: size * 0.055, dy: size * 0.055)
-
-    let battery = NSRect(
-        x: outer.minX + outer.width * 0.120,
-        y: outer.midY - outer.height * 0.175,
-        width: outer.width * 0.690,
-        height: outer.height * 0.350
-    )
-    let cap = NSRect(
-        x: battery.maxX + outer.width * 0.030,
-        y: battery.midY - battery.height * 0.235,
-        width: outer.width * 0.074,
-        height: battery.height * 0.470
-    )
-    let batteryPath = rounded(battery, radius: battery.height * 0.35)
+    let screen = outer.insetBy(dx: outer.width * 0.125, dy: outer.height * 0.125)
+    let screenPath = rounded(screen, radius: size * 0.090)
 
     if pixels > 64 {
         NSGraphicsContext.saveGraphicsState()
-        let batteryShadow = NSShadow()
-        batteryShadow.shadowOffset = NSSize(width: 0, height: -size * 0.012)
-        batteryShadow.shadowBlurRadius = size * 0.032
-        batteryShadow.shadowColor = color(0x020305, alpha: 0.34)
-        batteryShadow.set()
-        color(0xf8fbff, alpha: 0.94).setFill()
-        batteryPath.fill()
+        let glyphShadow = NSShadow()
+        glyphShadow.shadowOffset = NSSize(width: 0, height: -size * 0.014)
+        glyphShadow.shadowBlurRadius = size * 0.036
+        glyphShadow.shadowColor = color(0x020305, alpha: 0.34)
+        glyphShadow.set()
+        color(0xf8fbff, alpha: 0.92).setStroke()
+        screenPath.lineWidth = max(1, size * 0.014)
+        screenPath.stroke()
         NSGraphicsContext.restoreGraphicsState()
     } else {
-        color(0xf8fbff, alpha: 0.92).setFill()
-        batteryPath.fill()
+        color(0xf8fbff, alpha: 0.88).setStroke()
+        screenPath.lineWidth = max(1, size * 0.014)
+        screenPath.stroke()
     }
 
-    drawQuotaCellFill(in: battery, pixels: pixels)
+    let center = NSPoint(x: screen.minX + screen.width * 0.36, y: screen.minY + screen.height * 0.38)
+    let arcLineWidth = max(1.2, size * 0.026)
+    drawRadarPulseArc(
+        center: center,
+        radius: screen.width * 0.225,
+        startAngle: 16,
+        endAngle: 124,
+        lineWidth: arcLineWidth,
+        strokeColor: color(0x5ef0a4, alpha: 0.98)
+    )
+    drawRadarPulseArc(
+        center: center,
+        radius: screen.width * 0.390,
+        startAngle: 16,
+        endAngle: 125,
+        lineWidth: arcLineWidth,
+        strokeColor: color(0x58b8ff, alpha: 0.92)
+    )
 
-    let capPath = rounded(cap, radius: cap.height * 0.34)
-    color(0xf8fbff, alpha: 0.86).setFill()
-    capPath.fill()
+    drawRadarSweep(
+        center: center,
+        endpoint: NSPoint(x: screen.maxX - screen.width * 0.170, y: screen.maxY - screen.height * 0.165),
+        lineWidth: max(1.4, size * 0.025)
+    )
 
-    batteryPath.lineWidth = max(1, size * 0.010)
-    color(0xffffff, alpha: pixels > 64 ? 0.32 : 0.24).setStroke()
-    batteryPath.stroke()
+    NSGradient(colorsAndLocations:
+        (color(0x5ef0a4), 0.00),
+        (color(0x58b8ff), 1.00)
+    )!.draw(in: circle(center: center, radius: max(1.2, size * 0.050)), angle: 35)
+
+    if pixels > 64 {
+        let lowerStatus = NSRect(
+            x: screen.minX + screen.width * 0.16,
+            y: screen.minY + screen.height * 0.15,
+            width: screen.width * 0.62,
+            height: max(2, size * 0.020)
+        )
+        color(0xffffff, alpha: 0.28).setFill()
+        rounded(lowerStatus, radius: lowerStatus.height / 2).fill()
+    }
 }
 
 func writePNG(size: Int, scale: Int, name: String, directory: URL) throws {
@@ -183,7 +186,7 @@ func writePNG(size: Int, scale: Int, name: String, directory: URL) throws {
     let backgroundPath = drawMonitorTileBackground(in: rect, pixels: pixels)
     NSGraphicsContext.saveGraphicsState()
     backgroundPath.addClip()
-    drawQuotaCell(in: rect, pixels: pixels)
+    drawQuotaRadar(in: rect, pixels: pixels)
     NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.restoreGraphicsState()

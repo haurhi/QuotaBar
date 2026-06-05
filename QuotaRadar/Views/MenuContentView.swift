@@ -189,9 +189,7 @@ struct HeaderView: View {
     var body: some View {
         HStack(spacing: 8) {
             HStack(spacing: 7) {
-                Image(systemName: "battery.75percent")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.primary)
+                QuotaRadarMark(size: 22)
 
                 Text(L10n.t(.apiQuotaTitle))
                     .font(.system(size: 15, weight: .semibold))

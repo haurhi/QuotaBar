@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 private struct MenuGlassTransparencyKey: EnvironmentKey {
@@ -8,6 +9,20 @@ extension EnvironmentValues {
     var menuGlassTransparency: Double {
         get { self[MenuGlassTransparencyKey.self] }
         set { self[MenuGlassTransparencyKey.self] = min(max(newValue, 0.0), 1.0) }
+    }
+}
+
+// MARK: - App Mark
+
+struct QuotaRadarMark: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }
 

@@ -23,7 +23,7 @@ open 'build/Quota Radar.app'
 
 ## 2. 打开界面
 
-点击 macOS 状态栏里的 Quota Radar 电池图标。
+点击 macOS 状态栏里的 Quota Radar 余量雷达图标。
 
 Dock 图标会打开主窗口；状态栏弹窗用于快速查看额度。
 

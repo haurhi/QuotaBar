@@ -50,32 +50,61 @@ assert_match 'CFBundleDisplayName' \
 assert_match 'Quota Radar' \
   "QuotaRadar/Info.plist" \
   "App bundle display name should be Quota Radar"
-assert_match '0\.2\.1' \
+assert_match '0\.2\.2' \
   "QuotaRadar/Info.plist" \
-  "Quota Radar 0.2.1 should be recorded in Info.plist"
+  "Quota Radar 0.2.2 should be recorded in Info.plist"
 assert_no_match 'LSUIElement' \
   "QuotaRadar/Info.plist" \
   "QuotaRadar must appear in the macOS Dock after launch"
-[[ -s docs/assets/screenshots/quota-overview.png ]] || fail "README quota overview screenshot asset should exist"
-[[ -s docs/assets/screenshots/menu-bar-popover.png ]] || fail "README menu bar popover screenshot asset should exist"
-assert_match 'docs/assets/screenshots/quota-overview\.png' \
+assert_match 'struct QuotaRadarMark' \
+  "QuotaRadar/Views/Components.swift" \
+  "Main app should expose a shared quota-radar mark that matches the new Dock and menu bar icon direction"
+assert_match 'Image\(nsImage: NSApp\.applicationIconImage\)' \
+  "QuotaRadar/Views/Components.swift" \
+  "Main app interface should reuse the actual app icon asset instead of drawing a separate visual variant"
+assert_no_match 'badgeSystemImage' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Main app header icons should not add page-specific badges that make the brand mark inconsistent"
+assert_match 'QuotaRadarMark\(size: 42' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Main app sidebar should use the shared quota-radar mark instead of a generic text-only brand"
+assert_no_match 'QuotaRadarMark\(size: 36' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Main app inner page headers should not repeat the app icon; the sidebar brand mark is enough"
+assert_match 'QuotaRadarMark\(size: 76' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Main app About page should use the same quota-radar mark as the app icon"
+assert_match 'drawStatusIconInnerScreen' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Menu bar icon should preserve the same outer tile, inner screen, and radar structure as the app icon"
+[[ -s docs/assets/screenshots/zh-Hans/quota-overview.png ]] || fail "Chinese README quota overview screenshot asset should exist"
+[[ -s docs/assets/screenshots/zh-Hans/menu-bar-popover.png ]] || fail "Chinese README menu bar popover screenshot asset should exist"
+[[ -s docs/assets/screenshots/en/quota-overview.png ]] || fail "English README quota overview screenshot asset should exist"
+[[ -s docs/assets/screenshots/en/menu-bar-popover.png ]] || fail "English README menu bar popover screenshot asset should exist"
+assert_match 'docs/assets/screenshots/zh-Hans/quota-overview\.png' \
   "README.md" \
-  "Chinese README should show the quota overview screenshot"
-assert_match 'docs/assets/screenshots/menu-bar-popover\.png' \
+  "Chinese README should show the Simplified Chinese quota overview screenshot"
+assert_match 'docs/assets/screenshots/zh-Hans/menu-bar-popover\.png' \
   "README.md" \
-  "Chinese README should show the menu bar popover screenshot"
+  "Chinese README should show the Simplified Chinese menu bar popover screenshot"
 assert_match '真实运行画面，密钥由应用自动打码' \
   "README.md" \
   "Chinese README should clarify that public screenshots use masked real app captures"
-assert_match 'docs/assets/screenshots/quota-overview\.png' \
+assert_no_match 'docs/assets/screenshots/en/' \
+  "README.md" \
+  "Chinese README should not link to English screenshots"
+assert_match 'docs/assets/screenshots/en/quota-overview\.png' \
   "README.en.md" \
-  "English README should show the quota overview screenshot"
-assert_match 'docs/assets/screenshots/menu-bar-popover\.png' \
+  "English README should show the English quota overview screenshot"
+assert_match 'docs/assets/screenshots/en/menu-bar-popover\.png' \
   "README.en.md" \
-  "English README should show the menu bar popover screenshot"
+  "English README should show the English menu bar popover screenshot"
 assert_match 'captured from the running app, with credentials masked by Quota Radar' \
   "README.en.md" \
   "English README should clarify that public screenshots use masked real app captures"
+assert_no_match 'docs/assets/screenshots/zh-Hans/' \
+  "README.en.md" \
+  "English README should not link to Simplified Chinese screenshots"
 assert_match 'setActivationPolicy\(\.regular\)' \
   "QuotaRadar/AppDelegate.swift" \
   "QuotaRadar should explicitly use a regular activation policy so it appears in Dock"
@@ -700,9 +729,9 @@ assert_match 'button\.imagePosition = \.imageOnly' \
 assert_match 'button\.imageScaling = \.scaleProportionallyDown' \
   "QuotaRadar/AppDelegate.swift" \
   "Status bar item should scale the icon visibly inside the menu-bar button"
-assert_match 'button\.contentTintColor = \.labelColor' \
+assert_match 'button\.contentTintColor = nil' \
   "QuotaRadar/AppDelegate.swift" \
-  "Status bar item should explicitly tint the template icon with the menu-bar label color"
+  "Status bar item should not tint the real white cutout glyph as a template icon"
 assert_match 'panel\.animationBehavior = \.none' \
   "QuotaRadar/AppDelegate.swift" \
   "Status bar panel should not fade through a low-contrast half-transparent opening state"
@@ -1287,21 +1316,21 @@ assert_no_match 'Image\(systemName: provider\.icon\)' \
 assert_no_match 'clipShape\(Circle\(\)\)' \
   "QuotaRadar/Views/Components.swift" \
   "ProviderIcon must not crop official provider logos into generic circles"
-assert_match 'drawQuotaCell' \
+assert_match 'drawQuotaRadar' \
   "scripts/generate_app_icon.swift" \
-  "The app icon generator should use the approved quota-cell icon"
-assert_match 'drawQuotaCellFill' \
+  "The app icon generator should use the approved quota-radar icon"
+assert_match 'drawRadarPulseArc' \
   "scripts/generate_app_icon.swift" \
-  "The app icon generator should render one large, clear quota-cell fill instead of tiny reserve segments"
+  "The app icon generator should render radar arcs instead of a battery terminal"
 assert_match 'drawMonitorTileBackground' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should use a crisp monitor-style tile background"
 assert_no_match 'topGlow|drawGlassPanel' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should remove the old blurred glass glow treatment"
-assert_no_match 'drawQuotaCellSegments|drawProviderDots|keyRingCenter' \
+assert_no_match 'drawQuotaCell|drawQuotaCellFill|drawQuotaCellSegments|drawProviderDots|keyRingCenter|battery|capPath' \
   "scripts/generate_app_icon.swift" \
-  "The app icon generator should remove tiny decorations that make the battery blurry at small sizes"
+  "The app icon generator should remove battery-cell decorations that can be confused with power status"
 assert_no_match 'drawModernQuotaGlyph|drawLiquidAppGlyph' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should remove earlier rejected app icon drawings"
@@ -1480,27 +1509,45 @@ assert_no_match 'heights: \[CGFloat\] = \[5, 9, 12\]' \
 assert_no_match 'dotRect' \
   "QuotaRadar/AppDelegate.swift" \
   "The status bar icon must not use the old bar-plus-dot glyph"
-assert_match 'drawQuotaCellStatusGlyph' \
+assert_match 'drawQuotaRadarStatusGlyph' \
   "QuotaRadar/AppDelegate.swift" \
-  "The status bar icon should use a compact quota-cell glyph"
-assert_match 'drawStatusBatteryFill' \
+  "The status bar icon should use a compact quota-radar glyph"
+assert_match 'drawRadarPulseArc' \
   "QuotaRadar/AppDelegate.swift" \
-  "The status bar quota-cell glyph should use a single clear battery fill"
-assert_match 'drawStatusBatteryTerminal' \
+  "The status bar icon should include a radar arc so it is distinguishable from the macOS battery icon"
+assert_no_match 'drawStatusBatteryTerminal' \
   "QuotaRadar/AppDelegate.swift" \
-  "The status bar quota icon should draw a distinct battery terminal at menu-bar size"
+  "The status bar icon must not draw a battery terminal that can be confused with the macOS battery icon"
 assert_match 'makeStatusBarIcon' \
   "QuotaRadar/AppDelegate.swift" \
   "The status bar icon should be a purpose-built quota icon"
+assert_match 'icon\.isTemplate = false' \
+  "QuotaRadar/AppDelegate.swift" \
+  "The menu bar icon should render as a real white glyph instead of a black template mask"
+assert_match 'NSColor\.white\.setFill' \
+  "QuotaRadar/AppDelegate.swift" \
+  "The menu bar icon should use a white filled base to match other macOS status items"
+assert_match 'compositingOperation = \.clear' \
+  "QuotaRadar/AppDelegate.swift" \
+  "The menu bar icon radar arcs and pointer should be cut out from the white base"
+assert_no_match 'battery\.75percent' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "The menu bar popover header should not use the macOS-style battery symbol"
+assert_no_match 'dot\.radiowaves\.left\.and\.right' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "The menu bar popover header should not use a separate SF Symbol when the app icon is the shared brand mark"
+assert_match 'QuotaRadarMark\(size: 22' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "The menu bar popover header should use the same app icon mark as the main app"
 assert_no_match 'heights = \[0\.18, 0\.31, 0\.44\]' \
   "scripts/generate_app_icon.swift" \
   "The Dock app icon must not use the old three-bar chart glyph"
-assert_match 'drawQuotaCell' \
+assert_match 'drawQuotaRadar' \
   "scripts/generate_app_icon.swift" \
-  "The Dock app icon generator should use the approved quota-cell battery metaphor"
-assert_match 'drawQuotaCellFill' \
+  "The Dock app icon generator should use the approved quota-radar metaphor"
+assert_match 'drawRadarSweep' \
   "scripts/generate_app_icon.swift" \
-  "The Dock app icon should make the battery fill clear at small sizes"
+  "The Dock app icon should include a clear radar sweep"
 assert_match 'drawMonitorTileBackground' \
   "scripts/generate_app_icon.swift" \
   "The Dock app icon should use a crisp monitor-style tile background instead of a blurry glass treatment"
@@ -1995,6 +2042,7 @@ require(L10n.t(.provider, language: .simplifiedChinese) == "服务商", "Chinese
 require(L10n.t(.language, language: .simplifiedChinese) == "语言", "Chinese language label should be available")
 require(L10n.t(.statusBarTransparency, language: .simplifiedChinese) == "状态栏透明度", "Chinese status bar transparency label should be available")
 require(L10n.t(.adminCredentialRequired, language: .simplifiedChinese) == "需要管理员凭据", "Chinese Admin credential status should be fully translated")
+require(L10n.localizedQuotaLabel("需要管理员凭据", language: .english) == "Admin credential required", "Persisted Chinese Admin credential labels should render in the current English UI language")
 require(L10n.t(.autoRefreshInterval, language: .simplifiedChinese) == "自动刷新", "Chinese settings should include an automatic refresh label")
 require(L10n.t(.available, language: .english) == "Available", "English menu summary should label available credentials")
 require(L10n.t(.available, language: .simplifiedChinese) == "可用", "Chinese menu summary should label available credentials")

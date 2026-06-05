@@ -383,6 +383,12 @@ enum L10n {
             return t(.quotaUnavailable, language: language)
         case "Manual refresh only":
             return t(.manualRefreshOnly, language: language)
+        case "Admin credential required",
+             "需要管理员凭据",
+             "需要管理員憑證",
+             "管理者認証情報が必要",
+             "관리자 자격 증명 필요":
+            return t(.adminCredentialRequired, language: language)
         case "Search works, but Brave did not expose monthly quota for this key.",
              "Search works, but monthly quota is hidden by Brave.":
             return t(.braveQuotaUnknownDiagnostic, language: language)
@@ -533,7 +539,7 @@ enum L10n {
         .featureRealtime: "Provider-level quota refresh",
         .featureGlass: "Frosted glass menu bar UI",
         .featureMenuBar: "Menu bar quick access",
-        .version: "Version 0.2.1",
+        .version: "Version 0.2.2",
         .importNoKeys: "No supported API keys found in %@.",
         .importSummary: "Imported %d new and updated %d key(s).",
         .refreshAlreadyRunning: "Refresh already running",
@@ -681,7 +687,7 @@ enum L10n {
         .featureRealtime: "按服务商单独刷新额度",
         .featureGlass: "磨砂玻璃状态栏界面",
         .featureMenuBar: "状态栏快速访问",
-        .version: "版本 0.2.1",
+        .version: "版本 0.2.2",
         .importNoKeys: "在 %@ 中没有找到支持的 API 密钥。",
         .importSummary: "已导入 %d 个，新更新 %d 个密钥。",
         .refreshAlreadyRunning: "刷新正在进行",
@@ -790,7 +796,7 @@ enum L10n {
         .lastUpdated: "上次更新",
         .providersHeader: "額度監控",
         .remaining: "剩餘",
-        .version: "版本 0.2.1",
+        .version: "版本 0.2.2",
         .credentialExpired: "憑證已過期",
         .adminCredentialRequired: "需要管理員憑證",
         .reauthenticate: "重新認證",
@@ -882,7 +888,7 @@ enum L10n {
         .featureRealtime: "プロバイダー単位のクォータ更新",
         .featureGlass: "フロストガラスのメニューバー UI",
         .featureMenuBar: "メニューバーから素早くアクセス",
-        .version: "バージョン 0.2.1",
+        .version: "バージョン 0.2.2",
         .refreshAlreadyRunning: "更新中です",
         .refreshing: "更新中...",
         .refreshingProvider: "%@ を更新中...",
@@ -1006,7 +1012,7 @@ enum L10n {
         .featureRealtime: "공급자별 할당량 새로 고침",
         .featureGlass: "반투명 메뉴 막대 UI",
         .featureMenuBar: "메뉴 막대 빠른 접근",
-        .version: "버전 0.2.1",
+        .version: "버전 0.2.2",
         .refreshAlreadyRunning: "새로 고침 중입니다",
         .refreshing: "새로 고치는 중...",
         .refreshingProvider: "%@ 새로 고치는 중...",
