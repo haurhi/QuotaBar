@@ -6,17 +6,26 @@ enum FileSecretStoreError: Error {
 
 struct FileSecretStore {
     private let fileURL: URL
+    private let legacyFileURL: URL?
     private let fileManager: FileManager
 
     init(
         fileURL: URL? = nil,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        legacyFileURL: URL? = nil
     ) {
         self.fileManager = fileManager
-        self.fileURL = fileURL ?? Self.defaultFileURL(fileManager: fileManager)
+        if let fileURL {
+            self.fileURL = fileURL
+            self.legacyFileURL = legacyFileURL
+        } else {
+            self.fileURL = Self.defaultFileURL(fileManager: fileManager)
+            self.legacyFileURL = legacyFileURL ?? Self.legacyDefaultFileURL(fileManager: fileManager)
+        }
     }
 
     func read(account: String) throws -> String? {
+        try migrateLegacySecretsIfNeeded()
         try tightenExistingPermissions()
         return try loadSecrets()[account]
     }
@@ -34,6 +43,15 @@ struct FileSecretStore {
     }
 
     private static func defaultFileURL(fileManager: FileManager) -> URL {
+        let quotaRadarSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("QuotaRadar", isDirectory: true)
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Library/Application Support/QuotaRadar", isDirectory: true)
+        return quotaRadarSupportURL
+            .appendingPathComponent("secrets.json")
+    }
+
+    private static func legacyDefaultFileURL(fileManager: FileManager) -> URL {
         let quotaBarSupportURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("QuotaBar", isDirectory: true)
             ?? URL(fileURLWithPath: NSHomeDirectory())
@@ -43,6 +61,7 @@ struct FileSecretStore {
     }
 
     private func loadSecrets() throws -> [String: String] {
+        try migrateLegacySecretsIfNeeded()
         guard fileManager.fileExists(atPath: fileURL.path) else {
             return [:]
         }
@@ -63,6 +82,36 @@ struct FileSecretStore {
         if fileManager.fileExists(atPath: fileURL.path) {
             try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         }
+    }
+
+    private func migrateLegacySecretsIfNeeded() throws {
+        guard let legacyFileURL,
+              legacyFileURL.path != fileURL.path,
+              !fileManager.fileExists(atPath: fileURL.path),
+              fileManager.fileExists(atPath: legacyFileURL.path) else {
+            return
+        }
+
+        let directory = fileURL.deletingLastPathComponent()
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+
+        let data = try Data(contentsOf: legacyFileURL)
+        guard fileManager.createFile(
+            atPath: fileURL.path,
+            contents: data,
+            attributes: [.posixPermissions: 0o600]
+        ) else {
+            throw FileSecretStoreError.invalidDirectory
+        }
+
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+        let legacyDirectory = legacyFileURL.deletingLastPathComponent()
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: legacyDirectory.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: legacyDirectory.path)
+        }
+        try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: legacyFileURL.path)
     }
 
     private func saveSecrets(_ secrets: [String: String]) throws {

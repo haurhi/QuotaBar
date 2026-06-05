@@ -414,15 +414,30 @@ enum L10n {
             return format(.noProviderCreditsAvailableFormat, match[0], language: language)
         }
         if let match = regexCapture(label, pattern: #"^([A-Z]{3}) ([0-9]+(?:\.[0-9]+)?) available$"#) {
-            return format(.moneyAvailableFormat, match[0], match[1], language: language)
+            return format(.moneyAvailableFormat, localizedMoneyText(currency: match[0], amount: match[1], language: language), language: language)
         }
         if let match = regexCapture(label, pattern: #"^([A-Z]{3}) ([0-9]+(?:\.[0-9]+)?) balance$"#) {
-            return format(.moneyBalanceFormat, match[0], match[1], language: language)
+            return format(.moneyBalanceFormat, localizedMoneyText(currency: match[0], amount: match[1], language: language), language: language)
         }
         if let match = regexCapture(label, pattern: #"^([A-Z]{3}) ([0-9]+(?:\.[0-9]+)?) used$"#) {
-            return format(.moneyUsedFormat, match[0], match[1], language: language)
+            return format(.moneyUsedFormat, localizedMoneyText(currency: match[0], amount: match[1], language: language), language: language)
         }
         return nil
+    }
+
+    private static func localizedMoneyText(currency: String, amount: String, language: AppLanguage) -> String {
+        guard currency == "CNY" else {
+            return "\(currency) \(amount)"
+        }
+
+        switch language {
+        case .simplifiedChinese:
+            return "人民币 \(amount) 元"
+        case .traditionalChinese:
+            return "人民幣 \(amount) 元"
+        case .english, .japanese, .korean:
+            return "\(currency) \(amount)"
+        }
     }
 
     private static func regexCapture(_ value: String, pattern: String) -> [String]? {
@@ -461,9 +476,9 @@ enum L10n {
         .statusBarTransparency: "Status Bar Transparency",
         .statusBarTransparencyDescription: "Adjust the frosted-glass menu transparency.",
         .launchAtLogin: "Open at Login",
-        .launchAtLoginDescription: "Start QuotaBar automatically after signing in to macOS.",
+        .launchAtLoginDescription: "Start Quota Radar automatically after signing in to macOS.",
         .autoRefreshInterval: "Automatic Refresh",
-        .autoRefreshDescription: "Choose how often QuotaBar refreshes providers in the background.",
+        .autoRefreshDescription: "Choose how often Quota Radar refreshes providers in the background.",
         .autoRefreshBraveWarning: "Automatic refresh skips Brave because each Brave check consumes one real search request.",
         .quotaConsumingAutoRefreshInterval: "Quota-Consuming Refresh",
         .quotaConsumingAutoRefreshWarning: "Enable only when you accept spending real search quota. These checks use a much longer refresh cadence.",
@@ -474,7 +489,7 @@ enum L10n {
         .quotaConsumingAutoRefreshSixHours: "Every 6 hours",
         .quotaConsumingAutoRefreshTwelveHours: "Every 12 hours",
         .quotaConsumingAutoRefreshOneDay: "Every day",
-        .apiQuotaTitle: "API Quota",
+        .apiQuotaTitle: "Quota Radar",
         .noApiKeys: "No credentials",
         .noApiKeysMessage: "Import a .env file or add credentials on the Credentials page to show provider quotas here.",
         .openSettings: "Open Settings",
@@ -518,7 +533,7 @@ enum L10n {
         .featureRealtime: "Provider-level quota refresh",
         .featureGlass: "Frosted glass menu bar UI",
         .featureMenuBar: "Menu bar quick access",
-        .version: "Version 0.1.3",
+        .version: "Version 0.2.0",
         .importNoKeys: "No supported API keys found in %@.",
         .importSummary: "Imported %d new and updated %d key(s).",
         .refreshAlreadyRunning: "Refresh already running",
@@ -538,7 +553,7 @@ enum L10n {
         .noCookiesFound: "No matching cookies found",
         .missingRequiredCookies: "Missing login cookies: %@",
         .reauthTitle: "Re-authenticate %@",
-        .reauthDescription: "Log in to the provider dashboard. QuotaBar will save matching WebView cookies automatically after login.",
+        .reauthDescription: "Log in to the provider dashboard. Quota Radar will save matching WebView cookies automatically after login.",
         .autoCookieSaveHint: "Waiting for dashboard login. You can still save manually if needed.",
         .autoSavingCookie: "Saving dashboard Cookie...",
         .checkingCookie: "Checking dashboard login...",
@@ -580,9 +595,9 @@ enum L10n {
         .searchesLeftFormat: "%@ searches left",
         .creditsLeftFormat: "%@ credits left",
         .noProviderCreditsAvailableFormat: "No %@ credits available",
-        .moneyAvailableFormat: "%@ %@ available",
-        .moneyBalanceFormat: "%@ %@ balance",
-        .moneyUsedFormat: "%@ %@ used",
+        .moneyAvailableFormat: "%@ available",
+        .moneyBalanceFormat: "%@ balance",
+        .moneyUsedFormat: "%@ used",
         .manualRefreshOnly: "Manual refresh only",
         .zeroRemainingBadge: "0 left",
         .notAvailableShort: "N/A",
@@ -609,9 +624,9 @@ enum L10n {
         .statusBarTransparency: "状态栏透明度",
         .statusBarTransparencyDescription: "调整状态栏弹窗的磨砂玻璃透明程度。",
         .launchAtLogin: "开机自启动",
-        .launchAtLoginDescription: "登录 macOS 后自动启动 QuotaBar。",
+        .launchAtLoginDescription: "登录 macOS 后自动启动 Quota Radar。",
         .autoRefreshInterval: "自动刷新",
-        .autoRefreshDescription: "选择 QuotaBar 在后台刷新服务商额度的频率。",
+        .autoRefreshDescription: "选择 Quota Radar 在后台刷新服务商额度的频率。",
         .autoRefreshBraveWarning: "自动刷新会跳过 Brave，因为每次 Brave 检查都会消耗 1 次真实搜索请求。",
         .quotaConsumingAutoRefreshInterval: "消耗检索额度的自动刷新",
         .quotaConsumingAutoRefreshWarning: "仅在你接受消耗真实搜索额度时开启。这类检查使用更长的刷新周期。",
@@ -622,7 +637,7 @@ enum L10n {
         .quotaConsumingAutoRefreshSixHours: "每 6 小时",
         .quotaConsumingAutoRefreshTwelveHours: "每 12 小时",
         .quotaConsumingAutoRefreshOneDay: "每天",
-        .apiQuotaTitle: "API 额度",
+        .apiQuotaTitle: "余量雷达",
         .noApiKeys: "没有凭据",
         .noApiKeysMessage: "导入 .env 文件或在凭据页添加凭据后，这里会显示各服务商的额度。",
         .openSettings: "打开设置",
@@ -666,7 +681,7 @@ enum L10n {
         .featureRealtime: "按服务商单独刷新额度",
         .featureGlass: "磨砂玻璃状态栏界面",
         .featureMenuBar: "状态栏快速访问",
-        .version: "版本 0.1.3",
+        .version: "版本 0.2.0",
         .importNoKeys: "在 %@ 中没有找到支持的 API 密钥。",
         .importSummary: "已导入 %d 个，新更新 %d 个密钥。",
         .refreshAlreadyRunning: "刷新正在进行",
@@ -686,7 +701,7 @@ enum L10n {
         .noCookiesFound: "没有找到匹配的 Cookie",
         .missingRequiredCookies: "缺少登录 Cookie：%@",
         .reauthTitle: "重新认证 %@",
-        .reauthDescription: "登录服务商控制台后，QuotaBar 会自动保存匹配的 WebView Cookie。",
+        .reauthDescription: "登录服务商控制台后，Quota Radar 会自动保存匹配的 WebView Cookie。",
         .autoCookieSaveHint: "等待后台登录完成；需要时仍可手动保存。",
         .autoSavingCookie: "正在保存控制台 Cookie...",
         .checkingCookie: "正在验证控制台登录...",
@@ -728,9 +743,9 @@ enum L10n {
         .searchesLeftFormat: "剩余 %@ 次搜索",
         .creditsLeftFormat: "剩余 %@ 积分",
         .noProviderCreditsAvailableFormat: "没有可用的 %@ 积分",
-        .moneyAvailableFormat: "可用 %@ %@",
-        .moneyBalanceFormat: "余额 %@ %@",
-        .moneyUsedFormat: "已用 %@ %@",
+        .moneyAvailableFormat: "可用%@",
+        .moneyBalanceFormat: "余额%@",
+        .moneyUsedFormat: "已用 %@",
         .manualRefreshOnly: "仅支持手动刷新",
         .zeroRemainingBadge: "剩余 0",
         .notAvailableShort: "未知",
@@ -752,13 +767,13 @@ enum L10n {
         .statusBarTransparency: "狀態列透明度",
         .statusBarTransparencyDescription: "調整狀態列彈窗的磨砂玻璃透明程度。",
         .launchAtLogin: "登入時啟動",
-        .launchAtLoginDescription: "登入 macOS 後自動啟動 QuotaBar。",
+        .launchAtLoginDescription: "登入 macOS 後自動啟動 Quota Radar。",
         .autoRefreshInterval: "自動刷新",
-        .autoRefreshDescription: "選擇 QuotaBar 在背景刷新服務商額度的頻率。",
+        .autoRefreshDescription: "選擇 Quota Radar 在背景刷新服務商額度的頻率。",
         .autoRefreshBraveWarning: "自動刷新會跳過 Brave，因為每次 Brave 檢查都會消耗 1 次真實搜尋請求。",
         .quotaConsumingAutoRefreshInterval: "消耗搜尋額度的自動刷新",
         .quotaConsumingAutoRefreshWarning: "僅在你接受消耗真實搜尋額度時開啟。這類檢查使用更長的刷新週期。",
-        .apiQuotaTitle: "API 額度",
+        .apiQuotaTitle: "餘量雷達",
         .noApiKeys: "沒有憑證",
         .noApiKeysMessage: "匯入 .env 檔案或在憑證頁新增憑證後，這裡會顯示各服務商的額度。",
         .keys: "金鑰",
@@ -775,7 +790,7 @@ enum L10n {
         .lastUpdated: "上次更新",
         .providersHeader: "額度監控",
         .remaining: "剩餘",
-        .version: "版本 0.1.3",
+        .version: "版本 0.2.0",
         .credentialExpired: "憑證已過期",
         .reauthenticate: "重新認證",
         .dashboardSession: "控制台會話 Cookie",
@@ -809,9 +824,9 @@ enum L10n {
         .statusBarTransparency: "メニューバー透明度",
         .statusBarTransparencyDescription: "メニューバーポップオーバーのフロストガラス透明度を調整します。",
         .launchAtLogin: "ログイン時に起動",
-        .launchAtLoginDescription: "macOS にサインインした後、QuotaBar を自動的に起動します。",
+        .launchAtLoginDescription: "macOS にサインインした後、Quota Radar を自動的に起動します。",
         .autoRefreshInterval: "自動更新",
-        .autoRefreshDescription: "QuotaBar がバックグラウンドでプロバイダーのクォータを更新する頻度を選択します。",
+        .autoRefreshDescription: "Quota Radar がバックグラウンドでプロバイダーのクォータを更新する頻度を選択します。",
         .autoRefreshBraveWarning: "Brave のチェックは実際の検索リクエストを 1 回消費するため、自動更新ではスキップされます。",
         .quotaConsumingAutoRefreshInterval: "検索クォータを消費する自動更新",
         .quotaConsumingAutoRefreshWarning: "実際の検索クォータを消費してよい場合のみ有効にしてください。このチェックは長い更新間隔を使います。",
@@ -822,7 +837,7 @@ enum L10n {
         .quotaConsumingAutoRefreshSixHours: "6 時間ごと",
         .quotaConsumingAutoRefreshTwelveHours: "12 時間ごと",
         .quotaConsumingAutoRefreshOneDay: "毎日",
-        .apiQuotaTitle: "API クォータ",
+        .apiQuotaTitle: "クォータレーダー",
         .noApiKeys: "認証情報がありません",
         .noApiKeysMessage: ".env をインポートするか、認証情報ページで追加すると、ここにプロバイダーのクォータが表示されます。",
         .openSettings: "設定を開く",
@@ -866,7 +881,7 @@ enum L10n {
         .featureRealtime: "プロバイダー単位のクォータ更新",
         .featureGlass: "フロストガラスのメニューバー UI",
         .featureMenuBar: "メニューバーから素早くアクセス",
-        .version: "バージョン 0.1.3",
+        .version: "バージョン 0.2.0",
         .refreshAlreadyRunning: "更新中です",
         .refreshing: "更新中...",
         .refreshingProvider: "%@ を更新中...",
@@ -884,7 +899,7 @@ enum L10n {
         .noCookiesFound: "一致する Cookie が見つかりません",
         .missingRequiredCookies: "不足しているログイン Cookie: %@",
         .reauthTitle: "%@ を再認証",
-        .reauthDescription: "プロバイダーのダッシュボードにログインしてください。ログイン後、QuotaBar が一致する WebView Cookie を自動保存します。",
+        .reauthDescription: "プロバイダーのダッシュボードにログインしてください。ログイン後、Quota Radar が一致する WebView Cookie を自動保存します。",
         .autoCookieSaveHint: "ダッシュボードのログイン待機中です。必要に応じて手動保存もできます。",
         .autoSavingCookie: "ダッシュボード Cookie を保存中...",
         .checkingCookie: "ダッシュボードログインを確認中...",
@@ -933,9 +948,9 @@ enum L10n {
         .statusBarTransparency: "메뉴 막대 투명도",
         .statusBarTransparencyDescription: "메뉴 막대 팝오버의 반투명 효과를 조정합니다.",
         .launchAtLogin: "로그인 시 열기",
-        .launchAtLoginDescription: "macOS에 로그인한 후 QuotaBar를 자동으로 시작합니다.",
+        .launchAtLoginDescription: "macOS에 로그인한 후 Quota Radar를 자동으로 시작합니다.",
         .autoRefreshInterval: "자동 새로 고침",
-        .autoRefreshDescription: "QuotaBar가 백그라운드에서 공급자 할당량을 새로 고치는 주기를 선택합니다.",
+        .autoRefreshDescription: "Quota Radar가 백그라운드에서 공급자 할당량을 새로 고치는 주기를 선택합니다.",
         .autoRefreshBraveWarning: "Brave 확인은 실제 검색 요청 1회를 소비하므로 자동 새로 고침에서 건너뜁니다.",
         .quotaConsumingAutoRefreshInterval: "검색 할당량을 소비하는 자동 새로 고침",
         .quotaConsumingAutoRefreshWarning: "실제 검색 할당량을 소비해도 되는 경우에만 켜세요. 이 확인은 더 긴 주기를 사용합니다.",
@@ -946,7 +961,7 @@ enum L10n {
         .quotaConsumingAutoRefreshSixHours: "6시간마다",
         .quotaConsumingAutoRefreshTwelveHours: "12시간마다",
         .quotaConsumingAutoRefreshOneDay: "매일",
-        .apiQuotaTitle: "API 할당량",
+        .apiQuotaTitle: "할당량 레이더",
         .noApiKeys: "자격 증명 없음",
         .noApiKeysMessage: ".env 파일을 가져오거나 자격 증명 페이지에서 추가하면 여기에 공급자 할당량이 표시됩니다.",
         .openSettings: "설정 열기",
@@ -990,7 +1005,7 @@ enum L10n {
         .featureRealtime: "공급자별 할당량 새로 고침",
         .featureGlass: "반투명 메뉴 막대 UI",
         .featureMenuBar: "메뉴 막대 빠른 접근",
-        .version: "버전 0.1.3",
+        .version: "버전 0.2.0",
         .refreshAlreadyRunning: "새로 고침 중입니다",
         .refreshing: "새로 고치는 중...",
         .refreshingProvider: "%@ 새로 고치는 중...",
@@ -1008,7 +1023,7 @@ enum L10n {
         .noCookiesFound: "일치하는 Cookie가 없습니다",
         .missingRequiredCookies: "누락된 로그인 Cookie: %@",
         .reauthTitle: "%@ 다시 인증",
-        .reauthDescription: "공급자 대시보드에 로그인하세요. 로그인 후 QuotaBar가 일치하는 WebView Cookie를 자동 저장합니다.",
+        .reauthDescription: "공급자 대시보드에 로그인하세요. 로그인 후 Quota Radar가 일치하는 WebView Cookie를 자동 저장합니다.",
         .autoCookieSaveHint: "대시보드 로그인 대기 중입니다. 필요한 경우 수동으로 저장할 수 있습니다.",
         .autoSavingCookie: "대시보드 Cookie 저장 중...",
         .checkingCookie: "대시보드 로그인 확인 중...",

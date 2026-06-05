@@ -5,12 +5,13 @@ struct MenuContentView: View {
     static let menuSize = CGSize(width: 560, height: 680)
     private static let menuGlassCornerRadius: CGFloat = 20
     private static let contentHorizontalInset: CGFloat = 22
-    private static let contentTopSafeInset: CGFloat = 26
+    private static let contentTopSafeInset: CGFloat = 12
     private static let contentBottomInset: CGFloat = 14
 
     @ObservedObject var monitor: QuotaMonitor
     @ObservedObject private var languageStore = AppLanguageStore.shared
     @ObservedObject private var appearanceStore = AppAppearanceStore.shared
+    @ObservedObject private var quoteStore = AIQuoteStore.shared
 
     private var statusBarTransparency: Double {
         appearanceStore.statusBarTransparency
@@ -37,6 +38,8 @@ struct MenuContentView: View {
     }
 
     var body: some View {
+        let currentLanguage = languageStore.language
+
         ZStack {
             VisualEffectBlur(material: .popover, blendingMode: .behindWindow)
                 .opacity(blurOpacity)
@@ -60,6 +63,8 @@ struct MenuContentView: View {
                 HeaderView(
                     lastError: monitor.lastError,
                     refreshMessage: monitor.refreshMessage,
+                    failedCount: monitor.menuQuotaSummary.failedCount,
+                    quoteText: quoteStore.currentQuoteText(),
                     onOpenSettings: { openSettings() }
                 )
 
@@ -88,6 +93,7 @@ struct MenuContentView: View {
                 .allowsHitTesting(false)
         )
         .environment(\.menuGlassTransparency, statusBarTransparency)
+        .id(currentLanguage)
         .shadow(color: Color.black.opacity(shadowOpacity), radius: 24, x: 0, y: 12)
     }
 
@@ -149,45 +155,145 @@ struct EmptyQuotaStateView: View {
 // MARK: - Header View
 
 struct HeaderView: View {
+    @Environment(\.menuGlassTransparency) private var menuGlassTransparency
     let lastError: String?
     let refreshMessage: String?
+    let failedCount: Int
+    let quoteText: String
     let onOpenSettings: () -> Void
 
+    private var headerFillOpacity: Double {
+        0.22 + (1 - menuGlassTransparency) * 0.30
+    }
+
+    private var headerStatusMessage: String? {
+        refreshMessage
+    }
+
+    private var hasSettingsAttention: Bool {
+        lastError != nil || failedCount > 0
+    }
+
+    private var settingsHelpText: String {
+        if let lastError, !lastError.isEmpty {
+            return "\(L10n.t(.settingsTab))\n\(lastError)"
+        }
+
+        if failedCount > 0 {
+            return "\(L10n.t(.settingsTab))\n\(failedCount) \(L10n.t(.failed))"
+        }
+
+        return L10n.t(.settingsTab)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "battery.75percent")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary)
+        HStack(spacing: 8) {
+            HStack(spacing: 7) {
+                Image(systemName: "battery.75percent")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.primary)
 
-                    Text(L10n.t(.apiQuotaTitle))
-                        .font(.system(size: 15, weight: .semibold))
-                }
+                Text(L10n.t(.apiQuotaTitle))
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .layoutPriority(1)
 
-                Spacer()
+            if lastError == nil, let headerStatusMessage {
+                HeaderStatusPill(message: headerStatusMessage, tint: .secondary)
+            }
 
+            HeaderQuotePill(message: quoteText)
+
+            Spacer(minLength: 4)
+
+            ZStack(alignment: .topTrailing) {
                 StatusHeaderIconButton(
                     systemName: "slider.horizontal.3",
-                    helpText: L10n.t(.settingsTab),
+                    helpText: settingsHelpText,
                     action: onOpenSettings
                 )
                 .frame(width: 32, height: 32)
-            }
 
-            if let error = lastError {
-                Text(error)
-                    .font(.caption2)
-                    .foregroundColor(.red)
-                    .lineLimit(2)
-            } else if let refreshMessage {
-                Text(refreshMessage)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if hasSettingsAttention {
+                    SettingsAttentionDot()
+                        .offset(x: 1, y: -1)
+                        .help(settingsHelpText)
+                }
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.regularMaterial)
+                .opacity(headerFillOpacity)
+                .allowsHitTesting(false)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
+                .allowsHitTesting(false)
+        }
+    }
+}
+
+struct SettingsAttentionDot: View {
+    var body: some View {
+        Circle()
+            .fill(Color.red)
+            .frame(width: 7, height: 7)
+            .overlay {
+                Circle()
+                    .stroke(Color.white.opacity(0.92), lineWidth: 1.2)
+            }
+            .shadow(color: Color.red.opacity(0.35), radius: 3, x: 0, y: 1)
+            .allowsHitTesting(false)
+    }
+}
+
+struct HeaderQuotePill: View {
+    let message: String
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.045))
+                    .allowsHitTesting(false)
+            }
+            .frame(maxWidth: 210, alignment: .leading)
+    }
+}
+
+struct HeaderStatusPill: View {
+    let message: String
+    let tint: Color
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background {
+                Capsule(style: .continuous)
+                    .fill(tint.opacity(0.10))
+                    .allowsHitTesting(false)
+            }
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(tint.opacity(0.14), lineWidth: 0.5)
+                    .allowsHitTesting(false)
+            }
+            .frame(maxWidth: 260, alignment: .leading)
     }
 }
 
@@ -221,6 +327,8 @@ struct StatusHeaderIconButton: NSViewRepresentable {
         button.toolTip = helpText
         button.setAccessibilityLabel(helpText)
         button.actionHandler = action
+        button.target = button
+        button.action = #selector(StatusHeaderActionButton.performHeaderAction(_:))
         button.wantsLayer = true
         button.layer?.cornerRadius = 16
         button.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.18).cgColor
@@ -237,16 +345,22 @@ final class StatusHeaderActionButton: NSButton {
     }
 
     override func mouseDown(with event: NSEvent) {
-        let handler = actionHandler
         highlight(true)
         DispatchQueue.main.async { [weak self] in
             self?.highlight(false)
-            handler?()
         }
+        performHeaderAction(self)
     }
 
     override func performClick(_ sender: Any?) {
-        actionHandler?()
+        performHeaderAction(sender)
+    }
+
+    @objc func performHeaderAction(_ sender: Any?) {
+        let handler = actionHandler
+        DispatchQueue.main.async {
+            handler?()
+        }
     }
 }
 

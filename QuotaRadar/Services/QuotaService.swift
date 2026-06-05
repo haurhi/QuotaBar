@@ -822,6 +822,19 @@ actor QuotaService {
         }
     }
 
+    private func withHTTPStatus(
+        _ result: QuotaResult,
+        from response: HTTPURLResponse,
+        diagnosticMessage: String? = nil
+    ) -> QuotaResult {
+        var result = result
+        result.httpStatus = response.statusCode
+        if let diagnosticMessage {
+            result.diagnosticMessage = diagnosticMessage
+        }
+        return result
+    }
+
     // MARK: - Search Providers
 
     /// Tavily: 通过轻量搜索请求获取 quota header
@@ -844,7 +857,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseTavilyUsage(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseTavilyUsage(data),
+            from: httpResponse
+        )
     }
 
     /// Brave Search: 通过轻量搜索获取 quota header
@@ -901,7 +917,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseSerpApiAccount(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseSerpApiAccount(data),
+            from: httpResponse
+        )
     }
 
     /// Serper: account endpoint returns credit balance without issuing a search.
@@ -924,7 +943,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseSerperAccount(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseSerperAccount(data),
+            from: httpResponse
+        )
     }
 
     /// Exa Admin API requires a service key and the target API key id.
@@ -960,10 +982,11 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        var result = try QuotaParsers.parseExaUsage(data)
-        result.httpStatus = httpResponse.statusCode
-        result.diagnosticMessage = "Exa Team Management usage endpoint returned billing usage."
-        return result
+        return try withHTTPStatus(
+            QuotaParsers.parseExaUsage(data),
+            from: httpResponse,
+            diagnosticMessage: "Exa Team Management usage endpoint returned billing usage."
+        )
     }
 
     /// Bocha: 查询账户资源包 / 余额。
@@ -987,7 +1010,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseBochaRemainingFund(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseBochaRemainingFund(data),
+            from: httpResponse
+        )
     }
 
     /// AnySearch: 当前免费使用，没有公开 quota 上限。
@@ -1024,7 +1050,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseDajialaRemainMoney(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseDajialaRemainMoney(data),
+            from: httpResponse
+        )
     }
 
     /// Querit: dashboard account endpoint returns monthly request usage when authenticated by session cookie.
@@ -1058,10 +1087,11 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        var result = try QuotaParsers.parseQueritAccount(data)
-        result.httpStatus = httpResponse.statusCode
-        result.diagnosticMessage = "Querit account endpoint returned monthly request quota."
-        return result
+        return try withHTTPStatus(
+            QuotaParsers.parseQueritAccount(data),
+            from: httpResponse,
+            diagnosticMessage: "Querit account endpoint returned monthly request quota."
+        )
     }
 
     // MARK: - LLM Providers
@@ -1084,7 +1114,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseDeepSeekBalance(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseDeepSeekBalance(data),
+            from: httpResponse
+        )
     }
 
     /// 讯飞星火 Coding Plan: dashboard session endpoint.
@@ -1114,7 +1147,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseXFYunCodingPlanList(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseXFYunCodingPlanList(data),
+            from: httpResponse
+        )
     }
 
     /// 火山引擎 Coding Plan: console session endpoint.
@@ -1155,7 +1191,10 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseVolcengineCodingPlanUsage(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseVolcengineCodingPlanUsage(data),
+            from: httpResponse
+        )
     }
 
     /// OpenCode Go: dashboard server function endpoint.
@@ -1226,6 +1265,9 @@ actor QuotaService {
             throw QuotaError.invalidResponse
         }
 
-        return try QuotaParsers.parseOpenCodeGoUsage(data)
+        return try withHTTPStatus(
+            QuotaParsers.parseOpenCodeGoUsage(data),
+            from: httpResponse
+        )
     }
 }

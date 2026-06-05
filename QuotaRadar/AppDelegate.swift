@@ -2,27 +2,33 @@ import Cocoa
 import SwiftUI
 import Combine
 
-class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var statusItem: NSStatusItem?
-    var popover: NSPopover?
+    var statusPanel: NSPanel?
+    var statusPanelHostingController: NSHostingController<MenuContentView>?
     var quotaMonitor: QuotaMonitor!
     var settingsWindow: NSWindow?
     var popoverMouseExitTimer: Timer?
+    var statusPanelClickMonitor: Any?
+    var statusPanelGlobalClickMonitor: Any?
+    weak var statusPanelSettingsOverlayButton: StatusPanelSettingsOverlayButton?
     var cancellables = Set<AnyCancellable>()
     private var autoRefreshCancellable: AnyCancellable?
     private var quotaConsumingAutoRefreshCancellable: AnyCancellable?
     private let preferredSettingsContentSize = NSSize(width: 1040, height: 640)
     private let minimumSettingsWindowSize = NSSize(width: 900, height: 600)
-    private let statusPopoverAnchorHeight: CGFloat = 6
-    private let statusPopoverTopClearance: CGFloat = 12
+    private let statusPanelGap: CGFloat = 6
+    private let statusPanelScreenInset: CGFloat = 10
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        LegacyConfigurationMigrator.migrateUserDefaultsIfNeeded()
         NSApp.setActivationPolicy(.regular)
         clearSwiftUISettingsWindowAutosaveFrame()
         quotaMonitor = QuotaMonitor.shared
         setupStatusBar()
-        setupPopover()
+        setupStatusPanel()
         startMonitoring()
+        startLanguageMonitoring()
         showManagedSettingsWindowOnLaunch()
     }
 
@@ -37,7 +43,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         button.imagePosition = .imageOnly
         button.imageScaling = .scaleProportionallyDown
         button.contentTintColor = .labelColor
-        button.toolTip = "API Quota"
+        button.toolTip = L10n.t(.apiQuotaTitle)
 
         // 监听点击
         button.target = self
@@ -48,10 +54,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         let image = NSImage(size: NSSize(width: 18, height: 18))
         image.lockFocus()
 
-        drawQuotaCellStatusGlyph(in: NSRect(x: 1.0, y: 4.6, width: 16.0, height: 8.8))
+        drawQuotaCellStatusGlyph(in: NSRect(x: 1.4, y: 4.3, width: 15.0, height: 9.4))
 
         image.unlockFocus()
-        image.accessibilityDescription = "API Quota"
+        image.accessibilityDescription = L10n.t(.apiQuotaTitle)
         return image
     }
 
@@ -61,32 +67,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
 
         let body = NSRect(
             x: rect.minX,
-            y: rect.minY + rect.height * 0.08,
-            width: rect.width * 0.80,
-            height: rect.height * 0.84
+            y: rect.minY + rect.height * 0.06,
+            width: rect.width * 0.790,
+            height: rect.height * 0.880
         )
         let cap = NSRect(
-            x: body.maxX + rect.width * 0.050,
-            y: body.midY - body.height * 0.24,
-            width: rect.width * 0.090,
-            height: body.height * 0.48
+            x: body.maxX + rect.width * 0.070,
+            y: body.midY - body.height * 0.210,
+            width: rect.width * 0.105,
+            height: body.height * 0.420
         )
 
         let bodyPath = NSBezierPath(roundedRect: body, xRadius: body.height * 0.30, yRadius: body.height * 0.30)
-        bodyPath.lineWidth = 1.55
+        bodyPath.lineWidth = 1.60
         bodyPath.stroke()
 
-        let capPath = NSBezierPath(roundedRect: cap, xRadius: cap.height * 0.34, yRadius: cap.height * 0.34)
-        capPath.fill()
+        drawStatusBatteryTerminal(in: cap)
         drawStatusBatteryFill(in: body)
     }
 
+    private func drawStatusBatteryTerminal(in cap: NSRect) {
+        NSBezierPath(
+            roundedRect: cap,
+            xRadius: cap.height * 0.38,
+            yRadius: cap.height * 0.38
+        ).fill()
+    }
+
     private func drawStatusBatteryFill(in body: NSRect) {
-        let fillArea = body.insetBy(dx: body.width * 0.16, dy: body.height * 0.28)
+        let fillArea = body.insetBy(dx: body.width * 0.155, dy: body.height * 0.285)
         let fill = NSRect(
             x: fillArea.minX,
             y: fillArea.minY,
-            width: fillArea.width * 0.72,
+            width: fillArea.width * 0.740,
             height: fillArea.height
         )
         NSBezierPath(
@@ -96,66 +109,86 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         ).fill()
     }
 
-    private func setupPopover() {
+    private func setupStatusPanel() {
         let contentView = MenuContentView(monitor: quotaMonitor)
         let hostingController = NSHostingController(rootView: contentView)
-        hostingController.view.frame = NSRect(origin: .zero, size: MenuContentView.menuSize)
+        let containerView = StatusPanelContainerView(frame: NSRect(origin: .zero, size: MenuContentView.menuSize))
+        containerView.wantsLayer = true
+        containerView.layer?.backgroundColor = NSColor.clear.cgColor
+
+        hostingController.view.frame = containerView.bounds
+        hostingController.view.autoresizingMask = [.width, .height]
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.backgroundColor = NSColor.clear.cgColor
+        containerView.addSubview(hostingController.view)
 
-        let popover = NSPopover()
-        popover.behavior = .transient
-        popover.animates = false
-        popover.contentSize = MenuContentView.menuSize
-        popover.contentViewController = hostingController
-        popover.delegate = self
-        self.popover = popover
+        let panel = NSPanel(
+            contentRect: NSRect(origin: .zero, size: MenuContentView.menuSize),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.contentView = containerView
+        panel.setContentSize(MenuContentView.menuSize)
+        panel.animationBehavior = .none
+        panel.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle]
+        panel.hidesOnDeactivate = false
+        panel.isReleasedWhenClosed = false
+        panel.isMovable = false
+        panel.level = .statusBar
+        configureStatusPanelWindowAppearance(window: panel)
+        installStatusPanelSettingsOverlay(on: containerView)
+
+        statusPanelHostingController = hostingController
+        statusPanel = panel
     }
 
     @objc private func togglePopover() {
-        guard let button = statusItem?.button,
-              let popover else { return }
+        guard let button = statusItem?.button else { return }
 
-        if popover.isShown {
+        if statusPanel?.isVisible == true {
             closeStatusPopover()
         } else {
-            showStatusPopover(from: button)
+            showStatusPanel(relativeTo: button)
         }
     }
 
-    private func showStatusPopover(from button: NSStatusBarButton) {
-        guard let popover else { return }
-        popover.show(relativeTo: statusPopoverAnchorRect(for: button), of: button, preferredEdge: .minY)
-        configurePopoverWindowAppearance()
-        repositionStatusPopoverBelowMenuBar(relativeTo: button)
+    private func showStatusPanel(relativeTo button: NSStatusBarButton) {
+        guard let panel = statusPanel else { return }
+
+        AIQuoteStore.shared.advance()
+        let frame = frameForStatusPanel(relativeTo: button)
+        panel.setFrame(frame, display: true)
+        configureStatusPanelWindowAppearance(window: panel)
+        panel.orderFrontRegardless()
         DispatchQueue.main.async { [weak self] in
-            self?.repositionStatusPopoverBelowMenuBar(relativeTo: button)
+            guard let self, let panel = self.statusPanel else { return }
+            panel.setFrame(self.frameForStatusPanel(relativeTo: button), display: true)
         }
         startPopoverMouseExitMonitor()
     }
 
-    private func statusPopoverAnchorRect(for button: NSStatusBarButton) -> NSRect {
-        var rect = button.bounds
-        rect.origin.y = button.bounds.minY
-        rect.size.height = max(1, min(statusPopoverAnchorHeight, button.bounds.height))
-        return rect
+    private func frameForStatusPanel(relativeTo button: NSStatusBarButton) -> NSRect {
+        let buttonFrame: NSRect
+        if let window = button.window {
+            let buttonFrameInWindow = button.convert(button.bounds, to: nil)
+            buttonFrame = window.convertToScreen(buttonFrameInWindow)
+        } else {
+            buttonFrame = NSRect(origin: NSEvent.mouseLocation, size: .zero)
+        }
+
+        let screen = button.window?.screen ?? NSScreen.main
+        let visibleFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1512, height: 949)
+        let size = MenuContentView.menuSize
+        let minX = visibleFrame.minX + statusPanelScreenInset
+        let maxX = visibleFrame.maxX - size.width - statusPanelScreenInset
+        let preferredX = buttonFrame.midX - MenuContentView.menuSize.width / 2
+        let x = min(max(preferredX, minX), maxX)
+        let y = visibleFrame.maxY - statusPanelGap - size.height
+        return NSRect(x: x, y: y, width: size.width, height: size.height)
     }
 
-    private func repositionStatusPopoverBelowMenuBar(relativeTo button: NSStatusBarButton) {
-        guard let window = popover?.contentViewController?.view.window else { return }
-        let screen = button.window?.screen ?? window.screen ?? NSScreen.main
-        guard let visibleFrame = screen?.visibleFrame else { return }
-
-        let allowedMaxY = visibleFrame.maxY - statusPopoverTopClearance
-        var frame = window.frame
-        guard frame.maxY > allowedMaxY else { return }
-
-        frame.origin.y -= frame.maxY - allowedMaxY
-        window.setFrame(frame, display: true)
-    }
-
-    private func configurePopoverWindowAppearance() {
-        guard let window = popover?.contentViewController?.view.window else { return }
+    private func configureStatusPanelWindowAppearance(window: NSWindow) {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = false
@@ -163,13 +196,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
     }
 
+    private func installStatusPanelSettingsOverlay(on contentView: NSView) {
+        let button = StatusPanelSettingsOverlayButton(frame: statusHeaderSettingsHitRect(in: contentView))
+        button.toolTip = L10n.t(.settingsTab)
+        button.setAccessibilityLabel(L10n.t(.settingsTab))
+        button.actionHandler = { [weak self] in
+            self?.openPreferencesFromStatusPopover(destination: .settings)
+        }
+        statusPanelSettingsOverlayButton = button
+        contentView.addSubview(button, positioned: .above, relativeTo: nil)
+    }
+
     private func closeStatusPopover() {
-        popover?.close()
+        statusPanel?.orderOut(nil)
         stopPopoverMouseExitMonitor()
+        stopStatusPanelClickMonitor()
     }
 
     private func startPopoverMouseExitMonitor() {
         stopPopoverMouseExitMonitor()
+        startStatusPanelClickMonitor()
 
         let timer = Timer(timeInterval: 0.45, repeats: true) { [weak self] _ in
             self?.closePopoverIfMouseExited()
@@ -184,14 +230,96 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         popoverMouseExitTimer = nil
     }
 
+    private func startStatusPanelClickMonitor() {
+        stopStatusPanelClickMonitor()
+
+        statusPanelClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            guard let self,
+                  let panel = self.statusPanel,
+                  let contentView = panel.contentView,
+                  panel.isVisible,
+                  event.window === panel else {
+                return event
+            }
+
+            let pointInContent = contentView.convert(event.locationInWindow, from: nil)
+            if self.handleStatusPanelSettingsClick(at: pointInContent, in: contentView) {
+                return nil
+            }
+
+            return event
+        }
+
+        statusPanelGlobalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] event in
+            guard let self,
+                  let panel = self.statusPanel,
+                  panel.isVisible else {
+                return
+            }
+
+            let screenPoint = NSEvent.mouseLocation
+            guard panel.frame.contains(screenPoint),
+                  let contentView = panel.contentView else {
+                return
+            }
+
+            let pointInWindow = panel.convertPoint(fromScreen: screenPoint)
+            let pointInContent = contentView.convert(pointInWindow, from: nil)
+            _ = self.handleStatusPanelSettingsClick(at: pointInContent, in: contentView)
+        }
+    }
+
+    private func stopStatusPanelClickMonitor() {
+        if let statusPanelClickMonitor {
+            NSEvent.removeMonitor(statusPanelClickMonitor)
+            self.statusPanelClickMonitor = nil
+        }
+        if let statusPanelGlobalClickMonitor {
+            NSEvent.removeMonitor(statusPanelGlobalClickMonitor)
+            self.statusPanelGlobalClickMonitor = nil
+        }
+    }
+
+    @discardableResult
+    private func handleStatusPanelSettingsClick(at pointInContent: NSPoint, in contentView: NSView) -> Bool {
+        guard statusPanel?.isVisible == true,
+              statusHeaderSettingsHitRect(in: contentView).contains(pointInContent) else {
+            return false
+        }
+
+        openPreferencesFromStatusPopover(destination: .settings)
+        return true
+    }
+
+    private func statusHeaderSettingsHitRect(in contentView: NSView) -> NSRect {
+        let size = MenuContentView.menuSize
+        let visualTopRect = NSRect(
+            x: size.width - 68,
+            y: 10,
+            width: 54,
+            height: 48
+        )
+
+        if contentView.isFlipped {
+            return visualTopRect
+        }
+
+        return NSRect(
+            x: visualTopRect.minX,
+            y: size.height - visualTopRect.maxY,
+            width: visualTopRect.width,
+            height: visualTopRect.height
+        )
+    }
+
     private func closePopoverIfMouseExited() {
-        guard let popover, popover.isShown else {
+        guard let panel = statusPanel, panel.isVisible else {
             stopPopoverMouseExitMonitor()
             return
         }
 
         let mouseLocation = NSEvent.mouseLocation
-        let popoverFrame = popover.contentViewController?.view.window?.frame
+        let panelFrame = panel.frame
         let buttonFrame: NSRect? = {
             guard let button = statusItem?.button,
                   let window = button.window else { return nil }
@@ -199,16 +327,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
             return window.convertToScreen(windowFrame)
         }()
 
-        let isInsidePopover = popoverFrame?.insetBy(dx: -10, dy: -10).contains(mouseLocation) == true
+        let isInsidePopover = panelFrame.insetBy(dx: -10, dy: -10).contains(mouseLocation)
         let isInsideButton = buttonFrame?.insetBy(dx: -10, dy: -8).contains(mouseLocation) == true
 
         if !isInsidePopover && !isInsideButton {
             closeStatusPopover()
         }
-    }
-
-    func popoverDidClose(_ notification: Notification) {
-        stopPopoverMouseExitMonitor()
     }
 
     @MainActor
@@ -230,6 +354,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
 
         // 首次刷新
         quotaMonitor.refreshAll(mode: .automatic)
+    }
+
+    private func startLanguageMonitoring() {
+        AppLanguageStore.shared.$language
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.updateLocalizedStatusBarStrings()
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateLocalizedStatusBarStrings() {
+        if let button = statusItem?.button {
+            button.toolTip = L10n.t(.apiQuotaTitle)
+            button.image?.accessibilityDescription = L10n.t(.apiQuotaTitle)
+        }
+
+        statusPanelSettingsOverlayButton?.toolTip = L10n.t(.settingsTab)
+        statusPanelSettingsOverlayButton?.setAccessibilityLabel(L10n.t(.settingsTab))
     }
 
     @MainActor
@@ -293,8 +436,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
             let settingsView = SettingsView(monitor: quotaMonitor)
             let controller = NSHostingController(rootView: settingsView)
             let window = NSWindow(contentViewController: controller)
-            window.title = "QuotaBar Settings"
-            window.identifier = NSUserInterfaceItemIdentifier("QuotaBarMainSettingsWindow")
+            window.title = "Quota Radar Settings"
+            window.identifier = NSUserInterfaceItemIdentifier("QuotaRadarMainSettingsWindow")
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             window.isReleasedWhenClosed = false
             window.isRestorable = false
@@ -455,5 +598,52 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSWindowD
         adjusted.origin.x = min(max(adjusted.minX, visibleFrame.minX), visibleFrame.maxX - adjusted.width)
         adjusted.origin.y = min(max(adjusted.minY, visibleFrame.minY), visibleFrame.maxY - adjusted.height)
         return adjusted
+    }
+}
+
+final class StatusPanelSettingsOverlayButton: NSButton {
+    var actionHandler: (() -> Void)?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        isBordered = false
+        setButtonType(.momentaryChange)
+        imagePosition = .noImage
+        title = ""
+        focusRingType = .none
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+        target = self
+        action = #selector(performOverlayAction(_:))
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var isOpaque: Bool {
+        false
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        performOverlayAction(self)
+    }
+
+    override func performClick(_ sender: Any?) {
+        performOverlayAction(sender)
+    }
+
+    @objc private func performOverlayAction(_ sender: Any?) {
+        actionHandler?()
+    }
+}
+
+final class StatusPanelContainerView: NSView {
+    override var isOpaque: Bool {
+        false
     }
 }

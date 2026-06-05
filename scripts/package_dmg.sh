@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build a QuotaBar DMG.
+# Build a Quota Radar DMG.
 #
 # Local/self-use:
 #   scripts/package_dmg.sh
@@ -20,12 +20,14 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="QuotaBar"
+PRODUCT_NAME="QuotaRadar"
+DISPLAY_NAME="Quota Radar"
+SOURCE_DIR="QuotaRadar"
 BUILD_DIR="${PROJECT_DIR}/build"
-APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
+APP_BUNDLE="${BUILD_DIR}/${DISPLAY_NAME}.app"
 DMG_DIR="${BUILD_DIR}/dmg"
-DMG_PATH="${BUILD_DIR}/${APP_NAME}.dmg"
-VOLUME_NAME="${APP_NAME}"
+DMG_PATH="${BUILD_DIR}/${PRODUCT_NAME}.dmg"
+VOLUME_NAME="${DISPLAY_NAME}"
 REBUILD=false
 NOTARIZE=false
 
@@ -54,7 +56,7 @@ fi
 if [ -n "${DEVELOPER_ID_APPLICATION:-}" ]; then
     echo "Signing app with Developer ID: ${DEVELOPER_ID_APPLICATION}"
     codesign --force --deep --options runtime \
-        --entitlements "${PROJECT_DIR}/${APP_NAME}/${APP_NAME}.entitlements" \
+        --entitlements "${PROJECT_DIR}/${SOURCE_DIR}/${PRODUCT_NAME}.entitlements" \
         --sign "${DEVELOPER_ID_APPLICATION}" \
         "${APP_BUNDLE}"
 else

@@ -1,14 +1,16 @@
 #!/bin/bash
 
-# Build and install QuotaBar.
-# Run: ./install.sh to install the existing build/QuotaBar.app when present.
+# Build and install Quota Radar.
+# Run: ./install.sh to install the existing build/Quota Radar.app when present.
 # Run: ./install.sh --rebuild to rebuild and install.
-# Run: ./install.sh --bundle-only --rebuild to create build/QuotaBar.app without copying to /Applications.
+# Run: ./install.sh --bundle-only --rebuild to create build/Quota Radar.app without copying to /Applications.
 
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_NAME="QuotaBar"
+PRODUCT_NAME="QuotaRadar"
+DISPLAY_NAME="Quota Radar"
+SOURCE_DIR="QuotaRadar"
 BUILD_DIR="${PROJECT_DIR}/build"
 BUNDLE_ONLY=false
 REBUILD=false
@@ -29,12 +31,12 @@ for arg in "$@"; do
     esac
 done
 
-APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
+APP_BUNDLE="${BUILD_DIR}/${DISPLAY_NAME}.app"
 
 if [ -d "${APP_BUNDLE}" ] && [ "${REBUILD}" = false ]; then
     echo "📦 Using existing app bundle: ${APP_BUNDLE}"
 else
-    echo "🚀 Building ${APP_NAME}..."
+    echo "🚀 Building ${DISPLAY_NAME}..."
     REBUILD=true
 fi
 
@@ -61,12 +63,12 @@ if [ "${REBUILD}" = true ]; then
     }
 
     # Find the built executable
-    EXECUTABLE="${PROJECT_DIR}/.build/release/${APP_NAME}"
+    EXECUTABLE="${PROJECT_DIR}/.build/release/${PRODUCT_NAME}"
 
     if [ ! -f "${EXECUTABLE}" ]; then
         echo "❌ Executable not found at ${EXECUTABLE}"
         echo "🔍 Searching for executable..."
-        find "${PROJECT_DIR}/.build" -name "${APP_NAME}" -type f 2>/dev/null | head -5
+        find "${PROJECT_DIR}/.build" -name "${PRODUCT_NAME}" -type f 2>/dev/null | head -5
         exit 1
     fi
 
@@ -82,14 +84,14 @@ if [ "${REBUILD}" = true ]; then
     mkdir -p "${MACOS}" "${RESOURCES}"
 
     # Copy executable
-    cp "${EXECUTABLE}" "${MACOS}/${APP_NAME}"
+    cp "${EXECUTABLE}" "${MACOS}/${PRODUCT_NAME}"
 
     # Copy resources
-    cp "${PROJECT_DIR}/${APP_NAME}/Info.plist" "${CONTENTS}/Info.plist"
-    cp "${PROJECT_DIR}/${APP_NAME}/QuotaBar.entitlements" "${RESOURCES}/" 2>/dev/null || true
-    cp "${PROJECT_DIR}/${APP_NAME}/Resources/QuotaBar.icns" "${RESOURCES}/QuotaBar.icns"
+    cp "${PROJECT_DIR}/${SOURCE_DIR}/Info.plist" "${CONTENTS}/Info.plist"
+    cp "${PROJECT_DIR}/${SOURCE_DIR}/QuotaRadar.entitlements" "${RESOURCES}/" 2>/dev/null || true
+    cp "${PROJECT_DIR}/${SOURCE_DIR}/Resources/QuotaRadar.icns" "${RESOURCES}/QuotaRadar.icns"
 
-    RESOURCE_BUNDLE="${PROJECT_DIR}/.build/release/${APP_NAME}_${APP_NAME}.bundle"
+    RESOURCE_BUNDLE="${PROJECT_DIR}/.build/release/${PRODUCT_NAME}_${PRODUCT_NAME}.bundle"
     if [ -d "${RESOURCE_BUNDLE}" ]; then
         cp -R "${RESOURCE_BUNDLE}" "${RESOURCES}/"
     fi
@@ -110,7 +112,7 @@ fi
 
 echo "📝 App Bundle Info:"
 echo "   Location: ${APP_BUNDLE}"
-echo "   Executable: ${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
+echo "   Executable: ${APP_BUNDLE}/Contents/MacOS/${PRODUCT_NAME}"
 echo "   Size: $(du -sh "${APP_BUNDLE}" | cut -f1)"
 
 if [ "${BUNDLE_ONLY}" = true ]; then
@@ -119,30 +121,32 @@ if [ "${BUNDLE_ONLY}" = true ]; then
 fi
 
 # Install to Applications
-if [ -d "/Applications/${APP_NAME}.app" ]; then
+for old_app in "/Applications/${DISPLAY_NAME}.app" "/Applications/QuotaRadar.app" "/Applications/QuotaBar.app"; do
+if [ -d "${old_app}" ]; then
     echo "🗑️  Removing old version..."
-    rm -rf "/Applications/${APP_NAME}.app"
+    rm -rf "${old_app}"
 fi
+done
 
 echo "📲 Installing to Applications..."
 cp -R "${APP_BUNDLE}" "/Applications/"
 if command -v xattr &> /dev/null; then
-    xattr -dr com.apple.quarantine "/Applications/${APP_NAME}.app" 2>/dev/null || true
+    xattr -dr com.apple.quarantine "/Applications/${DISPLAY_NAME}.app" 2>/dev/null || true
 fi
 
 if command -v spctl &> /dev/null; then
     echo "✅ Registering local Gatekeeper approval..."
-    spctl --add --label "${APP_NAME}" "/Applications/${APP_NAME}.app" 2>/dev/null || true
+    spctl --add --label "${DISPLAY_NAME}" "/Applications/${DISPLAY_NAME}.app" 2>/dev/null || true
 fi
 
-if [ -d "/Applications/${APP_NAME}.app" ]; then
+if [ -d "/Applications/${DISPLAY_NAME}.app" ]; then
     echo "✅ Installation successful!"
     echo ""
-    echo "🎉 ${APP_NAME} is now installed in Applications"
+    echo "🎉 ${DISPLAY_NAME} is now installed in Applications"
     echo ""
     echo "To run:"
     echo "  1. Open Applications folder (Cmd+Shift+A in Finder)"
-    echo "  open /Applications/${APP_NAME}.app"
+    echo "  open '/Applications/${DISPLAY_NAME}.app'"
     echo ""
     echo "The app will appear in your menu bar with the quota-cell icon"
 else

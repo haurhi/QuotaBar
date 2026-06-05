@@ -13,8 +13,8 @@ assert_no_match() {
   local pattern="$1"
   local path="$2"
   local message="$3"
-  if rg -n "$pattern" "$path" >/tmp/quotabar-test-match.txt; then
-    cat /tmp/quotabar-test-match.txt >&2
+  if rg -n "$pattern" "$path" >/tmp/quotaradar-test-match.txt; then
+    cat /tmp/quotaradar-test-match.txt >&2
     fail "$message"
   fi
 }
@@ -30,23 +30,32 @@ assert_match() {
 
 echo "== Source safety checks =="
 assert_no_match 'APIKey\(name: ".*API_KEY.*key: "[^"]{8,}' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "DefaultKeys must not contain embedded API secrets"
 assert_no_match '@StateObject private var monitor = QuotaMonitor\(' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "SettingsView must use the shared QuotaMonitor instance"
 assert_no_match 'for var key in apiKeys where key\.isActive' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "refreshAll must preserve inactive keys instead of filtering them out"
 assert_no_match '\$\(' \
-  "QuotaBar/Info.plist" \
+  "QuotaRadar/Info.plist" \
   "Info.plist in the source bundle must contain concrete app bundle values"
 assert_match 'CFBundleIconFile' \
-  "QuotaBar/Info.plist" \
+  "QuotaRadar/Info.plist" \
   "Info.plist must declare the app icon file"
+assert_match 'CFBundleDisplayName' \
+  "QuotaRadar/Info.plist" \
+  "Info.plist must declare the Finder display name"
+assert_match 'Quota Radar' \
+  "QuotaRadar/Info.plist" \
+  "App bundle display name should be Quota Radar"
+assert_match '0\.2\.0' \
+  "QuotaRadar/Info.plist" \
+  "Quota Radar 0.2.0 should be recorded in Info.plist"
 assert_no_match 'LSUIElement' \
-  "QuotaBar/Info.plist" \
-  "QuotaBar must appear in the macOS Dock after launch"
+  "QuotaRadar/Info.plist" \
+  "QuotaRadar must appear in the macOS Dock after launch"
 [[ -s docs/assets/screenshots/quota-overview.png ]] || fail "README quota overview screenshot asset should exist"
 [[ -s docs/assets/screenshots/menu-bar-popover.png ]] || fail "README menu bar popover screenshot asset should exist"
 assert_match 'docs/assets/screenshots/quota-overview\.png' \
@@ -64,50 +73,50 @@ assert_match 'docs/assets/screenshots/quota-overview\.png' \
 assert_match 'docs/assets/screenshots/menu-bar-popover\.png' \
   "README.en.md" \
   "English README should show the menu bar popover screenshot"
-assert_match 'captured from the running app, with credentials masked by QuotaBar' \
+assert_match 'captured from the running app, with credentials masked by Quota Radar' \
   "README.en.md" \
   "English README should clarify that public screenshots use masked real app captures"
 assert_match 'setActivationPolicy\(\.regular\)' \
-  "QuotaBar/AppDelegate.swift" \
-  "QuotaBar should explicitly use a regular activation policy so it appears in Dock"
+  "QuotaRadar/AppDelegate.swift" \
+  "QuotaRadar should explicitly use a regular activation policy so it appears in Dock"
 assert_match 'enum AppLanguage' \
-  "QuotaBar/Models/AppLanguage.swift" \
-  "QuotaBar should define an app language enum"
+  "QuotaRadar/Models/AppLanguage.swift" \
+  "QuotaRadar should define an app language enum"
 assert_match 'case english' \
-  "QuotaBar/Models/AppLanguage.swift" \
-  "QuotaBar language options should include English"
+  "QuotaRadar/Models/AppLanguage.swift" \
+  "QuotaRadar language options should include English"
 assert_match 'case simplifiedChinese' \
-  "QuotaBar/Models/AppLanguage.swift" \
-  "QuotaBar language options should include Simplified Chinese"
+  "QuotaRadar/Models/AppLanguage.swift" \
+  "QuotaRadar language options should include Simplified Chinese"
 assert_match 'AppLanguageStore' \
-  "QuotaBar/Models/AppLanguage.swift" \
-  "QuotaBar should persist the selected app language"
+  "QuotaRadar/Models/AppLanguage.swift" \
+  "QuotaRadar should persist the selected app language"
 assert_match 'func displayName\(language: AppLanguage = AppLanguageStore\.shared\.language\)' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Providers should expose localized display names instead of rendering raw persistence values"
 assert_match 'static var visibleCases: \[Provider\]' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Provider UI lists should use a visible provider list so unsupported providers can be kept out without breaking legacy decoding"
 assert_match 'static let categoryDisplayOrder = \["AI Search", "LLM"\]' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Provider category display order should be defined once as AI Search before LLM"
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Status bar provider category groups should use the shared AI Search then LLM order"
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota overview and credential configuration should use the shared AI Search then LLM order"
 assert_no_match '\["LLM", "AI Search"\]' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credential configuration must not show LLM before AI Search"
 assert_no_match 'ForEach\(Provider\.allCases\)' \
-  "QuotaBar/Views" \
+  "QuotaRadar/Views" \
   "Visible provider pickers should not render every Codable provider case"
 assert_no_match 'Text\(.*(stat\.)?provider\.rawValue|Label\(.*rawValue|provider\.rawValue\) \(L10n\.t' \
-  "QuotaBar/Views" \
+  "QuotaRadar/Views" \
   "Visible provider labels should use localized display names instead of raw persistence values"
 assert_no_match 'return \.anthropic' \
-  "QuotaBar/Services/EnvImporter.swift" \
+  "QuotaRadar/Services/EnvImporter.swift" \
   "Anthropic should not be imported as a supported provider for now"
 assert_no_match '\| Anthropic \|' \
   "README.md" \
@@ -118,13 +127,13 @@ assert_no_match '\| Anthropic \|' \
 assert_match '未签名 DMG' \
   "README.md" \
   "README should clearly label the no-fee GitHub Release path as an unsigned DMG"
-assert_match 'xattr -dr com\.apple\.quarantine /Applications/QuotaBar\.app' \
+assert_match "xattr -dr com\\.apple\\.quarantine '/Applications/Quota Radar\\.app'" \
   "README.md" \
   "README should document how trusted users can remove Gatekeeper quarantine from an unsigned app"
 assert_match 'unsigned DMG' \
   "README.en.md" \
   "English README should clearly label the no-fee GitHub Release path as an unsigned DMG"
-assert_match 'xattr -dr com\.apple\.quarantine /Applications/QuotaBar\.app' \
+assert_match "xattr -dr com\\.apple\\.quarantine '/Applications/Quota Radar\\.app'" \
   "README.en.md" \
   "English README should document how trusted users can remove Gatekeeper quarantine from an unsigned app"
 assert_match 'gh release create' \
@@ -141,7 +150,7 @@ assert_match 'tags:' \
   "Release workflow should run from version tags"
 assert_match 'scripts/package_dmg.sh --rebuild' \
   ".github/workflows/release.yml" \
-  "Release workflow should package QuotaBar as a DMG"
+  "Release workflow should package QuotaRadar as a DMG"
 assert_match 'softprops/action-gh-release' \
   ".github/workflows/release.yml" \
   "Release workflow should upload the DMG to GitHub Releases"
@@ -158,993 +167,1125 @@ assert_match 'brew install ripgrep' \
   ".github/workflows/behavior-tests.yml" \
   "Behavior test workflow should install ripgrep because the behavior test script uses rg"
 assert_no_match 'api\.anthropic\.com' \
-  "QuotaBar/Info.plist" \
+  "QuotaRadar/Info.plist" \
   "Anthropic API domains should not be whitelisted while Anthropic is not supported"
 assert_match '简体中文' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "The language picker should expose Simplified Chinese as a user-facing option"
 assert_match 'applicationShouldHandleReopen' \
-  "QuotaBar/AppDelegate.swift" \
-  "Dock icon clicks should reopen a visible QuotaBar window instead of doing nothing"
+  "QuotaRadar/AppDelegate.swift" \
+  "Dock icon clicks should reopen a visible QuotaRadar window instead of doing nothing"
 assert_match 'openPreferences\(\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Dock reopen handling should show the settings window when no app window is visible"
 assert_no_match 'SettingsView\(monitor: \.shared\)' \
-  "QuotaBar/QuotaBarApp.swift" \
+  "QuotaRadar/QuotaRadarApp.swift" \
   "SwiftUI Settings scene must not host the real settings UI because it restores the old off-screen system settings window"
 assert_match 'CommandGroup\(replacing: \.appSettings\)' \
-  "QuotaBar/QuotaBarApp.swift" \
+  "QuotaRadar/QuotaRadarApp.swift" \
   "The app Settings command should route through AppDelegate.openPreferences so the managed window placement is used"
+assert_match 'LegacyConfigurationMigrator\.migrateUserDefaultsIfNeeded' \
+  "QuotaRadar/QuotaRadarApp.swift" \
+  "Quota Radar should migrate old QuotaBar preferences before shared stores read UserDefaults"
 assert_match 'clearSwiftUISettingsWindowAutosaveFrame' \
-  "QuotaBar/AppDelegate.swift" \
-  "QuotaBar should clear the stale SwiftUI Settings window autosave frame that can place the app on a hidden display"
+  "QuotaRadar/AppDelegate.swift" \
+  "QuotaRadar should clear the stale SwiftUI Settings window autosave frame that can place the app on a hidden display"
 assert_match 'showManagedSettingsWindowOnLaunch' \
-  "QuotaBar/AppDelegate.swift" \
-  "Launching QuotaBar should replace SwiftUI's empty Settings scene window with the managed settings window"
+  "QuotaRadar/AppDelegate.swift" \
+  "Launching QuotaRadar should replace SwiftUI's empty Settings scene window with the managed settings window"
 assert_match 'forceSettingsWindowOntoPreferredScreen' \
-  "QuotaBar/AppDelegate.swift" \
-  "QuotaBar should force the managed settings window onto the preferred screen after it is shown"
+  "QuotaRadar/AppDelegate.swift" \
+  "QuotaRadar should force the managed settings window onto the preferred screen after it is shown"
 assert_no_match 'visibleFrame\.contains\(currentFrame\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window placement should not skip repositioning because restored external-display frames can race after launch"
 assert_match 'scheduleSettingsWindowPlacementRecovery' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window placement should be re-applied after launch restoration races"
 assert_match 'applicationDidBecomeActive' \
-  "QuotaBar/AppDelegate.swift" \
-  "Settings window placement should be recovered when QuotaBar becomes active again"
+  "QuotaRadar/AppDelegate.swift" \
+  "Settings window placement should be recovered when QuotaRadar becomes active again"
 assert_match 'windowDidBecomeKey' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window placement should be recovered when the settings window becomes key"
 assert_match 'screen\.frame\.minX == 0 && screen\.frame\.minY == 0' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window placement should prefer the physical primary display at origin zero instead of NSScreen.main after a window was restored on an external display"
-assert_match 'showStatusPopover' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar clicks should show only the status popover instead of activating the main app window"
+assert_match 'showStatusPanel' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar clicks should show only the status panel instead of activating the main app window"
 assert_match 'openPreferencesFromStatusPopover\(destination: \.settings\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "The status bar settings button should open the Settings tab instead of the default API Keys page"
 assert_match 'openPreferencesFromStatusPopover\(destination: \.apiKeys\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "The status bar empty-state configuration button should open the API Keys page"
 assert_match 'SettingsNavigationStore' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "The settings window should expose shared navigation state so status-bar actions can select a tab"
 assert_match '\$navigationStore\.selection' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "The sidebar selection should be driven by shared navigation state"
 assert_match 'navigationOrder: \[SettingsDestination\] = \[\.providers, \.apiKeys, \.diagnostics, \.settings\]' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main navigation should prioritize quota observation, credential configuration, diagnostics, then language/appearance"
 assert_match '@Published var selection: SettingsDestination\? = \.providers' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "The main window should open on quota observation by default"
 assert_match 'case diagnostics' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "The main navigation should include a diagnostics page"
 assert_match 'DiagnosticsView\(monitor: monitor\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Selecting diagnostics should show the diagnostics page"
 assert_match 'CredentialDiagnosticRow' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Diagnostics should render credential-level rows"
 assert_match 'startPopoverMouseExitMonitor' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar popover should start a mouse-exit monitor when shown"
 assert_match 'closePopoverIfMouseExited' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar popover should close automatically after the pointer leaves the popover and status item"
 assert_match 'NSEvent\.mouseLocation' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar popover auto-close should track the pointer in screen coordinates"
 assert_match 'NSStatusBar\.system\.statusItem' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "AppDelegate must install a macOS status bar item"
 assert_match 'enum RefreshMode' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Quota refreshes should distinguish manual refreshes from automatic background polling"
 assert_match 'func refreshAll\(mode: RefreshMode = \.manual\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Manual UI refresh should remain available while automatic refreshes can avoid quota-consuming providers"
 assert_match 'func refreshProvider\(_ provider: Provider, mode: RefreshMode = \.manual\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Manual UI refreshes should be available per provider instead of only globally"
 assert_match '@Published var refreshingProviders: Set<Provider>' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Provider-level refresh buttons should have provider-specific loading state"
 assert_match '@Published var refreshMessage' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Manual refresh clicks should have visible status feedback instead of appearing to do nothing"
 assert_match 'L10n\.t\(\.refreshAlreadyRunning\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Manual refresh clicks during an active refresh should explain that a refresh is already running"
 assert_match 'Refresh already running' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Manual refresh clicks during an active refresh should have an English localized message"
 assert_match 'bypassCooldown: mode == \.manual' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Manual refreshes should bypass the short duplicate-check cooldown"
 assert_match 'func checkQuota\(for key: APIKey, bypassCooldown: Bool = false\)' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "QuotaService should let manual refreshes bypass its duplicate-check cooldown"
 assert_match 'httpStatus' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Quota results should carry HTTP status for diagnostics"
 assert_match 'diagnosticMessage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Quota results should carry a provider-specific diagnostic message"
 assert_no_match 'throw QuotaError\.notSupported // 使用缓存或跳过' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Cooldown skips must not masquerade as unsupported providers"
 assert_match 'quotaCheckConsumesSearchQuota' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Providers such as Brave should declare when checking quota consumes real search quota"
 assert_match 'lastHTTPStatus' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "API keys should persist the last HTTP status for diagnostics"
 assert_match 'lastDiagnosticMessage' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "API keys should persist the last diagnostic message"
 assert_match 'httpNotRequested' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Diagnostics should distinguish unsupported or unrequested checks from failed HTTP requests"
 assert_no_match 'key\.lastHTTPStatus\.map\(String\.init\) \?\? "N/A"' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Diagnostics should not show N/A when no HTTP request was made"
 assert_match 'unsupportedQuotaDiagnosticMessage' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Unsupported providers should explain why quota checks cannot be monitored"
 assert_match 'https://www\.querit\.ai/api/v1/user/account' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Querit should query the dashboard account endpoint with saved session cookies"
 assert_match 'parseQueritAccount' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Querit account responses should be parsed from dashboard account data"
 assert_match 'monthlyCreditsFormat' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Quota labels such as monthly credits should be localized instead of rendered as raw English"
 assert_match 'zeroRemainingBadge' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Compact exhausted badges should be localized instead of hardcoding 0 left"
 assert_match 'isUsableWithUnknownQuota' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "API keys should distinguish usable credentials whose quota is not exposed"
 assert_match 'isUsageLimitExceeded' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "API keys should distinguish provider usage-limit exhaustion from unknown quota"
 assert_match 'mode == \.automatic && key\.provider\.quotaCheckConsumesSearchQuota' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Automatic refreshes must skip quota checks that consume provider search quota"
 assert_match 'case quotaConsumingAutomatic' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Quota-consuming providers should have a separate automatic refresh mode from normal free checks"
 assert_match 'func refreshQuotaConsumingProviders\(mode: RefreshMode = \.quotaConsumingAutomatic\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Quota-consuming providers should be refreshed by their own long-cadence timer"
 assert_match 'quotaMonitor\.refreshAll\(mode: \.automatic\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Background timer refreshes should use automatic mode"
 assert_match 'quotaMonitor\.refreshQuotaConsumingProviders\(mode: \.quotaConsumingAutomatic\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "A separate timer should refresh quota-consuming providers only when explicitly enabled"
 assert_match 'configureAutoRefreshTimer' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Background quota refresh cadence should be configurable instead of hardcoded"
 assert_match 'configureQuotaConsumingAutoRefreshTimer' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Quota-consuming automatic refresh should use a separate long-cadence timer"
 assert_match 'Timer\.publish\(every: interval' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Auto refresh timer should use the configured interval"
 assert_no_match 'Timer\.publish\(every: 300' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Auto refresh timer should not be hardcoded to five minutes"
 assert_no_match 'quotaMonitor\.refreshAll\(\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "AppDelegate must not use manual refresh semantics for background polling"
 assert_match 'MenuContentView\(monitor: quotaMonitor\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item must host MenuContentView with the shared monitor"
-assert_match 'NSPopover' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar surface must use NSPopover instead of NSMenu so the frosted glass view is not painted over by an opaque menu window"
-assert_match 'setupPopover' \
-  "QuotaBar/AppDelegate.swift" \
-  "AppDelegate should configure a dedicated popover for the status bar glass surface"
-assert_match 'popover\.behavior = \.transient' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should dismiss naturally when the user clicks away"
-assert_match 'popover\.contentSize = MenuContentView\.menuSize' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover must use MenuContentView.menuSize"
-assert_no_match 'popover\.show\(relativeTo: button\.bounds, of: button, preferredEdge: \.minY\)' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should not anchor directly to button.bounds because the menu bar can clip the top edge"
-assert_match 'statusPopoverAnchorHeight' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should use a stable in-bounds anchor height"
-assert_match 'statusPopoverAnchorRect\(for: button\)' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should compute a clipped-safe anchor rect"
-assert_no_match 'rect\.origin\.y -= statusPopoverAnchorOffset' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover anchor must stay inside the status button bounds or NSPopover may not open"
-assert_match 'rect\.origin\.y = button\.bounds\.minY' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover anchor should use the button's internal bottom edge"
-assert_match 'repositionStatusPopoverBelowMenuBar' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should clamp the actual window below the menu bar after AppKit positions it"
-assert_match 'visibleFrame\.maxY - statusPopoverTopClearance' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should reserve screen-visible top clearance so the menu bar cannot cover its header"
-assert_match 'window\.setFrame\(frame, display: true' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should move the window itself when AppKit places it under the menu bar"
-assert_match 'configurePopoverWindowAppearance' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar transparency should clear the popover window chrome, not only the SwiftUI overlay"
+assert_no_match 'NSPopover' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar surface must not use NSPopover because its arrow and automatic offset do not match Stats/iStat-style popups"
+assert_match 'NSPanel' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar surface should use an arrowless floating panel like Stats/iStat and the macOS input-method palette"
+assert_match '\.nonactivatingPanel' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should not activate the main app when opened from the menu bar"
+assert_match 'setupStatusPanel' \
+  "QuotaRadar/AppDelegate.swift" \
+  "AppDelegate should configure a dedicated status-bar panel for the glass surface"
+assert_match 'containerView\.addSubview\(hostingController\.view\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should host the shared SwiftUI menu content inside the AppKit container"
+assert_match 'panel\.setContentSize\(MenuContentView\.menuSize\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel must use MenuContentView.menuSize"
+assert_no_match 'popover\.show|preferredEdge: \.minY' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar surface should not use NSPopover arrow anchoring"
+assert_match 'statusPanelGap' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should keep a small Stats-style gap below the menu bar item"
+assert_match 'frameForStatusPanel\(relativeTo: button\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should compute an explicit arrowless frame relative to the status item"
+assert_no_match 'statusPopoverAnchorRect|rect\.origin\.y -= statusPopoverAnchorOffset' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should remove the old popover anchor calculations"
+assert_match 'buttonFrame\.midX - MenuContentView\.menuSize\.width / 2' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should align horizontally to the menu-bar icon instead of drifting away"
+assert_match 'showStatusPanel\(relativeTo: button\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar clicks should show the arrowless status panel"
+assert_match 'visibleFrame\.maxY - statusPanelGap' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should sit close below the menu bar without a popover arrow"
+assert_match 'panel\.setFrame\(frame, display: true' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should be placed by explicit frame calculation"
+assert_match 'configureStatusPanelWindowAppearance' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar transparency should clear the panel window chrome, not only the SwiftUI overlay"
 assert_match 'window\.isOpaque = false' \
-  "QuotaBar/AppDelegate.swift" \
-  "Popover window must be non-opaque for status bar transparency to be visible"
+  "QuotaRadar/AppDelegate.swift" \
+  "Panel window must be non-opaque for status bar transparency to be visible"
 assert_match 'window\.backgroundColor = \.clear' \
-  "QuotaBar/AppDelegate.swift" \
-  "Popover window background must be clear for status bar transparency to be visible"
+  "QuotaRadar/AppDelegate.swift" \
+  "Panel window background must be clear for status bar transparency to be visible"
 assert_no_match 'statusItem\?\.menu = menu' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar glass surface must not be attached as an NSMenu"
 assert_no_match 'class GlassMenu' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The old NSMenu wrapper should be removed because it prevents the intended translucent glass surface"
 assert_match 'homeProviderStats' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose provider stats for the home view"
 assert_match 'homeCategoryStats' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose status bar category groups"
 assert_match 'ProviderCategoryStats' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Status bar category groups should have a model instead of ad hoc view filtering"
 assert_match 'struct QuotaPresentation' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Quota values should have a shared presentation model instead of each view inventing display strings"
 assert_match 'enum QuotaDataSource' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Quota presentation should expose where the number came from"
 assert_match 'var quotaPresentation: QuotaPresentation' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "APIKey should expose a numeric-first quota presentation"
 assert_match 'menuTopQuotaItems' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose top quota items for the menu bar summary"
 assert_match 'menuQuotaSummary' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose anxiety-focused status counts for the menu bar"
 assert_match 'menuAttentionQuotaItems' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose only credentials that need attention for the menu bar"
 assert_match 'struct MenuQuotaSummary' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Menu bar summary counts should live in a shared model instead of view-only logic"
 assert_match 'var statusBarCredentialLabel' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "APIKey should expose a safe status-bar credential label that hides cookie JSON"
 assert_match 'struct MenuQuotaItem' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Menu bar should use ranked quota items instead of rendering the full provider dashboard"
 assert_match 'var id: String \{ provider\.id \}' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats identity should be stable across quota refreshes so expanded sections and scroll position are preserved"
 assert_no_match 'let id = UUID\(\)' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats must not use a fresh UUID because refreshes would recreate every provider row"
 assert_match '\$0\.remaining != Int\.max' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats must exclude Int.max sentinel remaining values from provider totals to avoid arithmetic overflow"
 assert_match '\$0\.limit != Int\.max' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats must exclude Int.max sentinel limits from provider totals to avoid arithmetic overflow"
 assert_match 'homeVisibleWithoutKeys' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "New coding-plan providers should be able to appear on the home view before keys are configured"
 assert_match 'provider\.homeVisibleWithoutKeys' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Home provider stats should include supported coding-plan provider placeholders"
 assert_no_match 'provider.category == "Search"' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Home provider stats must include configured LLM providers instead of hiding them"
 assert_no_match 'monitor.providerStats' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar home view should not use the old full provider stats data source"
 assert_no_match 'ScrollView\(showsIndicators' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should not be a long scrolling dashboard"
 assert_match 'MenuProviderOverviewCard' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should include provider-level quota statistics instead of only expired or low API keys"
 assert_match 'ForEach\(monitor\.homeCategoryStats\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar provider overview should be grouped by AI Search and LLM provider categories"
 assert_match 'MenuProviderQuotaCell' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar provider overview should render compact per-provider quota cells"
 assert_no_match 'ForEach\(monitor\.homeProviderStats\) \{ stat in' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar home view should not render a flat provider list"
 assert_match 'MenuMetricStrip' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should show available, low-quota, and failed counts instead of provider/key totals"
 assert_match 'struct MonitorModule<Content: View>' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should use lightweight monitoring modules instead of large dashboard cards"
 assert_match 'struct MenuMetricStrip' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should use a compact metric strip like Stats/iStat Menus"
 assert_match 'MenuMetricStrip\(summary: monitor\.menuQuotaSummary\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar summary metrics should be rendered as a compact strip"
 assert_match 'struct MenuSectionHeader' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar sections should use a consistent compact monitoring header"
 assert_match 'MenuAttentionItemsView' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should keep credentials needing attention as secondary detail below provider statistics"
 assert_match 'ForEach\(monitor\.menuAttentionQuotaItems' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar attention rows should come from QuotaMonitor.menuAttentionQuotaItems"
 assert_no_match 'StatItem\(value: "\\\\\(totalProviders\\\\\)", label: L10n\.t\(\.providers\)\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar summary should not spend prime space on provider totals"
 assert_no_match 'StatItem\(value: "\\\\\(totalKeys\\\\\)", label: L10n\.t\(\.keys\)\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar summary should not spend prime space on credential totals"
 assert_match 'statusBarCredentialLabel' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar rows should use a safe credential label instead of rendering raw cookie JSON"
 assert_no_match 'Text\(key\.maskedKey\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar rows must not show masked raw cookie JSON for dashboard-session providers"
 assert_match 'L10n\.t\(\.needsAttention' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar attention list should have a clear localized title"
 assert_no_match 'spring\(response: 0\.3\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar collapsible sections should not use spring animation"
 assert_no_match 'Image\(systemName: "chevron.down"\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar collapsible sections should not show triangle/chevron disclosure icons"
 assert_no_match 'openDashboard\(\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header should avoid a second ambiguous dashboard action next to Settings"
 assert_no_match 'MenuFooterBar' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover must not reserve a bottom footer because it gets clipped in the fixed-height popover"
 assert_no_match 'Label\(L10n\.t\(\.providersHeader\), systemImage: "rectangle\.grid\.1x2"\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar footer must not render the Quota Overview title as a clipped visible button"
 assert_no_match 'systemName: "rectangle\.grid\.1x2"' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header should not show a second ambiguous dashboard icon next to Settings"
 assert_match 'systemName: "slider\.horizontal\.3"' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header should expose a single control-panel Settings action"
 assert_no_match 'controlBackgroundColor\.withAlphaComponent\(0\.34\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header action should not look like another heavy grey circular card"
 assert_match 'toolTip = helpText' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Shared status bar icon buttons should expose their localized tooltip"
 assert_match 'StatusHeaderIconButton' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header actions should use a shared AppKit icon button with a stable hit target"
 assert_match 'final class StatusHeaderActionButton: NSButton' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header actions should use an AppKit NSButton instead of relying on SwiftUI Button in a transient popover"
 assert_match 'override func acceptsFirstMouse\(for event: NSEvent\?\) -> Bool' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header AppKit buttons should accept the first click while the app is inactive"
 assert_match 'button\.actionHandler = action' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header AppKit buttons should retain the action closure inside the NSButton"
 assert_match 'override func mouseDown\(with event: NSEvent\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header AppKit buttons should run the action on the first physical click inside the transient popover"
 assert_match 'let handler = actionHandler' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header buttons should capture the action before the transient popover can deallocate the button"
 assert_no_match 'button\.sendAction\(on: \[\.leftMouseDown\]\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header buttons should not rely on NSControl event masks inside the transient popover"
 assert_match 'override func performClick\(_ sender: Any\?\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar header AppKit buttons should also respond to accessibility perform-click actions"
 assert_match '\.allowsHitTesting\(false\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar decorative glass and stroke layers must not intercept button clicks"
 assert_match '\.environment\(\\.menuGlassTransparency, statusBarTransparency\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar transparency should propagate into inner quota cards, not only the outer blur layer"
 assert_match '@Environment\(\\.menuGlassTransparency\)' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar GlassCard should read the configured transparency"
 assert_match 'GlassBackground\(transparency: menuGlassTransparency\)' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar card backgrounds should be driven by the configured transparency"
 assert_match 'materialOpacity' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar card material should change opacity with the transparency slider"
 assert_match '0\.28 \+ \(1 - transparency\) \* 0\.62' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar cards should visibly change material opacity with the transparency slider"
 assert_match '\.fill\(\.regularMaterial\)' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar cards should use regular material so quota text stays readable over bright or busy backgrounds"
 assert_match 'baseFillOpacity' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "Status bar cards should include an adaptive fill layer so text remains readable over busy backgrounds"
 assert_match 'backdropTintOpacity' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar menu should use a light adaptive tint over the real blur instead of an opaque grey panel"
 assert_match 'private var blurOpacity: Double \{' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar transparency should affect the outer blur layer, not only inner cards"
 assert_match '0\.32 \+ \(1 - statusBarTransparency\) \* 0\.58' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar outer blur opacity should visibly change across the full transparency range"
 assert_match 'Slider\(value: \$appearanceStore\.statusBarTransparency, in: 0\.0\.\.\.1\.0\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Status bar transparency slider should support the full 0% to 100% range"
 assert_match 'openPreferencesFromStatusPopover\(destination: \.settings\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar settings icon should use the status-popover handoff path"
 assert_match 'func openPreferencesFromStatusPopover\(destination: SettingsDestination\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "AppDelegate should expose a popover-safe window handoff for status bar buttons"
 assert_match 'closeStatusPopover\(\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Popover-safe window handoff should close the status popover before opening a main window"
+assert_match 'statusPanelClickMonitor' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should keep a native event-monitor fallback for header controls"
+assert_match 'statusPanelGlobalClickMonitor' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should also observe global clicks because non-activating panels may not deliver local events"
+assert_match 'NSEvent\.addLocalMonitorForEvents\(matching: \[\.leftMouseDown\]\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should monitor mouse-downs so header Settings clicks work in a non-activating panel"
+assert_match 'NSEvent\.addGlobalMonitorForEvents\(matching: \[\.leftMouseDown\]\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should monitor global mouse-downs for non-activating panel Settings clicks"
+assert_match 'statusHeaderSettingsHitRect\(in contentView: NSView\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should define a stable header Settings hit target independent of SwiftUI hit testing"
+assert_match 'StatusPanelSettingsOverlayButton' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should install a transparent native Settings button above SwiftUI content"
+assert_match 'StatusPanelContainerView' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should use an AppKit container so the Settings overlay is a sibling above SwiftUI content"
+assert_no_match 'panel\.contentViewController = hostingController' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel must not put SwiftUI directly in the panel when native overlay controls need reliable clicks"
+assert_match 'installStatusPanelSettingsOverlay' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should wire the transparent native Settings overlay during panel setup"
+assert_match 'handleStatusPanelSettingsClick\(at:.*in:' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should route local and global click monitors through one Settings hot-zone handler"
+assert_match 'contentView\.convert\(event\.locationInWindow, from: nil\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel local click handling should convert event points into the content view coordinate system"
+assert_match 'NSEvent\.mouseLocation' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel global click handling should use screen coordinates instead of unreliable window-local global events"
+assert_match 'contentView\.isFlipped' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar Settings hot zone should account for flipped SwiftUI hosting views"
+assert_match 'openPreferencesFromStatusPopover\(destination: \.settings\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Clicking the status header Settings hot zone should open the managed Settings tab"
 assert_match 'monitor\.refreshProvider\(item\.provider\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar top item rows should refresh only the selected provider"
 assert_no_match 'onRefresh: \{ monitor\.refreshAll\(\) \}' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar home view must not expose only a single global refresh action"
 assert_match 'RefreshButton\(isRefreshing: \.constant\(isRefreshing\), isEnabled: item\.canRefresh' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Each status bar top item row should own its refresh button"
 assert_match 'MenuContentView.menuSize' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar hosting view must use MenuContentView.menuSize to avoid clipping"
 assert_match 'statusItem = NSStatusBar\.system\.statusItem\(withLength: NSStatusItem\.squareLength\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item should use a compact square hit target so it is less likely to be hidden by long app menus"
 assert_no_match 'button\.sendAction\(on: \[\.leftMouseDown\]\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item should use the default mouse-up action so the transient popover is not immediately closed by the same click"
-assert_match 'button\.toolTip = "API Quota"' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar item should expose a clear tooltip for the compact icon hit target"
+assert_match 'button\.toolTip = L10n\.t\(\.apiQuotaTitle\)' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar item should expose the localized quota-relief title as its tooltip"
+assert_match 'AppLanguageStore\.shared\.\$language' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar AppKit controls should subscribe to language changes instead of keeping launch-time localized strings"
+assert_match 'updateLocalizedStatusBarStrings' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar AppKit controls should refresh tooltips and accessibility labels when language changes"
+assert_match 'statusPanelSettingsOverlayButton' \
+  "QuotaRadar/AppDelegate.swift" \
+  "The transparent status-panel Settings button should be retained so its localized tooltip can update"
 assert_match 'button\.imagePosition = \.imageOnly' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item should center the icon inside the square menu-bar hit target"
 assert_match 'button\.imageScaling = \.scaleProportionallyDown' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item should scale the icon visibly inside the menu-bar button"
 assert_match 'button\.contentTintColor = \.labelColor' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar item should explicitly tint the template icon with the menu-bar label color"
-assert_match 'popover\.animates = false' \
-  "QuotaBar/AppDelegate.swift" \
-  "Status bar popover should not fade through a low-contrast half-transparent opening state"
+assert_match 'panel\.animationBehavior = \.none' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Status bar panel should not fade through a low-contrast half-transparent opening state"
 assert_match 'hostingController\.view\.wantsLayer = true' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar hosting view should use a clear layer so the popover can render as frosted glass"
 assert_match 'backgroundColor = NSColor\.clear\.cgColor' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar hosting view should not paint an opaque background over the frosted glass"
 assert_match 'menuSize = CGSize\(width: 560, height: 680\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar summary popover should be wide enough to fit provider-level quota statistics without scrolling"
 provider_overview_column_count="$(awk '
   /private let columns = \[/ { inside = 1; count = 0; next }
   inside && /\]/ { print count; exit }
   inside && /GridItem\(\.flexible\(\), spacing: 8\)/ { count++ }
-' QuotaBar/Views/MenuContentView.swift)"
+' QuotaRadar/Views/MenuContentView.swift)"
 if [[ "$provider_overview_column_count" != "4" ]]; then
   fail "Status bar provider overview should keep four columns in the fixed-size popover"
 fi
 assert_no_match '^[[:space:]]*ScrollView' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar body content should fit in the expanded popover instead of requiring scrolling"
 assert_match 'contentHorizontalInset' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar home view should reserve an explicit horizontal inset to avoid left-edge clipping"
 assert_match 'contentTopSafeInset' \
-  "QuotaBar/Views/MenuContentView.swift" \
-  "Status bar summary popover should reserve top safe space below the menu bar arrow"
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar summary popover should reserve top breathing room below the menu bar"
+assert_match 'contentTopSafeInset: CGFloat = 12' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Arrowless status panel should not keep the old large top blank reserved for an NSPopover arrow"
+assert_match 'headerFillOpacity' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should fill the top area with a compact material strip instead of leaving empty glass"
+assert_match 'RoundedRectangle\(cornerRadius: 14' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header strip should use a compact rounded macOS palette shape"
+assert_match 'HeaderStatusPill' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should still be able to render compact non-error refresh state inline"
+assert_match 'if lastError == nil, let headerStatusMessage' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should not render failed-refresh errors as a text pill that crowds the quote"
+assert_match 'SettingsAttentionDot' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should show failed quota state as a compact red dot on the Settings control"
+assert_match 'failedCount: monitor\.menuQuotaSummary\.failedCount' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should receive the failed credential count, not only the last refresh error"
+assert_match 'let failedCount: Int' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should model failed credentials separately from transient refresh errors"
+assert_match 'settingsHelpText' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings control should expose failed-refresh or failed-credential detail through hover help"
+assert_match 'hasSettingsAttention' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings control should show its red dot when there is a failed-refresh state or failed credentials"
+assert_match 'failedCount > 0' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings red dot should remain visible while the menu summary reports failed credentials"
+assert_match 'HeaderQuotePill' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should show a compact built-in AI quote without adding another row"
+assert_match 'headerStatusMessage' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should keep non-error refresh messages in one compact status value"
+assert_no_match 'lastError \?\? refreshMessage' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should not prefer verbose failed-refresh text over the quote"
+assert_no_match 'lineLimit\(2\)' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar header should not reserve a two-line error area that leaves the top panel visually empty"
+assert_match 'button\.target = button' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings button should keep an AppKit target/action path in the transient status panel"
+assert_match 'button\.action = #selector\(StatusHeaderActionButton\.performHeaderAction' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings button should expose a concrete AppKit action selector"
+assert_match '@objc func performHeaderAction' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar Settings button should centralize click handling so mouse and accessibility paths behave the same"
+assert_match 'AIQuoteStore\.shared\.advance' \
+  "QuotaRadar/AppDelegate.swift" \
+  "Opening the status panel should rotate the built-in AI quote without calling a network model"
+assert_match 'quoteStore\.currentQuoteText\(\)' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar content should render the current built-in AI quote"
+assert_match 'let currentLanguage = languageStore\.language' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar SwiftUI content should explicitly depend on AppLanguageStore so hidden panels repaint after language changes"
+assert_match '\.id\(currentLanguage\)' \
+  "QuotaRadar/Views/MenuContentView.swift" \
+  "Status bar SwiftUI content should rebuild localized text when the selected language changes"
+assert_match 'struct AIQuoteLibrary' \
+  "QuotaRadar/Models/AIQuoteLibrary.swift" \
+  "Built-in AI quotes should live in a local library"
+assert_no_match 'URLSession|http|https|apiKey|Bearer|sk-' \
+  "QuotaRadar/Models/AIQuoteLibrary.swift" \
+  "Built-in AI quotes must not call a model API or embed secrets"
 assert_match 'menuTopQuotaItems: \[MenuQuotaItem\]' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose a compact status bar item set"
 assert_match 'MenuQuotaItem\.topItems\(from: homeProviderStats, limit: 3\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Status bar summary should cap top items at three to avoid vertical clipping"
 assert_match 'statusBarProviderQuotaText' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats should expose compact provider-level quota text for the status bar"
 assert_match 'statusBarProviderBadgeText' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats should expose compact provider-level badges for the status bar"
 assert_match 'menuGlassCornerRadius' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar menu should have a defined frosted-glass rounded container"
 assert_match 'VisualEffectBlur\(material: \.popover' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar menu should use the native popover material for a readable macOS glass effect"
 assert_match '\.clipShape\(RoundedRectangle\(cornerRadius: Self\.menuGlassCornerRadius' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar menu should clip the frosted background to a modern rounded container"
 assert_match 'providerHeaderLeadingPadding' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys provider headers should reserve explicit leading space so provider icons are not clipped by the macOS List edge"
 assert_match '\.padding\(\.leading, Self\.providerHeaderLeadingPadding\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys provider headers must apply their leading padding inside the section header"
 assert_no_match 'hostingView\.frame = NSRect\(x: 0, y: 0, width: 340, height: 480\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Status bar hosting view must not be smaller than the SwiftUI menu"
 assert_match 'EmptyQuotaStateView' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar menu must have a first-run empty state"
 assert_match 'quotaPresentation' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Key rows must use the shared quota presentation model"
 assert_match 'Text\(key\.statusBarCredentialLabel\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar key rows should show masked API keys or safe cookie credential labels"
 assert_no_match 'Text\(key\.name\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar key rows must not show TAVILY_API_KEY-style environment variable names"
 assert_no_match 'key\.key\.count' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key rows must not waste the right side on API key character counts"
 assert_no_match 'chars' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key rows must not show API key character counts"
 assert_match 'Text\(key\.resetSummary\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key rows should show quota reset timing on the right side"
 assert_match 'Text\(key\.quotaDisplayText\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key rows should show provider quota labels instead of only normalized remaining/limit values"
 assert_no_match 'Text\("\\\(remaining\)/\\\(limit\)"\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key rows must not collapse multi-window coding-plan quotas to one normalized remaining/limit value"
 assert_match 'sortedKeysByCurrentQuota' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "ProviderStats should expose API keys sorted by current quota descending"
 assert_no_match 'ProviderStats\.sortedByCurrentQuota' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Provider sections should keep the product-defined provider order"
 assert_match 'return stats' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "ProviderStats should preserve Provider.allCases order instead of sorting provider sections by quota"
 assert_no_match 'ForEach\(stat\.sortedKeysByCurrentQuota\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar popover should not list every key inside every provider"
 assert_match 'sortedByCurrentQuota' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings API key sections should list keys by current quota descending"
 assert_match 'Text\(presentation\.badgeText\)' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar key badges should come from the shared quota presentation"
 assert_match 'presentation\.resetText' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar top item rows must expose reset timing through the shared presentation"
 assert_match 'var resetSummary: String' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Quota reset timing should be shared by all key row views"
 assert_match 'L10n\.t\(\.noResetCycle' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Money-balance providers should make clear that quota does not reset on a cycle"
 assert_match 'L10n\.t\(\.resetsMonthlyDay1' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Tavily should communicate its known monthly reset cycle even before the next usage refresh"
 assert_match 'L10n\.t\(\.resetNotExposed' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Providers without reset data should not pretend to know reset timing"
 assert_match 'ProviderIcon\(provider: item.provider' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Menu top item rows should use official provider icons"
 assert_match 'ModernPage\(' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Providers page must have its own modern header so the first provider card is not hidden under the title area"
 assert_match 'keyProviderCategories' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys tab should group configured keys by AI Search and LLM so OpenCode Go is visible under LLM"
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys tab should use the shared AI Search then LLM category order"
 assert_match 'NavigationSplitView' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window should use the current macOS sidebar/content split view instead of an older tab-only layout"
 assert_no_match '\.frame\(minWidth: 820, minHeight: 580\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window must not keep the old narrow minimum size because the sidebar plus provider content gets squeezed"
 assert_no_match '\.frame\(minWidth: 1040, minHeight: 640\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window content must not force the default 1040px width as the minimum width"
 assert_match '\.frame\(minWidth: 900, minHeight: 600\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window should allow horizontal resizing below the default width while preserving usable provider panels"
 assert_match 'preferredSettingsContentSize = NSSize\(width: 1040, height: 640\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Main window should still open at the comfortable default width"
 assert_match 'minimumSettingsWindowSize = NSSize\(width: 900, height: 600\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Main window minimum size should allow users to resize horizontally below the default width"
 assert_no_match 'window\.setContentSize\(NSSize\(width: 640, height: 560\)\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window creation must not force the modern SettingsView into the old narrow 640x560 window"
 assert_no_match 'window\.minSize = NSSize\(width: 560, height: 460\)' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window minimum size must not remain smaller than the modern SettingsView layout"
 assert_match 'preferredSettingsContentSize' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window should use one shared modern content size"
 assert_match 'keepSettingsWindowOnScreen' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Opening settings should pull any previously off-screen window back onto the visible display"
 assert_match 'closeRestoredSettingsWindows' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Dock icon reopen should replace restored stale settings windows instead of reusing a broken split-view state"
 assert_match 'preferredSettingsVisibleFrame' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window should prefer the non-negative primary working screen instead of a stale negative-coordinate external display"
 assert_match 'CGGetActiveDisplayList' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "Settings window placement should inspect all active displays and choose a non-negative display when available"
 assert_no_match '\.frame\(minWidth: 480, maxWidth: 560' \
-  "QuotaBar/QuotaBarApp.swift" \
+  "QuotaRadar/QuotaRadarApp.swift" \
   "The native Settings scene must not constrain the same SettingsView to a narrow 560-point maximum"
 assert_match 'SettingsSidebarView' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window should have a dedicated macOS-style sidebar"
 assert_no_match 'List\(selection: \$selection\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar should not rely on NavigationSplitView List selection because it is not rendering/clicking reliably in the custom NSWindow"
 assert_no_match 'NavigationLink\(value: destination\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar should not rely on value NavigationLink rows that disappear in the custom NSWindow"
 assert_match 'SidebarNavigationButton' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar rows should be explicit visible clickable buttons"
 assert_match 'selection = destination' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar buttons should explicitly switch the selected page"
 assert_no_match '\.tag\(destination as SettingsDestination\?\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar rows must not be inert Label rows that only rely on a tag"
 assert_no_match '\.listStyle\(\.sidebar\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window sidebar should not use a List style that leaves the navigation rows blank here"
 assert_no_match 'ToolbarItemGroup|\.toolbar \{' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credentials page should not duplicate the in-page credential actions in the top-right toolbar"
 assert_match 'MaterialPanel' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window content should use modern material-backed panels instead of the old heavy glass card stack"
 assert_no_match 'TabView\(selection:' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Main window should not keep the old tab view chrome after adopting a macOS sidebar layout"
 assert_match 'KeyProviderCategorySection' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys tab should render category sections instead of one long flat provider list"
 assert_match 'ProviderIcon\(provider: provider' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings provider headers should use official provider icons"
 assert_match 'providerCategories' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings Providers page should group providers into AI Search and LLM sections"
 assert_match 'ProviderSettingsCategorySection' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings Providers page should render collapsible provider category sections"
 assert_match 'ProviderQuotaMonitorTable' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota monitoring should use a compact provider table instead of stacked dashboard cards"
 assert_match 'ProviderQuotaMonitorRow' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota monitoring should render each provider as a compact monitoring row"
 assert_match '@State private var isExpanded = false' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider quota rows should default to a compact collapsed overview so the page starts as a monitor, not a long key dashboard"
 assert_match 'ProviderQuotaKeyTableHeader' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Expanded provider quota rows should show a stable table header for key details"
 assert_match 'ProviderQuotaKeyTableRow' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Expanded provider quota rows should render key details in table-like rows"
 assert_no_match 'ProviderCard\(provider: stat\.provider' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota monitoring should not continue to render one large card per provider"
 assert_no_match 'StatBadge\(' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota monitoring should not use large repeated stat badges for every provider"
 assert_no_match 'spring\(response: 0\.3\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible sections should not use spring animation because it makes panels fly down"
 assert_no_match 'move\(edge: \.top\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible sections should not use top-edge movement transitions"
 assert_match 'settingsCollapseAnimation = Animation\.easeInOut\(duration: 0\.16\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible sections should use a short calm ease-in-out animation"
 assert_match 'withAnimation\(settingsCollapseAnimation\) \{ isExpanded\.toggle\(\) \}' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings provider cards should collapse with the shared calm animation"
 assert_match 'CollapsibleBanner' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible sections should use a clickable banner as the disclosure control"
 assert_no_match 'Image\(systemName: "chevron.down"\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible sections should not show a triangle/chevron disclosure icon"
 assert_match '\.contentShape\(RoundedRectangle\(cornerRadius: 12, style: \.continuous\)\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings collapsible banners should make the full banner clickable"
 assert_match 'providerSummaryRow' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider quota rows should keep the provider summary as the dedicated collapse hit target"
 assert_match 'ZStack\(alignment: \.trailing\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider quota rows should make the full row surface a collapse target while overlaying the refresh control"
 assert_match 'trailingControlReserve' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider quota rows should reserve trailing space so row actions do not steal the collapse hit target"
 assert_match 'Button\(action: onToggle\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider card banners should use a real button for reliable clicks on the non-control banner area"
 assert_match 'monitor\.refreshProvider\(provider\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings provider sections should refresh only the selected provider"
 assert_no_match 'Refresh All' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings must not present quota refresh as one global action"
 assert_match 'AppSettingsView' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should include an app settings tab for language selection"
 assert_match 'Picker\(L10n\.t\(\.language' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should provide a language picker"
 assert_no_match 'Text\(L10n\.t\(\.appLanguage\)\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings language panel should not repeat an App Language summary row below the segmented picker"
 assert_match 'AppAppearanceStore' \
-  "QuotaBar/Models/AppAppearance.swift" \
-  "QuotaBar should persist appearance settings such as status bar transparency"
+  "QuotaRadar/Models/AppAppearance.swift" \
+  "QuotaRadar should persist appearance settings such as status bar transparency"
 assert_match 'autoRefreshInterval' \
-  "QuotaBar/Models/AppAppearance.swift" \
-  "QuotaBar should persist the automatic refresh interval"
+  "QuotaRadar/Models/AppAppearance.swift" \
+  "QuotaRadar should persist the automatic refresh interval"
 assert_match 'AutoRefreshIntervalOption' \
-  "QuotaBar/Models/AppAppearance.swift" \
-  "QuotaBar should expose a finite set of safe automatic refresh intervals"
+  "QuotaRadar/Models/AppAppearance.swift" \
+  "QuotaRadar should expose a finite set of safe automatic refresh intervals"
 assert_match 'QuotaConsumingAutoRefreshIntervalOption' \
-  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaRadar/Models/AppAppearance.swift" \
   "Quota-consuming providers should use a separate long-cadence refresh interval option"
 assert_match 'quotaConsumingAutoRefreshInterval' \
-  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaRadar/Models/AppAppearance.swift" \
   "Quota-consuming automatic refresh should be persisted separately from normal free refresh"
 assert_match 'LaunchAtLoginStore' \
-  "QuotaBar/Models/AppAppearance.swift" \
-  "QuotaBar should expose a launch-at-login setting"
+  "QuotaRadar/Models/AppAppearance.swift" \
+  "QuotaRadar should expose a launch-at-login setting"
 assert_match 'SMAppService\.mainApp' \
-  "QuotaBar/Models/AppAppearance.swift" \
+  "QuotaRadar/Models/AppAppearance.swift" \
   "Launch-at-login should use the modern macOS SMAppService main-app login item API"
 assert_match 'statusBarTransparency' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar glass UI should react to the configured transparency"
 assert_match 'Slider\(value: \$appearanceStore\.statusBarTransparency, in: 0\.0\.\.\.1\.0\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Language/appearance settings should expose a full 0%-100% status bar transparency slider"
 assert_match 'Picker\(L10n\.t\(\.autoRefreshInterval' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should let the user configure automatic refresh cadence"
 assert_match 'Picker\(L10n\.t\(\.quotaConsumingAutoRefreshInterval' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should expose a separate long-cadence automatic refresh option for quota-consuming providers"
 assert_match 'Toggle\(isOn: Binding' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should expose launch-at-login as a real toggle"
 assert_match 'L10n\.t\(\.autoRefreshBraveWarning' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Auto refresh settings should warn that Brave is skipped because checks consume search quota"
 assert_match 'L10n\.t\(\.quotaConsumingAutoRefreshWarning' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Quota-consuming auto refresh settings should warn that real search quota will be spent"
 assert_no_match 'Text\(L10n\.t\(\.apiKeyConfiguration\)\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credentials page must not repeat the same Credential Configuration title in the top page header and local panel"
 assert_no_match '0\.20\.\.\.0\.88|0\.72 \+ \(1 - statusBarTransparency\) \* 0\.20|0\.20 - statusBarTransparency \* 0\.12' \
-  "QuotaBar" \
+  "QuotaRadar" \
   "Status bar transparency must not keep the old narrow range or barely visible opacity formula"
 assert_match '\.providersTab: "额度监控"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese navigation should name the quota observation page explicitly"
 assert_match '\.apiKeysTab: "配置凭据"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese navigation should avoid implying every credential is an API key"
 assert_match '\.settingsTab: "设置"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese navigation should use the broader Settings label"
 assert_match 'APIKeyConfigurationPanel' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys page should expose a visible in-page API key configuration panel"
 assert_match 'L10n\.t\(\.apiKeyConfiguration\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API key configuration panel should have a clear localized title"
 assert_match 'Button\(action: onAddKey\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API key configuration panel should expose a direct Add Key action in the main content area"
 assert_match 'Button\(action: onImportEnv\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API key configuration panel should expose a direct .env import action in the main content area"
 assert_match 'APIKeyProviderBanner' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys provider sections should use a clickable provider banner"
 assert_match '@State private var isExpanded = true' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys provider sections should own provider-level collapse state"
 assert_match 'APIKeyManagementRow' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys page should use management-focused key rows rather than quota overview rows"
 assert_no_match 'KeyRowItem' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "API Keys page should not use quota-observation rows that duplicate the Providers page"
 assert_no_match '\.onTapGesture' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credential rows must not open the edit sheet when the user is trying to toggle enabled state"
 assert_match 'onSetActive: \{ isActive in' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credential rows should route enabled-state changes through a dedicated handler"
 assert_match 'Toggle\(isOn: Binding\(get: \{ key\.isActive \}' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Credential rows should enable or disable directly without opening the edit sheet"
 assert_match 'provider\.supportsDashboardReauthentication \? L10n\.t\(\.dashboardSession\) : L10n\.t\(\.apiKey\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Dashboard-session providers should label their secret as a session cookie rather than an API key"
 assert_match 'L10n\.t\(\.apiKeysTab' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings tab labels should use localized strings"
 assert_match 'L10n\.t\(\.apiQuotaTitle' \
-  "QuotaBar/Views/MenuContentView.swift" \
+  "QuotaRadar/Views/MenuContentView.swift" \
   "Status bar title should use localized strings"
 assert_match 'L10n\.categoryTitle\(provider\.statusBarCategoryTitle' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Provider cards should localize category subtitles instead of showing raw English category labels"
 assert_no_match '\.providersTab: "Provider"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese UI should not leave Providers untranslated as Provider"
 assert_no_match '\.providers: "Provider"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese status bar stats should not leave Providers untranslated as Provider"
 assert_match '\.provider: "服务商"' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese form labels should not leave Provider untranslated"
 assert_no_match 'provider 的额度|provider 刷新' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Simplified Chinese helper text should not keep provider as an untranslated UI word"
 assert_match 'supportsDashboardReauthentication' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Dashboard-cookie Coding Plan providers should declare that they support in-app reauthentication"
 assert_match 'cookieDomains' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Dashboard-cookie Coding Plan providers should declare the domains whose cookies can be saved"
 assert_match 'dashboardAuthenticationCookieNames' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Dashboard-cookie providers should declare authentication cookie names for automatic saving"
 assert_match 'DashboardReauthConfig' \
-  "QuotaBar/Services/DashboardReauth.swift" \
+  "QuotaRadar/Services/DashboardReauth.swift" \
   "Dashboard reauthentication should have a provider-specific configuration model"
 assert_match 'DashboardCookieBuilder' \
-  "QuotaBar/Services/DashboardReauth.swift" \
+  "QuotaRadar/Services/DashboardReauth.swift" \
   "Dashboard reauthentication should build Cookie headers through a testable helper"
 assert_match 'containsRequiredCookie' \
-  "QuotaBar/Services/DashboardReauth.swift" \
+  "QuotaRadar/Services/DashboardReauth.swift" \
   "Dashboard reauthentication should wait for provider authentication cookies before auto-saving"
 assert_match 'import WebKit' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should use an in-app WebKit login window"
 assert_match 'WKWebView' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should embed WKWebView"
 assert_match 'WKUIDelegate' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should handle OAuth popup windows such as Querit Google login"
 assert_match 'webView\.uiDelegate = context\.coordinator' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should install a WKUIDelegate for login popups"
 assert_match 'webView\(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures\)' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should load target=_blank OAuth windows instead of dropping them"
 assert_match 'WKHTTPCookieStoreObserver' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should observe cookie changes instead of only page navigation"
 assert_match 'clearProviderCookiesBeforeLoading' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should clear stale provider cookies before opening the login page"
 assert_match 'cookieStore\.delete' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should delete stale WebView cookies for the provider domain"
 assert_match 'cookiesDidChange' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should retry cookie capture when login cookies change"
 assert_match 'WKNavigationDelegate' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should observe dashboard navigation so it can auto-save cookies after login"
 assert_match 'webView\(_ webView: WKWebView, didFinish navigation: WKNavigation!\)' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should check cookies when the WebView finishes loading a dashboard page"
 assert_match 'onCookiesAvailable' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should expose an automatic cookie-save callback"
 assert_match 'reauthenticatedSecret' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should preserve non-cookie JSON credential metadata when refreshing cookies"
 assert_no_match 'updatedKey\.key = cookieHeader' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication must not overwrite JSON dashboard credentials with a raw Cookie header"
 assert_match 'validateAndPersistCookies' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should validate captured cookies before saving and closing"
 assert_match 'try await QuotaService\(\)\.checkQuota\(for: candidateKey, bypassCooldown: true\)' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should call the provider quota endpoint before accepting captured cookies"
 assert_match 'catch QuotaError\.unauthorized' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should keep the login window open when captured cookies still return unauthorized"
 assert_match 'didAutoSave = false' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should allow retry after a captured cookie fails validation"
 assert_no_match 'monitor\.refreshProvider\(provider\)' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should not close first and refresh later because invalid cookies look like no-op"
 assert_match 'reauthStillUnauthorized' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Dashboard reauthentication should explain when captured cookies still fail provider login validation"
 assert_match 'WKWebsiteDataStore\.default\(\)\.httpCookieStore' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should read only cookies from the in-app WebKit data store"
 assert_match 'monitor\.updateKey' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
-  "Saving dashboard cookies should update the selected QuotaBar credential"
+  "QuotaRadar/Views/DashboardReauthView.swift" \
+  "Saving dashboard cookies should update the selected QuotaRadar credential"
 assert_match 'verifiedKey\.remaining = result\.remaining' \
-  "QuotaBar/Views/DashboardReauthView.swift" \
+  "QuotaRadar/Views/DashboardReauthView.swift" \
   "Saving dashboard cookies should persist the validated quota result instead of closing first and refreshing later"
 assert_match 'DashboardReauthSheet' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings should expose dashboard reauthentication for cookie-backed providers"
 assert_match 'Credential expired' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Expired dashboard credentials should have an English localized label"
 assert_match '凭据已过期' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Expired dashboard credentials should have a Simplified Chinese localized label"
 assert_match 'autoCookieSaveHint' \
-  "QuotaBar/Models/AppLanguage.swift" \
+  "QuotaRadar/Models/AppLanguage.swift" \
   "Dashboard reauthentication should explain that cookies will be saved automatically after login"
 assert_match 'QuotaError\.unauthorized' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Unauthorized quota refreshes should mark dashboard credentials as expired"
 assert_match 'key\.lastDiagnosticMessage = key\.provider\.supportsDashboardReauthentication \? L10n\.t\(\.credentialExpired\) : error\.localizedDescription' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Dashboard-cookie providers should not describe expired cookies as invalid API keys"
 assert_no_match 'Cookies\.binarycookies|Login Data|Library/Application Support/Google/Chrome|SecKeychain' \
-  "QuotaBar" \
-  "QuotaBar must not scrape browser cookie databases or use login Keychain APIs for reauthentication"
+  "QuotaRadar" \
+  "QuotaRadar must not scrape browser cookie databases or use login Keychain APIs for reauthentication"
 assert_no_match 'Image\(systemName: provider\.icon\)' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Settings provider headers must not fall back to colored SF Symbols when provider icons exist"
 assert_no_match 'clipShape\(Circle\(\)\)' \
-  "QuotaBar/Views/Components.swift" \
+  "QuotaRadar/Views/Components.swift" \
   "ProviderIcon must not crop official provider logos into generic circles"
 assert_match 'drawQuotaCell' \
   "scripts/generate_app_icon.swift" \
@@ -1152,6 +1293,12 @@ assert_match 'drawQuotaCell' \
 assert_match 'drawQuotaCellFill' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should render one large, clear quota-cell fill instead of tiny reserve segments"
+assert_match 'drawMonitorTileBackground' \
+  "scripts/generate_app_icon.swift" \
+  "The app icon generator should use a crisp monitor-style tile background"
+assert_no_match 'topGlow|drawGlassPanel' \
+  "scripts/generate_app_icon.swift" \
+  "The app icon generator should remove the old blurred glass glow treatment"
 assert_no_match 'drawQuotaCellSegments|drawProviderDots|keyRingCenter' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should remove tiny decorations that make the battery blurry at small sizes"
@@ -1159,26 +1306,26 @@ assert_no_match 'drawModernQuotaGlyph|drawLiquidAppGlyph' \
   "scripts/generate_app_icon.swift" \
   "The app icon generator should remove earlier rejected app icon drawings"
 assert_match 'title: L10n\.t\(\.providersHeader' \
-  "QuotaBar/Views/SettingsView.swift" \
+  "QuotaRadar/Views/SettingsView.swift" \
   "Providers tab header must label the page"
 assert_match 'ClaudeSettingsImporter' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should initialize from ~/.claude/settings.json on first launch"
 assert_match 'didAttemptClaudeSettingsImport' \
-  "QuotaBar/Services/APIKeyStore.swift" \
+  "QuotaRadar/Services/APIKeyStore.swift" \
   "Claude settings auto-import must be guarded so it only runs once"
 assert_match 'mergeImportedKeys' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
-  "QuotaMonitor should merge newly added Claude settings keys into existing QuotaBar metadata"
+  "QuotaRadar/Models/QuotaMonitor.swift" \
+  "QuotaMonitor should merge newly added Claude settings keys into existing QuotaRadar metadata"
 assert_no_match 'hasAnySecret' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor must not skip Claude settings import just because old secrets already exist"
 python3 - <<'PY'
 from pathlib import Path
 import re
 import sys
 
-source = Path("QuotaBar/Models/QuotaMonitor.swift").read_text()
+source = Path("QuotaRadar/Models/QuotaMonitor.swift").read_text()
 ensure_match = re.search(r"private func ensureSecretsLoaded\(\) \{(?P<body>.*?)\n    \}", source, re.S)
 if not ensure_match:
     print("FAIL: QuotaMonitor.ensureSecretsLoaded should exist", file=sys.stderr)
@@ -1202,130 +1349,148 @@ if guard_index == -1 or import_index == -1 or import_index < guard_index:
     sys.exit(1)
 PY
 assert_match 'func loadSecrets' \
-  "QuotaBar/Services/APIKeyStore.swift" \
+  "QuotaRadar/Services/APIKeyStore.swift" \
   "Secrets must be loaded separately from metadata"
 assert_no_match 'KeychainStore' \
-  "QuotaBar/Services/APIKeyStore.swift" \
+  "QuotaRadar/Services/APIKeyStore.swift" \
   "APIKeyStore must not use the login Keychain because ad-hoc rebuilds trigger repeated macOS password prompts"
 assert_no_match 'SecItem' \
-  "QuotaBar" \
-  "QuotaBar must not call login Keychain SecItem APIs"
+  "QuotaRadar" \
+  "QuotaRadar must not call login Keychain SecItem APIs"
+assert_match 'Application Support/QuotaRadar' \
+  "QuotaRadar/Services/FileSecretStore.swift" \
+  "Secrets should be stored in QuotaRadar Application Support instead of the login Keychain"
 assert_match 'Application Support/QuotaBar' \
-  "QuotaBar/Services/FileSecretStore.swift" \
-  "Secrets should be stored in QuotaBar Application Support instead of the login Keychain"
+  "QuotaRadar/Services/FileSecretStore.swift" \
+  "Secrets should migrate from the old QuotaBar Application Support directory"
+assert_match 'legacyDefaultFileURL' \
+  "QuotaRadar/Services/FileSecretStore.swift" \
+  "FileSecretStore should preserve old QuotaBar secrets during the Quota Radar rename"
+assert_match 'com\.gaorongvc\.quotabar' \
+  "QuotaRadar/Services/LegacyConfigurationMigrator.swift" \
+  "Quota Radar should migrate legacy QuotaBar UserDefaults metadata after bundle id changes"
 assert_match 'posixPermissions' \
-  "QuotaBar/Services/FileSecretStore.swift" \
+  "QuotaRadar/Services/FileSecretStore.swift" \
   "Secret storage file must set restrictive filesystem permissions"
 assert_match 'https://api.tavily.com/usage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Tavily quota must use the official usage endpoint"
 assert_match 'nextMonthStartLocal' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Tavily free monthly credits should reset on the first day of the next local month"
 assert_match 'X-Subscription-Token' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Brave quota checks must use X-Subscription-Token authentication"
 assert_no_match 'No monthly quota (remaining|configured)' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Brave keys that return HTTP 200 with a zero monthly header should not be labeled as unusable quota"
 assert_match 'https://google.serper.dev/account' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Serper quota must use the non-search account endpoint"
 assert_match 'parseSerperAccount' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Serper account responses should be parsed as credit balance"
 assert_match 'X-API-KEY' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Serper account checks must authenticate with X-API-KEY"
 assert_no_match 'api.exa.ai/(usage|account|user)' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Exa must not use removed/nonexistent plain search-key account endpoints"
 assert_match 'https://admin-api\.exa\.ai/team-management/api-keys' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Exa quota should use the official Team Management usage endpoint"
 assert_match 'request\.setValue\(credential\.serviceKey, forHTTPHeaderField: "x-api-key"\)' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Exa quota checks should authenticate with the Admin API service key"
 assert_match 'parseExaUsage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Exa usage responses should be parsed from Team Management billing data"
 assert_match 'Exa Admin API requires a service key' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Exa search API keys should explain that usage requires the Admin API service key"
 assert_match 'key\.remaining = nil' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Unsupported quota refreshes must clear stale remaining values"
 assert_match 'key\.limit = nil' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Unsupported quota refreshes must clear stale quota limits"
 assert_match 'key\.lastUpdated = Date\(\)' \
-  "QuotaBar/Models/QuotaMonitor.swift" \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
   "Unsupported quota refreshes should still mark when the provider state was checked"
 assert_no_match 'api.anysearch.ai' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "AnySearch must not use the obsolete .ai endpoint"
 assert_match 'Unlimited free usage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "AnySearch should be represented as free unlimited usage instead of quota unavailable"
 assert_match 'case \.anysearch:' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "AnySearch must have explicit quota handling"
 assert_match 'https://www.dajiala.com/fbmain/monitor/v3/get_remain_money' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "WeChat search quota must use the Dajiala remaining-money endpoint"
 assert_match 'application/x-www-form-urlencoded' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Dajiala remaining-money checks must submit form-encoded API keys"
 assert_match 'https://api.bochaai.com/v1/fund/remaining' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Bocha quota should use the official remaining-fund endpoint"
 assert_match 'parseBochaRemainingFund' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Bocha remaining-fund responses should be parsed as account balance"
 assert_match 'https://maas.xfyun.cn/api/v1/gpt-finetune/coding-plan/list' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "XFYun Coding Plan should use the dashboard coding-plan list endpoint"
 assert_match 'https://console.volcengine.com/api/top/ark/cn-beijing/2024-01-01/GetCodingPlanUsage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Volcengine Coding Plan should use the console GetCodingPlanUsage endpoint"
 assert_match 'https://opencode.ai/_server' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "OpenCode Go should use the dashboard server function endpoint"
 assert_match 'Chrome/148\.0\.0\.0 Safari/537\.36' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "OpenCode Go usage checks should send browser-like headers so opencode.ai does not reject URLSession defaults"
 assert_match 'sec-fetch-site' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "OpenCode Go usage checks should include browser fetch metadata headers"
 assert_match 'parseXFYunCodingPlanList' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "XFYun Coding Plan responses should be parsed as coding quota windows"
 assert_match 'parseVolcengineCodingPlanUsage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "Volcengine Coding Plan responses should be parsed as coding quota windows"
 assert_match 'parseOpenCodeGoUsage' \
-  "QuotaBar/Services/QuotaService.swift" \
+  "QuotaRadar/Services/QuotaService.swift" \
   "OpenCode Go dashboard responses should be parsed as coding quota windows"
+assert_match 'private func withHTTPStatus' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "QuotaService should centralize successful HTTP status propagation for Diagnostics"
+assert_no_match 'return try QuotaParsers\.parse(TavilyUsage|SerpApiAccount|SerperAccount|BochaRemainingFund|DajialaRemainMoney|DeepSeekBalance|XFYunCodingPlanList|VolcengineCodingPlanUsage|OpenCodeGoUsage)\(data\)' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Successful quota endpoints must attach HTTP status before returning so Diagnostics does not show Not requested"
 assert_match 'https://www.querit.ai/en/dashboard/usage' \
-  "QuotaBar/Models/APIKey.swift" \
+  "QuotaRadar/Models/APIKey.swift" \
   "Querit must link to the official usage dashboard when API quota is not exposed"
 assert_no_match 'magnifyingglass.circle' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar icon must not use the indistinct magnifying glass symbol"
 assert_no_match 'heights: \[CGFloat\] = \[5, 9, 12\]' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar icon must not use the old indistinct three-bar glyph"
 assert_no_match 'dotRect' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar icon must not use the old bar-plus-dot glyph"
 assert_match 'drawQuotaCellStatusGlyph' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar icon should use a compact quota-cell glyph"
 assert_match 'drawStatusBatteryFill' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar quota-cell glyph should use a single clear battery fill"
+assert_match 'drawStatusBatteryTerminal' \
+  "QuotaRadar/AppDelegate.swift" \
+  "The status bar quota icon should draw a distinct battery terminal at menu-bar size"
 assert_match 'makeStatusBarIcon' \
-  "QuotaBar/AppDelegate.swift" \
+  "QuotaRadar/AppDelegate.swift" \
   "The status bar icon should be a purpose-built quota icon"
 assert_no_match 'heights = \[0\.18, 0\.31, 0\.44\]' \
   "scripts/generate_app_icon.swift" \
@@ -1336,6 +1501,9 @@ assert_match 'drawQuotaCell' \
 assert_match 'drawQuotaCellFill' \
   "scripts/generate_app_icon.swift" \
   "The Dock app icon should make the battery fill clear at small sizes"
+assert_match 'drawMonitorTileBackground' \
+  "scripts/generate_app_icon.swift" \
+  "The Dock app icon should use a crisp monitor-style tile background instead of a blurry glass treatment"
 assert_no_match 'drawQuotaGauge|drawQuotaNeedle' \
   "scripts/generate_app_icon.swift" \
   "The Dock app icon should not keep the old gauge/needle metaphor"
@@ -1356,8 +1524,17 @@ assert_match '--rebuild' \
   "Install script should support explicit rebuilds instead of rebuilding every install"
 assert_match 'Using existing app bundle' \
   "install.sh" \
-  "Install script should reuse build/QuotaBar.app by default to preserve local approvals"
-test -f "QuotaBar/Resources/QuotaBar.icns" || fail "QuotaBar.icns must exist for Finder/Application icon"
+  "Install script should reuse build/Quota Radar.app by default to preserve local approvals"
+assert_match 'DISPLAY_NAME="Quota Radar"' \
+  "install.sh" \
+  "Install script should create a Finder-visible Quota Radar.app bundle"
+assert_match 'PRODUCT_NAME="QuotaRadar"' \
+  "install.sh" \
+  "Install script should keep a no-space executable and package product name"
+assert_match '/Applications/QuotaBar\.app' \
+  "install.sh" \
+  "Install script should remove the old QuotaBar.app during the rename"
+test -f "QuotaRadar/Resources/QuotaRadar.icns" || fail "QuotaRadar.icns must exist for Finder/Application icon"
 test -x "scripts/package_dmg.sh" || fail "scripts/package_dmg.sh must exist and be executable"
 assert_match 'hdiutil create' \
   "scripts/package_dmg.sh" \
@@ -1374,7 +1551,7 @@ assert_match 'DEVELOPER_ID_APPLICATION' \
 assert_match 'xattr -dr com\.apple\.quarantine' \
   "scripts/package_dmg.sh" \
   "Local unsigned packaging should clear quarantine attributes for the generated app bundle"
-plutil -lint "QuotaBar/QuotaBar.entitlements" >/dev/null || fail "entitlements plist must be valid"
+plutil -lint "QuotaRadar/QuotaRadar.entitlements" >/dev/null || fail "entitlements plist must be valid"
 
 echo "== Provider icon assets =="
 python3 - <<'PY'
@@ -1399,7 +1576,7 @@ legacy_placeholder_colors = {
     "wxmp": (7, 193, 96),
 }
 
-root = Path("QuotaBar/Assets.xcassets/ProviderIcons")
+root = Path("QuotaRadar/Assets.xcassets/ProviderIcons")
 missing = sorted(
     name for name in expected
     if not (root / f"{name}.iconset" / "icon_32x32@2x.png").exists()
@@ -1590,9 +1767,17 @@ require(localizedSerperCredits.quotaDisplayText == "剩余 24 积分", "Serper c
 let localizedSerperExhausted = APIKey(name: "SERPER_API_KEY", key: "serper", provider: .serper, remaining: 0, limit: 0, quotaLabel: "No Serper credits available")
 require(localizedSerperExhausted.quotaDisplayText == "没有可用的 Serper 积分", "Serper exhausted credit labels should be localized in Simplified Chinese")
 let localizedDeepSeekMoney = APIKey(name: "DEEPSEEK_API_KEY", key: "deepseek", provider: .deepseek, remaining: 1250, limit: 1250, quotaLabel: "CNY 12.50 available")
-require(localizedDeepSeekMoney.quotaDisplayText == "可用 CNY 12.50", "Money available labels should be localized in Simplified Chinese")
+require(localizedDeepSeekMoney.quotaDisplayText == "可用人民币 12.50 元", "DeepSeek money balance labels should be localized as RMB, not credits")
+require(localizedDeepSeekMoney.remainingBadgeText == "¥12.50", "DeepSeek money balance badge should show currency amount, not 100%")
 let localizedBochaBalance = APIKey(name: "BOCHA_API_KEY", key: "bocha", provider: .bocha, remaining: 1400, limit: 1400, quotaLabel: "CNY 14.00 balance")
-require(localizedBochaBalance.quotaDisplayText == "余额 CNY 14.00", "Money balance labels should be localized in Simplified Chinese")
+require(localizedBochaBalance.quotaDisplayText == "余额人民币 14.00 元", "Bocha money balance labels should be localized as RMB, not credits")
+require(localizedBochaBalance.remainingBadgeText == "¥14.00", "Bocha money balance badge should show currency amount, not 100%")
+let localizedWeChatMoney = APIKey(name: "WECHAT_API_KEY", key: "wechat", provider: .wxmp, remaining: 16180, limit: 16180, quotaLabel: "CNY 161.80 available")
+require(localizedWeChatMoney.quotaDisplayText == "可用人民币 161.80 元", "WeChat Search money balance labels should be localized as RMB, not credits")
+require(localizedWeChatMoney.remainingBadgeText == "¥161.80", "WeChat Search money balance badge should show currency amount, not 100%")
+let moneyStats = ProviderStats(provider: .bocha, keys: [localizedBochaBalance])
+require(moneyStats.totalRemainingDisplayText == "¥14.00", "Money-balance provider overview should show RMB amount instead of cents")
+require(moneyStats.statusBarProviderBadgeText == "¥14.00", "Money-balance status bar badge should show RMB amount instead of percentage")
 let localizedExaUsage = APIKey(name: "EXA_ADMIN", key: "exa", provider: .exa, remaining: Int.max, limit: Int.max, quotaLabel: "USD 45.67 used")
 require(localizedExaUsage.quotaDisplayText == "已用 USD 45.67", "Exa usage cost labels should be localized in Simplified Chinese")
 require(localizedExaUsage.remainingBadgeText == "正常", "Exa usage-only checks should show a localized OK badge instead of a fake percentage")
@@ -1752,7 +1937,7 @@ require(settingsKeys.contains { $0.name == "TAVILY_API_KEY" && $0.provider == .t
 require(settingsKeys.contains { $0.name == "BRAVE_API_KEY" && $0.provider == .brave }, "Claude settings importer missing Brave")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift QuotaBar/Services/EnvImporter.swift QuotaBar/Services/ClaudeSettingsImporter.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/env-importer-test"
+swiftc QuotaRadar/Models/AppLanguage.swift QuotaRadar/Models/APIKey.swift QuotaRadar/Services/EnvImporter.swift QuotaRadar/Services/ClaudeSettingsImporter.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/env-importer-test"
 "$TMP_DIR/env-importer-test"
 
 echo "== Language behavior =="
@@ -1766,7 +1951,7 @@ func require(_ condition: @autoclosure () -> Bool, _ message: String) {
     }
 }
 
-let defaults = UserDefaults(suiteName: "QuotaBarLanguageTests.\(UUID().uuidString)")!
+let defaults = UserDefaults(suiteName: "QuotaRadarLanguageTests.\(UUID().uuidString)")!
 defaults.removePersistentDomain(forName: defaults.dictionaryRepresentation().description)
 defaults.set(AppLanguage.simplifiedChinese.rawValue, forKey: AppLanguageStore.defaultsKey)
 let store = AppLanguageStore(defaults: defaults)
@@ -1780,10 +1965,26 @@ require(AppLanguage.japanese.displayName == "日本語", "Japanese language opti
 require(AppLanguage.korean.displayName == "한국어", "Korean language option should have a native display name")
 require(L10n.t(.providersTab, language: .english) == "Quota Overview", "English quota overview tab title should be available")
 require(L10n.t(.providersHeader, language: .english) == "Quota Overview", "English quota overview page title should match the navigation")
+require(L10n.t(.apiQuotaTitle, language: .english) == "Quota Radar", "English menu bar title should express active quota monitoring instead of a bland API quota label")
+require(AIQuoteLibrary.quotes.count >= 50, "Built-in AI quote library should include about 50 concise quotes")
+for language in AppLanguage.allCases {
+    let localizedQuotes = AIQuoteLibrary.quotes.map { $0.text(language: language) }
+    require(localizedQuotes.allSatisfy { !$0.isEmpty }, "\(language.rawValue) should have non-empty built-in AI quotes")
+    let maxLength = language == .english ? 40 : 18
+    require(localizedQuotes.allSatisfy { $0.count <= maxLength }, "\(language.rawValue) built-in AI quotes should stay concise enough for the status header")
+}
+let quoteDefaults = UserDefaults(suiteName: "QuotaRadarQuoteTests.\(UUID().uuidString)")!
+quoteDefaults.removePersistentDomain(forName: quoteDefaults.dictionaryRepresentation().description)
+let quoteStore = AIQuoteStore(defaults: quoteDefaults)
+let firstQuote = quoteStore.currentQuoteText(language: .english)
+quoteStore.advance()
+let secondQuote = quoteStore.currentQuoteText(language: .english)
+require(firstQuote != secondQuote, "Opening the status panel should rotate to the next built-in AI quote")
 require(L10n.t(.apiKeysTab, language: .english) == "Credentials", "English credentials tab title should be available")
 require(L10n.t(.settingsTab, language: .english) == "Settings", "English settings tab title should be available")
 require(L10n.t(.providersTab, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring tab title should be available")
 require(L10n.t(.providersHeader, language: .simplifiedChinese) == "额度监控", "Chinese quota monitoring page title should match the navigation")
+require(L10n.t(.apiQuotaTitle, language: .simplifiedChinese) == "余量雷达", "Chinese menu bar title should express active quota monitoring instead of a bland API quota label")
 require(L10n.t(.apiKeysTab, language: .simplifiedChinese) == "配置凭据", "Chinese credentials tab title should be available")
 require(L10n.t(.dashboardSession, language: .simplifiedChinese) == "控制台会话 Cookie", "Chinese dashboard-session credential label should avoid API key wording")
 require(L10n.t(.settingsTab, language: .simplifiedChinese) == "设置", "Chinese settings tab title should be available")
@@ -1811,8 +2012,11 @@ for language in AppLanguage.allCases {
     require(!L10n.quotaPeriodTitle("week", language: language).isEmpty, "\(language.rawValue) week period label should be localized")
 }
 require(L10n.t(.settingsTab, language: .traditionalChinese) == "設定", "Traditional Chinese settings label should be localized")
+require(L10n.t(.apiQuotaTitle, language: .traditionalChinese) == "餘量雷達", "Traditional Chinese menu bar title should express active quota monitoring")
 require(L10n.t(.settingsTab, language: .japanese) == "設定", "Japanese settings label should be localized")
+require(L10n.t(.apiQuotaTitle, language: .japanese) == "クォータレーダー", "Japanese menu bar title should express active quota monitoring")
 require(L10n.t(.settingsTab, language: .korean) == "설정", "Korean settings label should be localized")
+require(L10n.t(.apiQuotaTitle, language: .korean) == "할당량 레이더", "Korean menu bar title should express active quota monitoring")
 require(L10n.quotaPeriodTitle("5h", language: .traditionalChinese) == "5 小時", "Traditional Chinese five-hour quota period should be localized")
 require(L10n.quotaPeriodTitle("week", language: .japanese) == "週", "Japanese week quota period should be localized")
 require(L10n.quotaPeriodTitle("month", language: .korean) == "월", "Korean month quota period should be localized")
@@ -1829,7 +2033,7 @@ require(Provider.deepseek.displayName(language: .simplifiedChinese) == "Deepseek
 require(Provider.querit.displayName(language: .simplifiedChinese) == "Querit", "Querit should not repeat the generic search category in its Simplified Chinese provider display name")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/AppAppearance.swift QuotaBar/Models/APIKey.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
+swiftc QuotaRadar/Models/AppLanguage.swift QuotaRadar/Models/AppAppearance.swift QuotaRadar/Models/APIKey.swift QuotaRadar/Models/AIQuoteLibrary.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/language-test"
 "$TMP_DIR/language-test"
 
 echo "== Dashboard reauthentication behavior =="
@@ -1979,8 +2183,52 @@ for provider in [Provider.querit, .xfyunCodingPlan, .volcengineCodingPlan, .open
 }
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift QuotaBar/Services/DashboardReauth.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/dashboard-reauth-test"
+swiftc QuotaRadar/Models/AppLanguage.swift QuotaRadar/Models/APIKey.swift QuotaRadar/Services/DashboardReauth.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/dashboard-reauth-test"
 "$TMP_DIR/dashboard-reauth-test"
+
+echo "== Legacy configuration migration behavior =="
+cat >"$TMP_DIR/main.swift" <<'SWIFT'
+import Foundation
+
+func require(_ condition: @autoclosure () -> Bool, _ message: String) {
+    if !condition() {
+        FileHandle.standardError.write(Data("FAIL: \(message)\n".utf8))
+        exit(1)
+    }
+}
+
+let defaults = UserDefaults(suiteName: "QuotaRadarMigrationTests.\(UUID().uuidString)")!
+let legacyDefaults = UserDefaults(suiteName: "QuotaRadarLegacyMigrationTests.\(UUID().uuidString)")!
+defaults.removePersistentDomain(forName: defaults.dictionaryRepresentation().description)
+legacyDefaults.removePersistentDomain(forName: legacyDefaults.dictionaryRepresentation().description)
+legacyDefaults.set("simplifiedChinese", forKey: "appLanguage")
+legacyDefaults.set("legacy-metadata".data(using: .utf8), forKey: "apiKeyMetadata")
+defaults.set(0.42, forKey: "statusBarTransparency")
+LegacyConfigurationMigrator.migrateUserDefaultsIfNeeded(defaults: defaults, legacyDefaults: legacyDefaults)
+require(defaults.string(forKey: "appLanguage") == "simplifiedChinese", "Legacy migration should copy missing language preference")
+require(defaults.data(forKey: "apiKeyMetadata") == "legacy-metadata".data(using: .utf8), "Legacy migration should copy missing API metadata")
+require(defaults.double(forKey: "statusBarTransparency") == 0.42, "Legacy migration should not overwrite existing new preferences")
+require(defaults.bool(forKey: LegacyConfigurationMigrator.migrationMarkerKey), "Legacy migration should set a marker")
+
+let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString, isDirectory: true)
+let newURL = root.appendingPathComponent("QuotaRadar/secrets.json")
+let oldURL = root.appendingPathComponent("QuotaBar/secrets.json")
+try! FileManager.default.createDirectory(at: oldURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+FileManager.default.createFile(
+    atPath: oldURL.path,
+    contents: try! JSONEncoder().encode(["legacy-id": "legacy-secret"]),
+    attributes: [.posixPermissions: 0o644]
+)
+try! FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: oldURL.deletingLastPathComponent().path)
+let migratedSecretStore = FileSecretStore(fileURL: newURL, legacyFileURL: oldURL)
+require((try! migratedSecretStore.read(account: "legacy-id")) == "legacy-secret", "FileSecretStore should copy old QuotaBar secrets into QuotaRadar on first read")
+require(FileManager.default.fileExists(atPath: newURL.path), "FileSecretStore should create the new QuotaRadar secret file during migration")
+let migratedFilePermissions = ((try! FileManager.default.attributesOfItem(atPath: newURL.path)[.posixPermissions] as! NSNumber).intValue & 0o777)
+require(migratedFilePermissions == 0o600, "Migrated QuotaRadar secret file should use 0600 permissions")
+SWIFT
+
+swiftc QuotaRadar/Services/FileSecretStore.swift QuotaRadar/Services/LegacyConfigurationMigrator.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/legacy-migration-test"
+"$TMP_DIR/legacy-migration-test"
 
 echo "== Secret store behavior =="
 cat >"$TMP_DIR/main.swift" <<'SWIFT'
@@ -2030,7 +2278,7 @@ let tightenedFilePermissions = (tightenedFileAttrs[.posixPermissions] as! NSNumb
 require(tightenedDirPermissions == 0o700, "FileSecretStore should tighten legacy directory permissions on read")
 require(tightenedFilePermissions == 0o600, "FileSecretStore should tighten legacy file permissions on read")
 
-let defaults = UserDefaults(suiteName: "QuotaBarBehaviorTests.\(UUID().uuidString)")!
+let defaults = UserDefaults(suiteName: "QuotaRadarBehaviorTests.\(UUID().uuidString)")!
 let store = APIKeyStore(defaults: defaults, secretStore: secretStore)
 let keyID = UUID()
 let key = APIKey(id: keyID, name: "TAVILY_API_KEY", key: "tvly-from-store", provider: .tavily)
@@ -2061,7 +2309,7 @@ require(migratedBrave.count == 1, "APIKeyStore should load Brave metadata")
 require(migratedBrave[0].quotaLabel == "Search OK · monthly quota not exposed", "APIKeyStore should migrate ambiguous Brave zero-window labels")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift QuotaBar/Services/FileSecretStore.swift QuotaBar/Services/APIKeyStore.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/secret-store-test"
+swiftc QuotaRadar/Models/AppLanguage.swift QuotaRadar/Models/APIKey.swift QuotaRadar/Services/FileSecretStore.swift QuotaRadar/Services/APIKeyStore.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/secret-store-test"
 "$TMP_DIR/secret-store-test"
 
 echo "== Quota parser behavior =="
@@ -2208,7 +2456,7 @@ require(opencode.quotaLabel == "5h 98% · week 50% · month 25%", "OpenCode Go s
 require(opencode.resetAt != nil && opencode.resetAt! > Date(), "OpenCode Go should convert resetInSec into a future reset date")
 SWIFT
 
-swiftc QuotaBar/Models/AppLanguage.swift QuotaBar/Models/APIKey.swift QuotaBar/Services/QuotaService.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/quota-parser-test"
+swiftc QuotaRadar/Models/AppLanguage.swift QuotaRadar/Models/APIKey.swift QuotaRadar/Services/QuotaService.swift "$TMP_DIR/main.swift" -o "$TMP_DIR/quota-parser-test"
 "$TMP_DIR/quota-parser-test"
 
 echo "== SwiftPM build =="
@@ -2216,10 +2464,11 @@ swift build
 
 echo "== App bundle build =="
 ./install.sh --bundle-only --rebuild
-test -x "build/QuotaBar.app/Contents/MacOS/QuotaBar" || fail "app bundle executable is missing"
-test -f "build/QuotaBar.app/Contents/Resources/QuotaBar.icns" || fail "app bundle icon is missing"
-plutil -extract CFBundleExecutable raw "build/QuotaBar.app/Contents/Info.plist" | rg '^QuotaBar$' >/dev/null || fail "bundle executable name is wrong"
-plutil -extract CFBundleIconFile raw "build/QuotaBar.app/Contents/Info.plist" | rg '^QuotaBar$' >/dev/null || fail "bundle icon name is wrong"
-codesign --verify --deep --strict --verbose=2 "build/QuotaBar.app" >/dev/null
+test -x "build/Quota Radar.app/Contents/MacOS/QuotaRadar" || fail "app bundle executable is missing"
+test -f "build/Quota Radar.app/Contents/Resources/QuotaRadar.icns" || fail "app bundle icon is missing"
+plutil -extract CFBundleExecutable raw "build/Quota Radar.app/Contents/Info.plist" | rg '^QuotaRadar$' >/dev/null || fail "bundle executable name is wrong"
+plutil -extract CFBundleIconFile raw "build/Quota Radar.app/Contents/Info.plist" | rg '^QuotaRadar$' >/dev/null || fail "bundle icon name is wrong"
+plutil -extract CFBundleDisplayName raw "build/Quota Radar.app/Contents/Info.plist" | rg '^Quota Radar$' >/dev/null || fail "bundle display name is wrong"
+codesign --verify --deep --strict --verbose=2 "build/Quota Radar.app" >/dev/null
 
 echo "All behavior tests passed"

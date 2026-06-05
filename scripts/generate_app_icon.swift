@@ -2,9 +2,9 @@ import AppKit
 import Foundation
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let resourcesURL = root.appendingPathComponent("QuotaBar/Resources", isDirectory: true)
-let iconsetURL = root.appendingPathComponent("build/QuotaBar.iconset", isDirectory: true)
-let appIconURL = root.appendingPathComponent("QuotaBar/Assets.xcassets/AppIcon.appiconset", isDirectory: true)
+let resourcesURL = root.appendingPathComponent("QuotaRadar/Resources", isDirectory: true)
+let iconsetURL = root.appendingPathComponent("build/QuotaRadar.iconset", isDirectory: true)
+let appIconURL = root.appendingPathComponent("QuotaRadar/Assets.xcassets/AppIcon.appiconset", isDirectory: true)
 
 try FileManager.default.createDirectory(at: resourcesURL, withIntermediateDirectories: true)
 try FileManager.default.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
@@ -29,82 +29,59 @@ func circle(center: NSPoint, radius: CGFloat) -> NSBezierPath {
     NSBezierPath(ovalIn: NSRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
 }
 
-func drawIconBackground(in rect: NSRect, pixels: Int) -> NSBezierPath {
+func drawMonitorTileBackground(in rect: NSRect, pixels: Int) -> NSBezierPath {
     let size = CGFloat(pixels)
     let outer = rect.insetBy(dx: size * 0.055, dy: size * 0.055)
     let path = rounded(outer, radius: size * 0.205)
 
     NSGraphicsContext.saveGraphicsState()
     let shadow = NSShadow()
-    shadow.shadowOffset = NSSize(width: 0, height: -size * 0.018)
-    shadow.shadowBlurRadius = size * 0.060
-    shadow.shadowColor = color(0x0d1730, alpha: 0.20)
+    shadow.shadowOffset = NSSize(width: 0, height: -size * 0.020)
+    shadow.shadowBlurRadius = size * 0.055
+    shadow.shadowColor = color(0x05070a, alpha: 0.24)
     shadow.set()
 
     NSGradient(colorsAndLocations:
-        (color(0xf8fbff), 0.00),
-        (color(0xe7f1ff), 0.42),
-        (color(0x7896e8), 1.00)
-    )!.draw(in: path, angle: 132)
+        (color(0x262b33), 0.00),
+        (color(0x1b2028), 0.50),
+        (color(0x10141a), 1.00)
+    )!.draw(in: path, angle: 90)
     NSGraphicsContext.restoreGraphicsState()
 
     NSGraphicsContext.saveGraphicsState()
     path.addClip()
 
-    let topGlow = NSGradient(colorsAndLocations:
-        (color(0xffffff, alpha: 0.46), 0.00),
-        (color(0xffffff, alpha: 0.10), 0.52),
+    let surfaceSheen = NSGradient(colorsAndLocations:
+        (color(0xffffff, alpha: 0.16), 0.00),
+        (color(0xffffff, alpha: 0.05), 0.46),
         (NSColor.clear, 1.00)
     )!
-    topGlow.draw(
-        in: NSBezierPath(ovalIn: NSRect(x: -size * 0.24, y: size * 0.42, width: size * 0.90, height: size * 0.70)),
-        relativeCenterPosition: NSPoint(x: -0.20, y: 0.22)
-    )
+    surfaceSheen.draw(in: rounded(outer.insetBy(dx: size * 0.028, dy: size * 0.028), radius: size * 0.178), angle: 92)
 
-    let glass = rounded(outer.insetBy(dx: size * 0.034, dy: size * 0.034), radius: size * 0.172)
-    NSGradient(colorsAndLocations:
-        (color(0xffffff, alpha: 0.18), 0.00),
-        (color(0xffffff, alpha: 0.03), 1.00)
-    )!.draw(in: glass, angle: 122)
+    let lowerPlate = NSRect(
+        x: outer.minX,
+        y: outer.minY,
+        width: outer.width,
+        height: outer.height * 0.42
+    )
+    color(0x05070a, alpha: 0.14).setFill()
+    lowerPlate.fill()
 
     NSGraphicsContext.restoreGraphicsState()
 
     path.lineWidth = max(1, size * 0.010)
-    color(0xffffff, alpha: 0.62).setStroke()
+    color(0xffffff, alpha: 0.13).setStroke()
     path.stroke()
 
     return path
 }
 
-func drawGlassPanel(_ panel: NSRect, radius: CGFloat, pixels: Int, fillAlpha: CGFloat = 0.48) {
-    let path = rounded(panel, radius: radius)
-
-    NSGraphicsContext.saveGraphicsState()
-    let shadow = NSShadow()
-    shadow.shadowOffset = NSSize(width: 0, height: -CGFloat(pixels) * 0.010)
-    shadow.shadowBlurRadius = CGFloat(pixels) * 0.032
-    shadow.shadowColor = color(0x122044, alpha: 0.17)
-    shadow.set()
-    color(0xffffff, alpha: fillAlpha).setFill()
-    path.fill()
-    NSGraphicsContext.restoreGraphicsState()
-
-    NSGradient(colorsAndLocations:
-        (color(0xffffff, alpha: 0.34), 0.00),
-        (color(0xffffff, alpha: 0.06), 1.00)
-    )!.draw(in: path, angle: 116)
-
-    path.lineWidth = max(1, CGFloat(pixels) * 0.010)
-    color(0xffffff, alpha: 0.70).setStroke()
-    path.stroke()
-}
-
 func drawQuotaCellFill(in battery: NSRect, pixels: Int, fraction: CGFloat = 0.72) {
     let size = CGFloat(pixels)
-    let inner = battery.insetBy(dx: battery.width * 0.090, dy: battery.height * 0.22)
+    let inner = battery.insetBy(dx: battery.width * 0.095, dy: battery.height * 0.24)
     let track = rounded(inner, radius: inner.height / 2)
 
-    color(0x172033, alpha: 0.10).setFill()
+    color(0x111820, alpha: 0.18).setFill()
     track.fill()
 
     let fillWidth = max(inner.height, inner.width * min(max(fraction, 0.08), 1.00))
@@ -118,9 +95,9 @@ func drawQuotaCellFill(in battery: NSRect, pixels: Int, fraction: CGFloat = 0.72
     NSGraphicsContext.saveGraphicsState()
     track.addClip()
     NSGradient(colorsAndLocations:
-        (color(0x27d985), 0.00),
-        (color(0x41d3aa), 0.42),
-        (color(0x5aa8ff), 1.00)
+        (color(0x31d77d), 0.00),
+        (color(0x3bd5a7), 0.56),
+        (color(0x45b8ff), 1.00)
     )!.draw(in: rounded(fill, radius: fill.height / 2), angle: 0)
     NSGraphicsContext.restoreGraphicsState()
 
@@ -140,61 +117,43 @@ func drawQuotaCell(in rect: NSRect, pixels: Int) {
     let size = CGFloat(pixels)
     let outer = rect.insetBy(dx: size * 0.055, dy: size * 0.055)
 
-    if pixels <= 64 {
-        let battery = NSRect(
-            x: outer.minX + outer.width * 0.115,
-            y: outer.midY - outer.height * 0.185,
-            width: outer.width * 0.68,
-            height: outer.height * 0.37
-        )
-        let cap = NSRect(
-            x: battery.maxX + outer.width * 0.026,
-            y: battery.midY - battery.height * 0.24,
-            width: outer.width * 0.070,
-            height: battery.height * 0.48
-        )
-
-        color(0xffffff, alpha: 0.84).setFill()
-        rounded(battery, radius: battery.height * 0.30).fill()
-        color(0xffffff, alpha: 0.78).setFill()
-        rounded(cap, radius: cap.height * 0.34).fill()
-
-        drawQuotaCellFill(in: battery, pixels: pixels)
-        return
-    }
-
     let battery = NSRect(
-        x: outer.minX + outer.width * 0.115,
-        y: outer.midY - outer.height * 0.185,
-        width: outer.width * 0.68,
-        height: outer.height * 0.37
+        x: outer.minX + outer.width * 0.120,
+        y: outer.midY - outer.height * 0.175,
+        width: outer.width * 0.690,
+        height: outer.height * 0.350
     )
     let cap = NSRect(
-        x: battery.maxX + outer.width * 0.026,
-        y: battery.midY - battery.height * 0.24,
-        width: outer.width * 0.070,
-        height: battery.height * 0.48
+        x: battery.maxX + outer.width * 0.030,
+        y: battery.midY - battery.height * 0.235,
+        width: outer.width * 0.074,
+        height: battery.height * 0.470
     )
     let batteryPath = rounded(battery, radius: battery.height * 0.35)
 
-    NSGraphicsContext.saveGraphicsState()
-    let batteryShadow = NSShadow()
-    batteryShadow.shadowOffset = NSSize(width: 0, height: -size * 0.012)
-    batteryShadow.shadowBlurRadius = size * 0.030
-    batteryShadow.shadowColor = color(0x122044, alpha: 0.20)
-    batteryShadow.set()
-    color(0xffffff, alpha: 0.86).setFill()
-    batteryPath.fill()
-    NSGraphicsContext.restoreGraphicsState()
+    if pixels > 64 {
+        NSGraphicsContext.saveGraphicsState()
+        let batteryShadow = NSShadow()
+        batteryShadow.shadowOffset = NSSize(width: 0, height: -size * 0.012)
+        batteryShadow.shadowBlurRadius = size * 0.032
+        batteryShadow.shadowColor = color(0x020305, alpha: 0.34)
+        batteryShadow.set()
+        color(0xf8fbff, alpha: 0.94).setFill()
+        batteryPath.fill()
+        NSGraphicsContext.restoreGraphicsState()
+    } else {
+        color(0xf8fbff, alpha: 0.92).setFill()
+        batteryPath.fill()
+    }
 
     drawQuotaCellFill(in: battery, pixels: pixels)
 
     let capPath = rounded(cap, radius: cap.height * 0.34)
-    color(0xffffff, alpha: 0.78).setFill()
+    color(0xf8fbff, alpha: 0.86).setFill()
     capPath.fill()
 
     batteryPath.lineWidth = max(1, size * 0.010)
-    color(0xffffff, alpha: 0.76).setStroke()
+    color(0xffffff, alpha: pixels > 64 ? 0.32 : 0.24).setStroke()
     batteryPath.stroke()
 }
 
@@ -221,7 +180,7 @@ func writePNG(size: Int, scale: Int, name: String, directory: URL) throws {
     NSColor.clear.setFill()
     rect.fill()
 
-    let backgroundPath = drawIconBackground(in: rect, pixels: pixels)
+    let backgroundPath = drawMonitorTileBackground(in: rect, pixels: pixels)
     NSGraphicsContext.saveGraphicsState()
     backgroundPath.addClip()
     drawQuotaCell(in: rect, pixels: pixels)
@@ -230,7 +189,7 @@ func writePNG(size: Int, scale: Int, name: String, directory: URL) throws {
     NSGraphicsContext.restoreGraphicsState()
 
     guard let png = rep.representation(using: .png, properties: [:]) else {
-        throw NSError(domain: "QuotaBarIcon", code: 1)
+        throw NSError(domain: "QuotaRadarIcon", code: 1)
     }
     try png.write(to: directory.appendingPathComponent(name))
 }
@@ -279,11 +238,11 @@ iconutil.arguments = [
     "icns",
     iconsetURL.path,
     "-o",
-    resourcesURL.appendingPathComponent("QuotaBar.icns").path
+    resourcesURL.appendingPathComponent("QuotaRadar.icns").path
 ]
 try iconutil.run()
 iconutil.waitUntilExit()
 
 if iconutil.terminationStatus != 0 {
-    throw NSError(domain: "QuotaBarIcon", code: Int(iconutil.terminationStatus))
+    throw NSError(domain: "QuotaRadarIcon", code: Int(iconutil.terminationStatus))
 }

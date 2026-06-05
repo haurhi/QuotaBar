@@ -144,7 +144,7 @@ struct SettingsSidebarView: View {
             Spacer()
         }
         .padding(.horizontal, 12)
-        .navigationTitle("QuotaBar")
+        .navigationTitle("Quota Radar")
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(.thinMaterial)
     }
@@ -1605,7 +1605,7 @@ struct AppSettingsView: View {
 struct AboutView: View {
     var body: some View {
         ModernPage(
-            title: "QuotaBar",
+            title: "Quota Radar",
             subtitle: L10n.t(.aboutSubtitle),
             systemImage: "gauge.with.dots.needle.67percent"
         ) {
@@ -1617,7 +1617,7 @@ struct AboutView: View {
                         .frame(width: 76, height: 76)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("QuotaBar")
+                        Text("Quota Radar")
                             .font(.system(size: 28, weight: .semibold))
 
                         Text(L10n.t(.version))
@@ -1638,7 +1638,7 @@ struct AboutView: View {
                 }
             }
         }
-        .navigationTitle("QuotaBar")
+        .navigationTitle("Quota Radar")
     }
 }
 

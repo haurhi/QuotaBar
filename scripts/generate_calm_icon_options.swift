@@ -369,7 +369,7 @@ func drawIcon(_ variant: CalmIconVariant, pixels: Int) -> NSBitmapImageRep {
 
 func writePNG(_ rep: NSBitmapImageRep, to url: URL) throws {
     guard let data = rep.representation(using: .png, properties: [:]) else {
-        throw NSError(domain: "QuotaBarCalmIcons", code: 1)
+        throw NSError(domain: "QuotaRadarCalmIcons", code: 1)
     }
     try data.write(to: url)
 }

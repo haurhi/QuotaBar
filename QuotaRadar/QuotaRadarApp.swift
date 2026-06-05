@@ -1,8 +1,12 @@
 import SwiftUI
 
 @main
-struct QuotaBarApp: App {
+struct QuotaRadarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    init() {
+        LegacyConfigurationMigrator.migrateUserDefaultsIfNeeded()
+    }
 
     var body: some Scene {
         Settings {

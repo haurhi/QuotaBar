@@ -116,6 +116,15 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    var usesMoneyBalance: Bool {
+        switch self {
+        case .deepseek, .bocha, .wxmp:
+            return true
+        case .tavily, .brave, .serpapi, .serper, .exa, .anysearch, .querit, .anthropic, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+            return false
+        }
+    }
+
     /// SF Symbol fallback name
     var icon: String {
         switch self {
@@ -672,6 +681,9 @@ struct APIKey: Identifiable, Codable, Equatable {
     }
 
     private var percentRemaining: Double? {
+        if provider.usesMoneyBalance {
+            return nil
+        }
         guard isActive,
               !isUnlimitedQuota,
               !isUsableWithUnknownQuota,
@@ -756,6 +768,10 @@ struct APIKey: Identifiable, Codable, Equatable {
             return "∞"
         }
 
+        if provider.usesMoneyBalance, let remaining {
+            return Self.formatCNYCents(remaining)
+        }
+
         guard let remaining else { return L10n.t(.notAvailableShort) }
 
         if let limit, limit > 0 {
@@ -768,6 +784,18 @@ struct APIKey: Identifiable, Codable, Equatable {
         }
 
         return remaining <= 0 ? L10n.t(.zeroRemainingBadge) : "\(remaining)"
+    }
+
+    static func formatCNYCents(_ cents: Int) -> String {
+        let amount = Decimal(max(0, cents)) / Decimal(100)
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        formatter.minimumIntegerDigits = 1
+        let value = formatter.string(from: NSDecimalNumber(decimal: amount))
+            ?? NSDecimalNumber(decimal: amount).stringValue
+        return "¥\(value)"
     }
 
     private var currentQuotaSortValue: Int {
@@ -897,6 +925,9 @@ struct ProviderStats: Identifiable {
 
     var totalRemainingDisplayText: String {
         if hasUnlimitedQuota { return L10n.t(.unlimited) }
+        if provider.usesMoneyBalance {
+            return APIKey.formatCNYCents(totalRemaining)
+        }
         if usesPercentageQuota {
             return tightestQuotaWindowDisplay ?? formatProviderPercent(totalRemainingPercent)
         }
@@ -905,6 +936,9 @@ struct ProviderStats: Identifiable {
 
     var totalLimitDisplayText: String {
         if hasUnlimitedQuota { return L10n.t(.unlimited) }
+        if provider.usesMoneyBalance {
+            return L10n.t(.noResetCycle)
+        }
         if usesPercentageQuota {
             return monthlyQuotaWindowDisplay ?? L10n.quotaWindowDisplay("month", formatProviderPercent(totalRemainingPercent))
         }
@@ -933,6 +967,9 @@ struct ProviderStats: Identifiable {
         if usesPercentageQuota {
             return totalRemainingDisplayText
         }
+        if provider.usesMoneyBalance {
+            return totalRemainingDisplayText
+        }
         if activeCredentialKeys.count == 1, let key = activeCredentialKeys.first {
             return key.quotaPresentation.primaryText
         }
@@ -954,6 +991,9 @@ struct ProviderStats: Identifiable {
         }
         if usesPercentageQuota {
             return monthlyQuotaWindowDisplay ?? totalRemainingDisplayText
+        }
+        if provider.usesMoneyBalance {
+            return totalRemainingDisplayText
         }
         if let percent = statusBarProviderPercentRemaining {
             if percent <= 0 {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build script for QuotaBar
+# Build script for Quota Radar
 # Usage: ./build.sh [debug|release]
 
 set -e
@@ -8,7 +8,7 @@ set -e
 CONFIG=${1:-debug}
 BUILD_DIR=".build/${CONFIG}"
 
-echo "🚀 Building QuotaBar (${CONFIG} mode)..."
+echo "🚀 Building Quota Radar (${CONFIG} mode)..."
 
 # Check if Swift is available
 if ! command -v swift &> /dev/null; then
@@ -19,16 +19,14 @@ fi
 # Build
 if [ "$CONFIG" = "release" ]; then
     swift build -c release
-    APP_PATH=".build/release/QuotaBar.app"
 else
     swift build
-    APP_PATH=".build/debug/QuotaBar.app"
 fi
 
 echo "✅ Build complete!"
 echo ""
 echo "To run:"
-echo "  swift run"
+echo "  swift run QuotaRadar"
 echo ""
 echo "Or open in Xcode:"
-echo "  open QuotaBar.xcodeproj (after creating it)"
+echo "  open QuotaRadar.xcodeproj (after creating it)"

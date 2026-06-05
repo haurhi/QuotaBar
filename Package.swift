@@ -2,22 +2,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "QuotaBar",
+    name: "QuotaRadar",
     platforms: [
         .macOS(.v14)
     ],
     products: [
         .executable(
-            name: "QuotaBar",
-            targets: ["QuotaBar"]
+            name: "QuotaRadar",
+            targets: ["QuotaRadar"]
         )
     ],
     dependencies: [],
     targets: [
         .executableTarget(
-            name: "QuotaBar",
-            path: "QuotaBar",
-            exclude: ["Info.plist", "QuotaBar.entitlements", "Preview Content"],
+            name: "QuotaRadar",
+            path: "QuotaRadar",
+            exclude: ["Info.plist", "QuotaRadar.entitlements", "Preview Content"],
             resources: [
                 .process("Assets.xcassets"),
                 .copy("Resources")

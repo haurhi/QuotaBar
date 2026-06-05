@@ -414,7 +414,7 @@ func writePNG(_ image: NSImage, to url: URL) throws {
     guard let tiff = image.tiffRepresentation,
           let bitmap = NSBitmapImageRep(data: tiff),
           let png = bitmap.representation(using: .png, properties: [:]) else {
-        throw NSError(domain: "QuotaBarIconOptions", code: 1)
+        throw NSError(domain: "QuotaRadarIconOptions", code: 1)
     }
     try png.write(to: url)
 }
