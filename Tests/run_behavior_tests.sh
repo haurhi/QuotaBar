@@ -829,6 +829,27 @@ assert_match 'providerCategories' \
 assert_match 'ProviderSettingsCategorySection' \
   "QuotaBar/Views/SettingsView.swift" \
   "Settings Providers page should render collapsible provider category sections"
+assert_match 'ProviderQuotaMonitorTable' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Quota monitoring should use a compact provider table instead of stacked dashboard cards"
+assert_match 'ProviderQuotaMonitorRow' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Quota monitoring should render each provider as a compact monitoring row"
+assert_match '@State private var isExpanded = false' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Provider quota rows should default to a compact collapsed overview so the page starts as a monitor, not a long key dashboard"
+assert_match 'ProviderQuotaKeyTableHeader' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Expanded provider quota rows should show a stable table header for key details"
+assert_match 'ProviderQuotaKeyTableRow' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Expanded provider quota rows should render key details in table-like rows"
+assert_no_match 'ProviderCard\(provider: stat\.provider' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Quota monitoring should not continue to render one large card per provider"
+assert_no_match 'StatBadge\(' \
+  "QuotaBar/Views/SettingsView.swift" \
+  "Quota monitoring should not use large repeated stat badges for every provider"
 assert_no_match 'spring\(response: 0\.3\)' \
   "QuotaBar/Views/SettingsView.swift" \
   "Settings collapsible sections should not use spring animation because it makes panels fly down"
@@ -850,15 +871,15 @@ assert_no_match 'Image\(systemName: "chevron.down"\)' \
 assert_match '\.contentShape\(RoundedRectangle\(cornerRadius: 12, style: \.continuous\)\)' \
   "QuotaBar/Views/SettingsView.swift" \
   "Settings collapsible banners should make the full banner clickable"
-assert_match 'ProviderCardBanner' \
+assert_match 'providerSummaryRow' \
   "QuotaBar/Views/SettingsView.swift" \
-  "Provider cards should use a dedicated clickable banner instead of only making the left label area clickable"
+  "Provider quota rows should keep the provider summary as the dedicated collapse hit target"
 assert_match 'ZStack\(alignment: \.trailing\)' \
   "QuotaBar/Views/SettingsView.swift" \
-  "Provider card banners should make the full banner surface a collapse target while overlaying the refresh control"
+  "Provider quota rows should make the full row surface a collapse target while overlaying the refresh control"
 assert_match 'trailingControlReserve' \
   "QuotaBar/Views/SettingsView.swift" \
-  "Provider card banners should reserve trailing space so the refresh control does not steal the collapse hit target"
+  "Provider quota rows should reserve trailing space so row actions do not steal the collapse hit target"
 assert_match 'Button\(action: onToggle\)' \
   "QuotaBar/Views/SettingsView.swift" \
   "Provider card banners should use a real button for reliable clicks on the non-control banner area"

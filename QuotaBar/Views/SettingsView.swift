@@ -220,17 +220,20 @@ struct ModernPage<Content: View>: View {
     let title: String
     let subtitle: String?
     let systemImage: String
+    let maxContentWidth: CGFloat
     let content: Content
 
     init(
         title: String,
         subtitle: String? = nil,
         systemImage: String,
+        maxContentWidth: CGFloat = 920,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
         self.subtitle = subtitle
         self.systemImage = systemImage
+        self.maxContentWidth = maxContentWidth
         self.content = content()
     }
 
@@ -242,7 +245,7 @@ struct ModernPage<Content: View>: View {
             }
             .padding(.horizontal, 26)
             .padding(.vertical, 22)
-            .frame(maxWidth: 920, alignment: .topLeading)
+            .frame(maxWidth: maxContentWidth, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .top)
         }
         .scrollContentBackground(.hidden)
@@ -947,7 +950,8 @@ struct ProvidersView: View {
         ModernPage(
             title: L10n.t(.providersHeader),
             subtitle: L10n.format(.providersSupported, configuredProviders, Provider.visibleCases.count),
-            systemImage: "server.rack"
+            systemImage: "server.rack",
+            maxContentWidth: 1080
         ) {
             VStack(spacing: 14) {
                 ForEach(providerCategories) { category in
@@ -977,112 +981,172 @@ struct ProviderSettingsCategorySection: View {
             }
 
             if isExpanded {
-                VStack(spacing: 12) {
-                    ForEach(category.stats) { stat in
-                        ProviderCard(provider: stat.provider, monitor: monitor)
-                    }
-                }
-                .transition(.opacity)
+                ProviderQuotaMonitorTable(stats: category.stats, monitor: monitor)
+                    .transition(.opacity)
             }
         }
     }
 }
 
-struct ProviderCard: View {
-    let provider: Provider
+struct ProviderQuotaMonitorTable: View {
+    let stats: [ProviderStats]
     @ObservedObject var monitor: QuotaMonitor
-    @State private var isExpanded = true
+
+    var body: some View {
+        MaterialPanel(padding: 0) {
+            VStack(spacing: 0) {
+                ProviderQuotaMonitorTableHeader()
+
+                Divider()
+
+                ForEach(Array(stats.enumerated()), id: \.element.id) { index, stat in
+                    if index > 0 {
+                        Divider()
+                            .padding(.leading, 12)
+                    }
+
+                    ProviderQuotaMonitorRow(stat: stat, monitor: monitor)
+                }
+            }
+        }
+    }
+}
+
+struct ProviderQuotaMonitorTableHeader: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(L10n.t(.provider))
+                .frame(minWidth: 150, maxWidth: .infinity, alignment: .leading)
+
+            Text(L10n.t(.remaining))
+                .frame(width: 94, alignment: .trailing)
+
+            Text(L10n.t(.total))
+                .frame(width: 82, alignment: .trailing)
+
+            Text(L10n.t(.quotaStatus))
+                .frame(width: 100, alignment: .trailing)
+
+            Color.clear
+                .frame(width: 104)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .textCase(.uppercase)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+    }
+}
+
+struct ProviderQuotaMonitorRow: View {
+    private static let trailingControlReserve: CGFloat = 104
+
+    let stat: ProviderStats
+    @ObservedObject var monitor: QuotaMonitor
+    @State private var isExpanded = false
     @State private var showingReauth = false
 
-    var keys: [APIKey] {
-        APIKey.sortedByCurrentQuota(monitor.apiKeys.filter { $0.provider == provider })
+    private var provider: Provider { stat.provider }
+    private var keys: [APIKey] { stat.sortedKeysByCurrentQuota }
+    private var activeCount: Int { keys.filter { $0.isActive }.count }
+    private var isRefreshing: Bool { monitor.refreshingProviders.contains(provider) }
+    private var canRefresh: Bool { keys.contains { $0.isActive && !$0.key.isEmpty } }
+
+    private var remainingText: String {
+        keys.isEmpty ? L10n.t(.notAvailableShort) : stat.totalRemainingDisplayText
     }
 
-    private var stats: ProviderStats {
-        ProviderStats(provider: provider, keys: keys)
+    private var totalText: String {
+        keys.isEmpty ? L10n.t(.notAvailableShort) : stat.totalLimitDisplayText
     }
 
-    private var isRefreshing: Bool {
-        monitor.refreshingProviders.contains(provider)
+    private var statusText: String {
+        guard !keys.isEmpty else { return L10n.t(.noKeyConfigured) }
+        if keys.allSatisfy({ !$0.isActive }) { return L10n.t(.disabled) }
+        if keys.contains(where: { $0.isCredentialExpired }) { return L10n.t(.credentialExpired) }
+        if keys.contains(where: { $0.isUsageLimitExceeded }) { return L10n.t(.usageLimitExceeded) }
+        if keys.contains(where: { $0.isExhausted || $0.isLow }) { return L10n.t(.low) }
+        if keys.contains(where: { $0.status == .failed }) { return L10n.t(.healthFailed) }
+        if keys.contains(where: { $0.isUsableWithUnknownQuota }) { return L10n.t(.ok) }
+        return L10n.t(.healthHealthy)
     }
 
-    private var canRefresh: Bool {
-        keys.contains { $0.isActive && !$0.key.isEmpty }
+    private var statusColor: Color {
+        stat.statusBarProviderStatusColor
     }
 
     var body: some View {
-        MaterialPanel {
-            VStack(alignment: .leading, spacing: 12) {
-                ProviderCardBanner(
-                    provider: provider,
-                    keyCount: keys.count,
-                    isExpanded: isExpanded,
-                    isRefreshing: isRefreshing,
-                    canRefresh: canRefresh,
-                    onToggle: {
-                        withAnimation(settingsCollapseAnimation) { isExpanded.toggle() }
-                    },
-                    onRefresh: { monitor.refreshProvider(provider) }
-                )
+        VStack(spacing: 0) {
+            ZStack(alignment: .trailing) {
+                Button {
+                    withAnimation(settingsCollapseAnimation) { isExpanded.toggle() }
+                } label: {
+                    providerSummaryRow
+                }
+                .buttonStyle(.plain)
 
-                if isExpanded {
-                    Divider()
-
-                    HStack(spacing: 12) {
-                        StatBadge(
-                            label: L10n.t(.total),
-                            value: stats.totalLimitDisplayText
-                        )
-
-                        StatBadge(
-                            label: L10n.t(.remaining),
-                            value: stats.totalRemainingDisplayText
-                        )
-
-                        StatBadge(
-                            label: L10n.t(.active),
-                            value: "\(keys.filter { $0.isActive }.count)"
-                        )
+                HStack(spacing: 7) {
+                    if let dashboard = provider.dashboardURL,
+                       let url = URL(string: dashboard) {
+                        Link(destination: url) {
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 28, height: 28)
+                                .background(.thinMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(provider.color)
+                        .help(L10n.t(.openDashboard))
                     }
 
-                    if !keys.isEmpty {
-                        VStack(spacing: 6) {
-                            ForEach(stats.sortedKeysByCurrentQuota) { key in
-                                ProviderKeySummaryRow(key: key)
-                            }
+                    if provider.supportsDashboardReauthentication {
+                        Button {
+                            showingReauth = true
+                        } label: {
+                            Image(systemName: "person.badge.key.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 28, height: 28)
+                                .background(.thinMaterial, in: Circle())
                         }
-                    } else {
-                        HStack(spacing: 8) {
-                            Image(systemName: "key.slash")
-                                .font(.system(size: 11, weight: .semibold))
-                            Text(L10n.t(.noKeyConfigured))
-                                .font(.caption)
-                            Spacer()
-                        }
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 4)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(provider.color)
+                        .help(L10n.t(.reauthenticate))
                     }
 
-                    HStack(spacing: 14) {
-                        if let dashboard = provider.dashboardURL {
-                            Link(destination: URL(string: dashboard)!) {
-                                Label(L10n.t(.openDashboard), systemImage: "arrow.up.right.square")
-                                    .font(.caption)
-                            }
-                            .foregroundStyle(provider.color)
-                        }
+                    RefreshButton(
+                        isRefreshing: .constant(isRefreshing),
+                        isEnabled: canRefresh,
+                        action: { monitor.refreshProvider(provider) }
+                    )
+                    .scaleEffect(0.82)
+                }
+                .padding(.trailing, 10)
+            }
 
-                        if provider.supportsDashboardReauthentication {
-                            Button {
-                                showingReauth = true
-                            } label: {
-                                Label(L10n.t(.reauthenticate), systemImage: "person.badge.key.fill")
-                                    .font(.caption)
+            if isExpanded {
+                if keys.isEmpty {
+                    ProviderQuotaEmptyKeyRow()
+                        .padding(.leading, 56)
+                        .padding(.trailing, 14)
+                        .padding(.bottom, 10)
+                        .transition(.opacity)
+                } else {
+                    VStack(spacing: 0) {
+                        ProviderQuotaKeyTableHeader()
+
+                        ForEach(Array(keys.enumerated()), id: \.element.id) { index, key in
+                            if index > 0 {
+                                Divider()
+                                    .padding(.leading, 12)
                             }
-                            .foregroundStyle(provider.color)
-                            .buttonStyle(.plain)
+
+                            ProviderQuotaKeyTableRow(key: key)
                         }
                     }
+                    .padding(.leading, 56)
+                    .padding(.trailing, 14)
+                    .padding(.bottom, 10)
+                    .transition(.opacity)
                 }
             }
         }
@@ -1094,130 +1158,174 @@ struct ProviderCard: View {
             )
         }
     }
-}
 
-struct ProviderCardBanner: View {
-    private static let trailingControlReserve: CGFloat = 44
+    private var providerSummaryRow: some View {
+        HStack(spacing: 12) {
+            ProviderIcon(provider: provider, size: 30)
 
-    let provider: Provider
-    let keyCount: Int
-    let isExpanded: Bool
-    let isRefreshing: Bool
-    let canRefresh: Bool
-    let onToggle: () -> Void
-    let onRefresh: () -> Void
+            VStack(alignment: .leading, spacing: 2) {
+                Text(provider.displayName())
+                    .font(.system(size: 13, weight: .semibold))
 
-    var body: some View {
-        ZStack(alignment: .trailing) {
-            Button(action: onToggle) {
                 HStack(spacing: 12) {
-                    ProviderIcon(provider: provider, size: 36)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(provider.displayName())
-                            .font(.system(size: 15, weight: .semibold))
-
-                        Text(L10n.categoryTitle(provider.statusBarCategoryTitle))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
                     Text(L10n.format(.providerKeyCount, keyCount))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.secondary.opacity(0.10), in: Capsule())
-
-                    Color.clear
-                        .frame(width: Self.trailingControlReserve)
+                    Text(L10n.format(.activeCount, activeCount))
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 9)
-                .background(
-                    Color.primary.opacity(isExpanded ? 0.045 : 0.025),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.primary.opacity(isExpanded ? 0.10 : 0.06), lineWidth: 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
 
-            RefreshButton(
-                isRefreshing: .constant(isRefreshing),
-                isEnabled: canRefresh,
-                action: onRefresh
-            )
-            .scaleEffect(0.86)
-            .padding(.trailing, 10)
+            Spacer(minLength: 10)
+
+            ProviderQuotaColumnValue(value: remainingText, tint: statusColor)
+                .frame(width: 94, alignment: .trailing)
+
+            ProviderQuotaColumnValue(value: totalText)
+                .frame(width: 82, alignment: .trailing)
+
+            ProviderQuotaStatusPill(text: statusText, tint: statusColor)
+                .frame(width: 100, alignment: .trailing)
+
+            Color.clear
+                .frame(width: Self.trailingControlReserve)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .contentShape(Rectangle())
+    }
+
+    private var keyCount: Int {
+        keys.count
     }
 }
 
-struct ProviderKeySummaryRow: View {
+struct ProviderQuotaColumnValue: View {
+    let value: String
+    var tint: Color = .primary
+
+    var body: some View {
+        Text(value)
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .foregroundStyle(tint)
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+    }
+}
+
+struct ProviderQuotaStatusPill: View {
+    let text: String
+    let tint: Color
+
+    var body: some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .minimumScaleFactor(0.72)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(tint.opacity(0.12), in: Capsule())
+    }
+}
+
+struct ProviderQuotaEmptyKeyRow: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "key.slash")
+                .font(.system(size: 11, weight: .semibold))
+            Text(L10n.t(.noKeyConfigured))
+                .font(.caption)
+            Spacer()
+        }
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color.primary.opacity(0.028), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+struct ProviderQuotaKeyTableHeader: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(L10n.t(.apiKey))
+                .frame(minWidth: 160, maxWidth: .infinity, alignment: .leading)
+
+            Text(L10n.t(.remaining))
+                .frame(width: 86, alignment: .trailing)
+
+            Text(L10n.t(.quotaStatus))
+                .frame(width: 112, alignment: .trailing)
+
+            Text(L10n.t(.lastUpdated))
+                .frame(width: 124, alignment: .trailing)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.tertiary)
+        .textCase(.uppercase)
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
+        .background(Color.primary.opacity(0.018), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+}
+
+struct ProviderQuotaKeyTableRow: View {
     let key: APIKey
+
+    private var updatedText: String {
+        guard let lastUpdated = key.lastUpdated else { return L10n.t(.notChecked) }
+        return L10n.shortDateTime(lastUpdated)
+    }
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle()
-                .fill(key.status.color)
-                .frame(width: 6, height: 6)
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(key.status.color)
+                    .frame(width: 6, height: 6)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(key.maskedKey)
-                    .font(.system(size: 12, weight: .medium))
-                    .fontDesign(.monospaced)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(key.maskedKey)
+                        .font(.system(size: 12, weight: .medium))
+                        .fontDesign(.monospaced)
+                        .lineLimit(1)
 
-                Text(key.quotaDisplayText)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    Text(key.quotaPresentation.primaryText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
+            .frame(minWidth: 160, maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+            Text(key.remainingBadgeText)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(key.status.color)
+                .monospacedDigit()
+                .lineLimit(1)
+                .frame(width: 86, alignment: .trailing)
+
+            ProviderQuotaStatusPill(text: key.healthDisplayText, tint: key.status.color)
+                .frame(width: 112, alignment: .trailing)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(key.remainingBadgeText)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(key.status.color)
-                    .monospacedDigit()
+                Text(updatedText)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
 
                 Text(key.resetSummary)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
+            .frame(width: 124, alignment: .trailing)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-    }
-}
-
-struct StatBadge: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.primary.opacity(0.022), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
