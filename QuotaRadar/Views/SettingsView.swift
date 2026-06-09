@@ -59,7 +59,7 @@ struct SettingsView: View {
         case .diagnostics:
             DiagnosticsView(monitor: monitor)
         case .settings:
-            AppSettingsView()
+            AppSettingsView(monitor: monitor)
         case .about:
             AboutView()
         }
@@ -368,11 +368,10 @@ struct KeysManagementView: View {
     @State private var importMessage: String?
 
     private var keyProviderCategories: [ProviderCategoryStats] {
-        let stats: [ProviderStats] = Provider.visibleCases.compactMap { provider in
+        let stats: [ProviderStats] = monitor.orderedVisibleProviders.map { provider in
             let providerKeys = APIKey.sortedByCurrentQuota(
                 monitor.apiKeys.filter { $0.provider == provider }
             )
-            guard !providerKeys.isEmpty else { return nil }
             return ProviderStats(provider: provider, keys: providerKeys)
         }
         let grouped = Dictionary(grouping: stats) { $0.provider.statusBarCategoryTitle }
@@ -600,18 +599,22 @@ struct ProviderKeyRowsSection: View {
                     Divider()
 
                     VStack(spacing: 4) {
-                        ForEach(stat.sortedKeysByCurrentQuota) { key in
-                            APIKeyManagementRow(
-                                key: key,
-                                onSetActive: { isActive in
-                                    var updated = key
-                                    updated.isActive = isActive
-                                    monitor.updateKey(updated)
-                                },
-                                onEdit: {
-                                    editingKey = key
-                                }
-                            )
+                        if stat.sortedKeysByCurrentQuota.isEmpty {
+                            ProviderQuotaEmptyKeyRow()
+                        } else {
+                            ForEach(stat.sortedKeysByCurrentQuota) { key in
+                                APIKeyManagementRow(
+                                    key: key,
+                                    onSetActive: { isActive in
+                                        var updated = key
+                                        updated.isActive = isActive
+                                        monitor.updateKey(updated)
+                                    },
+                                    onEdit: {
+                                        editingKey = key
+                                    }
+                                )
+                            }
                         }
                     }
                     .transition(.opacity)
@@ -823,7 +826,8 @@ struct AddKeySheet: View {
     var body: some View {
         CredentialEditorShell(
             title: L10n.t(.addAPIKey),
-            provider: $provider
+            provider: $provider,
+            providers: monitor.orderedVisibleProviders
         ) {
             AddCredentialDetailPane(
                 provider: provider,
@@ -923,6 +927,7 @@ struct AddKeySheet: View {
 struct CredentialEditorShell<Content: View, Footer: View>: View {
     let title: String
     @Binding var provider: Provider
+    let providers: [Provider]
     @ViewBuilder var content: Content
     @ViewBuilder var footer: Footer
 
@@ -933,7 +938,7 @@ struct CredentialEditorShell<Content: View, Footer: View>: View {
             Divider()
 
             HStack(spacing: 0) {
-                AddCredentialProviderList(provider: $provider)
+                AddCredentialProviderList(provider: $provider, providers: providers)
                     .frame(width: 220)
                     .background(Color(nsColor: .controlBackgroundColor).opacity(0.42))
 
@@ -988,9 +993,10 @@ struct AddCredentialHeader: View {
 
 struct AddCredentialProviderList: View {
     @Binding var provider: Provider
+    let providers: [Provider]
 
     private var groupedProviders: [String: [Provider]] {
-        Dictionary(grouping: Provider.visibleCases) { $0.statusBarCategoryTitle }
+        Dictionary(grouping: providers) { $0.statusBarCategoryTitle }
     }
 
     var body: some View {
@@ -1355,7 +1361,8 @@ struct EditKeySheet: View {
     var body: some View {
         CredentialEditorShell(
             title: L10n.t(.editAPIKey),
-            provider: $provider
+            provider: $provider,
+            providers: monitor.orderedVisibleProviders
         ) {
             AddCredentialDetailPane(
                 provider: provider,
@@ -1444,7 +1451,7 @@ struct EditKeySheet: View {
             DashboardReauthSheet(
                 monitor: monitor,
                 provider: provider,
-                key: key.provider == provider ? key : nil
+                key: key.provider == provider && key.isQuotaMonitoringAuthorizationCredential ? key : nil
             )
         }
         .onChange(of: provider) { oldProvider, newProvider in
@@ -1579,7 +1586,7 @@ struct ProvidersView: View {
     @ObservedObject var monitor: QuotaMonitor
 
     private var providerCategories: [ProviderCategoryStats] {
-        let stats = Provider.visibleCases.map { provider in
+        let stats = monitor.orderedVisibleProviders.map { provider in
             ProviderStats(
                 provider: provider,
                 keys: APIKey.sortedByCurrentQuota(monitor.apiKeys.filter { $0.provider == provider })
@@ -1593,7 +1600,7 @@ struct ProvidersView: View {
     }
 
     private var configuredProviders: Int {
-        Set(monitor.apiKeys.map { $0.provider }).count
+        Set(monitor.apiKeys.map { $0.provider }).intersection(Set(Provider.visibleCases)).count
     }
 
     var body: some View {
@@ -2032,9 +2039,8 @@ struct DiagnosticsView: View {
     @ObservedObject var monitor: QuotaMonitor
 
     private var stats: [ProviderStats] {
-        Provider.visibleCases.compactMap { provider in
+        monitor.orderedVisibleProviders.map { provider in
             let keys = APIKey.sortedByCurrentQuota(monitor.apiKeys.filter { $0.provider == provider })
-            guard !keys.isEmpty else { return nil }
             return ProviderStats(provider: provider, keys: keys)
         }
     }
@@ -2096,8 +2102,12 @@ struct CredentialDiagnosticProviderSection: View {
                 }
 
                 VStack(spacing: 6) {
-                    ForEach(stat.credentialDiagnosticItems) { item in
-                        CredentialDiagnosticRow(item: item)
+                    if stat.credentialDiagnosticItems.isEmpty {
+                        ProviderQuotaEmptyKeyRow()
+                    } else {
+                        ForEach(stat.credentialDiagnosticItems) { item in
+                            CredentialDiagnosticRow(item: item)
+                        }
                     }
                 }
             }
@@ -2177,9 +2187,11 @@ struct DiagnosticPill: View {
 // MARK: - App Settings View
 
 struct AppSettingsView: View {
+    @ObservedObject var monitor: QuotaMonitor
     @ObservedObject private var languageStore = AppLanguageStore.shared
     @ObservedObject private var appearanceStore = AppAppearanceStore.shared
     @ObservedObject private var launchAtLoginStore = LaunchAtLoginStore.shared
+    @State private var showingProviderOrderSheet = false
 
     private var transparencyText: String {
         "\(Int((appearanceStore.statusBarTransparency * 100).rounded()))%"
@@ -2206,6 +2218,27 @@ struct AppSettingsView: View {
                     .labelsHidden()
                     .pickerStyle(.segmented)
                     .frame(width: 430)
+                }
+
+                SettingsDivider()
+
+                SettingsPreferenceRow(
+                    icon: "arrow.up.arrow.down",
+                    title: L10n.t(.customProviderOrder),
+                    subtitle: L10n.t(.customProviderOrderDescription)
+                ) {
+                    HStack(spacing: 10) {
+                        Toggle("", isOn: $monitor.isCustomProviderOrderEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+
+                        Button(L10n.t(.configureProviderOrder)) {
+                            showingProviderOrderSheet = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(!monitor.isCustomProviderOrderEnabled)
+                    }
                 }
 
                 SettingsDivider()
@@ -2290,6 +2323,197 @@ struct AppSettingsView: View {
             }
         }
         .navigationTitle(L10n.t(.settingsTab))
+        .sheet(isPresented: $showingProviderOrderSheet) {
+            ProviderOrderSheet(monitor: monitor)
+        }
+    }
+}
+
+struct ProviderOrderSheet: View {
+    @ObservedObject var monitor: QuotaMonitor
+    @Environment(\.dismiss) private var dismiss
+    @State private var draggedProvider: Provider?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ProviderOrderSheetToolbar(
+                onReset: {
+                    withAnimation(settingsCollapseAnimation) {
+                        monitor.resetProviderOrder()
+                    }
+                },
+                onClose: { dismiss() }
+            )
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Provider.categoryDisplayOrder, id: \.self) { category in
+                        let providers = providers(in: category)
+                        if !providers.isEmpty {
+                            ProviderOrderCategoryCard(
+                                title: L10n.categoryTitle(category),
+                                providers: providers,
+                                draggedProvider: $draggedProvider,
+                                onMove: move
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+            }
+        }
+        .frame(width: 460, height: 500)
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.84))
+    }
+
+    private func providers(in category: String) -> [Provider] {
+        monitor.orderedVisibleProviders.filter { $0.statusBarCategoryTitle == category }
+    }
+
+    private func move(_ sourceProvider: Provider?, before targetProvider: Provider) -> Bool {
+        guard let sourceProvider else { return false }
+        withAnimation(settingsCollapseAnimation) {
+            monitor.moveProvider(sourceProvider, before: targetProvider)
+        }
+        draggedProvider = nil
+        return true
+    }
+}
+
+struct ProviderOrderSheetToolbar: View {
+    let onReset: () -> Void
+    let onClose: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t(.providerOrderSheetTitle))
+                    .font(.system(size: 14, weight: .semibold))
+                Text(L10n.t(.dragProviderOrderHint))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Button(L10n.t(.resetProviderOrder), action: onReset)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+            Button(L10n.t(.close), action: onClose)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+}
+
+struct ProviderOrderCategoryCard: View {
+    let title: String
+    let providers: [Provider]
+    @Binding var draggedProvider: Provider?
+    let onMove: (Provider?, Provider) -> Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ProviderOrderCategoryHeader(title: title, count: providers.count)
+
+            Divider()
+                .padding(.leading, 12)
+
+            ForEach(Array(providers.enumerated()), id: \.element.id) { index, provider in
+                ProviderOrderDragRow(provider: provider, isDragging: draggedProvider == provider)
+                    .onDrag {
+                        draggedProvider = provider
+                        return NSItemProvider(object: provider.rawValue as NSString)
+                    }
+                    .onDrop(of: [UTType.text], isTargeted: nil) { _ in
+                        onMove(draggedProvider, provider)
+                    }
+
+                if index < providers.count - 1 {
+                    Divider()
+                        .padding(.leading, 54)
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+struct ProviderOrderCategoryHeader: View {
+    let title: String
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            Spacer()
+
+            Text("\(count)")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(.tertiary)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(Color.primary.opacity(0.025))
+    }
+}
+
+struct ProviderOrderDragRow: View {
+    let provider: Provider
+    let isDragging: Bool
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.tertiary)
+                .frame(width: 16)
+
+            ProviderIcon(provider: provider, size: 21, style: .compactBadge)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(provider.providerFamilyDisplayName())
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+
+                if let planName = provider.planTypeDisplayName() {
+                    Text(planName)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            (isDragging ? Color.accentColor.opacity(0.12) : Color.clear),
+            in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(isDragging ? Color.accentColor.opacity(0.35) : Color.clear, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
     }
 }
 

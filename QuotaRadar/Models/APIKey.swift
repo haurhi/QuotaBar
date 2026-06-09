@@ -19,6 +19,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
     case claudeSubscription = "Claude Subscription"
     case codexAPIUsage = "Codex API Usage"
     case codexSubscription = "Codex Subscription"
+    case kimiSubscription = "Kimi Subscription"
     case deepseek = "DeepSeek"
     case xfyunCodingPlan = "讯飞星火"
     case xfyunTokenPlan = "XFYun Spark Token Plan"
@@ -46,6 +47,23 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 && $0 != .codexAPIUsage
                 && !pendingQuotaIntegrationCases.contains($0)
         }
+    }
+
+    static func orderedVisibleCases(from storedOrder: [Provider]) -> [Provider] {
+        let visibleProviders = visibleCases
+        let visibleSet = Set(visibleProviders)
+        var orderedProviders: [Provider] = []
+
+        for provider in storedOrder where visibleSet.contains(provider) && !orderedProviders.contains(provider) {
+            orderedProviders.append(provider)
+        }
+
+        orderedProviders.append(contentsOf: visibleProviders.filter { !orderedProviders.contains($0) })
+        return orderedProviders
+    }
+
+    static func orderedVisibleCases(fromRawValues rawValues: [String]) -> [Provider] {
+        orderedVisibleCases(from: rawValues.compactMap { Provider(rawValue: $0) })
     }
 
     static let categoryDisplayOrder = ["AI Search", "LLM"]
@@ -80,6 +98,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Codex API Usage"
             case .codexSubscription:
                 return "Codex Subscription"
+            case .kimiSubscription:
+                return "Kimi Subscription"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .querit, .anthropic, .deepseek, .opencodeGo:
                 return rawValue
             }
@@ -109,6 +129,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Codex API 用量"
             case .codexSubscription:
                 return "Codex 订阅"
+            case .kimiSubscription:
+                return "Kimi 订阅"
             case .xfyunCodingPlan:
                 return "讯飞星火 coding plan"
             case .xfyunTokenPlan:
@@ -152,6 +174,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Codex API 用量"
             case .codexSubscription:
                 return "Codex 訂閱"
+            case .kimiSubscription:
+                return "Kimi 訂閱"
             case .aliyunCodingPlan:
                 return "阿里雲 coding plan"
             case .aliyunTokenPlan:
@@ -191,6 +215,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Codex API Usage"
             case .codexSubscription:
                 return "Codex Subscription"
+            case .kimiSubscription:
+                return "Kimi Subscription"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .querit, .anthropic, .deepseek, .opencodeGo:
                 return rawValue
             }
@@ -222,6 +248,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Codex API Usage"
             case .codexSubscription:
                 return "Codex Subscription"
+            case .kimiSubscription:
+                return "Kimi Subscription"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .querit, .anthropic, .deepseek, .opencodeGo:
                 return rawValue
             }
@@ -244,6 +272,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Claude"
             case .codexAPIUsage, .codexSubscription:
                 return "Codex"
+            case .kimiSubscription:
+                return "Kimi"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .deepseek, .opencodeGo:
                 return displayName(language: language)
             }
@@ -261,6 +291,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Claude"
             case .codexAPIUsage, .codexSubscription:
                 return "Codex"
+            case .kimiSubscription:
+                return "Kimi"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .deepseek, .opencodeGo:
                 return displayName(language: language)
             }
@@ -278,6 +310,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Claude"
             case .codexAPIUsage, .codexSubscription:
                 return "Codex"
+            case .kimiSubscription:
+                return "Kimi"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .deepseek, .opencodeGo:
                 return displayName(language: language)
             }
@@ -295,6 +329,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
                 return "Claude"
             case .codexAPIUsage, .codexSubscription:
                 return "Codex"
+            case .kimiSubscription:
+                return "Kimi"
             case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .deepseek, .opencodeGo:
                 return displayName(language: language)
             }
@@ -330,7 +366,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             case .korean:
                 return "API 사용량"
             }
-        case .claudeSubscription, .codexSubscription:
+        case .claudeSubscription, .codexSubscription, .kimiSubscription:
             switch language {
             case .english:
                 return "Subscription"
@@ -363,6 +399,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return "ProviderIcons/claude"
         case .codexAPIUsage, .codexSubscription:
             return "ProviderIcons/codex"
+        case .kimiSubscription:
+            return "ProviderIcons/kimi"
         case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .deepseek, .opencodeGo:
             return "ProviderIcons/\(self)"
         }
@@ -372,7 +410,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .brave:
             return true
-        case .tavily, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .deepseek, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .tavily, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .deepseek, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return false
         }
     }
@@ -381,7 +419,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .deepseek, .bocha, .wxmp:
             return true
-        case .tavily, .brave, .serpapi, .serper, .exa, .anysearch, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .tavily, .brave, .serpapi, .serper, .exa, .anysearch, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return false
         }
     }
@@ -403,6 +441,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         case .claudeSubscription: return "clock.badge.checkmark"
         case .codexAPIUsage: return "chevron.left.forwardslash.chevron.right"
         case .codexSubscription: return "terminal.fill"
+        case .kimiSubscription: return "sparkle.magnifyingglass"
         case .deepseek: return "sparkles"
         case .xfyunCodingPlan: return "waveform.path.ecg"
         case .xfyunTokenPlan: return "waveform.path.badge.plus"
@@ -430,6 +469,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         case .anthropic: return Color(hex: "191919")
         case .claudeAPIUsage, .claudeSubscription: return Color(hex: "D97757")
         case .codexAPIUsage, .codexSubscription: return Color(hex: "111827")
+        case .kimiSubscription: return Color(hex: "111111")
         case .deepseek: return Color(hex: "4D6BFA") // DeepSeek blue
         case .xfyunCodingPlan: return Color(hex: "E23B3B")
         case .xfyunTokenPlan: return Color(hex: "C81E1E")
@@ -447,7 +487,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit:
             return "Search"
-        case .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .deepseek, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .deepseek, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return "LLM"
         }
     }
@@ -463,16 +503,16 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
 
     var homeVisibleWithoutKeys: Bool {
         switch self {
-        case .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo:
+        case .tavily, .brave, .serpapi, .bocha, .claudeSubscription, .codexSubscription, .deepseek, .aliyunCodingPlan:
             return true
-        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .serper, .exa, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .codexAPIUsage, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return false
         }
     }
 
     var supportsDashboardReauthentication: Bool {
         switch self {
-        case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan, .claudeSubscription, .codexSubscription:
+        case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan, .claudeSubscription, .codexSubscription, .kimiSubscription:
             return true
         case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .codexAPIUsage, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan:
             return false
@@ -493,6 +533,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return ["claude.ai"]
         case .codexSubscription:
             return ["chatgpt.com"]
+        case .kimiSubscription:
+            return ["kimi.com", "www.kimi.com"]
         case .aliyunCodingPlan, .aliyunTokenPlan:
             return ["aliyun.com", "bailian.console.aliyun.com"]
         case .tencentCloudCodingPlan:
@@ -516,6 +558,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return ["sessionKey"]
         case .codexSubscription:
             return ["__Secure-next-auth.session-token|__Secure-next-auth.session-token.*|__search-next-auth"]
+        case .kimiSubscription:
+            return ["kimi-auth|accessToken|access_token"]
         case .aliyunCodingPlan, .aliyunTokenPlan:
             return ["login_aliyunid_ticket", "aliyun_lang", "cna"]
         case .tencentCloudCodingPlan:
@@ -553,6 +597,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return "OPENAI_API_KEY"
         case .codexSubscription:
             return "CODEX_SUBSCRIPTION_SESSION"
+        case .kimiSubscription:
+            return "KIMI_SUBSCRIPTION_SESSION"
         case .tavily:
             return "TAVILY_API_KEY"
         case .brave:
@@ -582,7 +628,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan:
             return true
-        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan:
+        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan:
             return false
         }
     }
@@ -601,7 +647,7 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return "ALIYUN_CODING_PLAN_API_KEY"
         case .tencentCloudCodingPlan:
             return "TENCENT_CLOUD_CODING_PLAN_API_KEY"
-        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan:
+        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan:
             return defaultCredentialName
         }
     }
@@ -609,22 +655,22 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
     /// 是否支持主动查询 quota（通过 API endpoint）
     var supportsQuotaQuery: Bool {
         switch self {
-        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan, .codexSubscription:
+        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .deepseek, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan, .claudeSubscription, .codexSubscription, .kimiSubscription:
             return true
-        case .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan:
+        case .anthropic, .claudeAPIUsage, .codexAPIUsage, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan:
             return false // 只能通过 response header、dashboard，或未公开 quota API
         }
     }
 
     func localizedUnsupportedQuotaLabel(language: AppLanguage = AppLanguageStore.shared.language) -> String {
         switch self {
-        case .querit, .anthropic, .claudeSubscription:
+        case .querit, .anthropic:
             return dashboardURL == nil ? L10n.t(.quotaUnavailable, language: language) : L10n.t(.openDashboard, language: language)
         case .exa:
             return L10n.t(.adminCredentialRequired, language: language)
         case .tavily, .brave, .serpapi, .serper, .bocha, .anysearch, .wxmp, .deepseek, .claudeAPIUsage, .codexAPIUsage, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return L10n.t(.quotaUnavailable, language: language)
-        case .codexSubscription:
+        case .claudeSubscription, .codexSubscription, .kimiSubscription:
             return L10n.t(.openDashboard, language: language)
         }
     }
@@ -639,8 +685,10 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return L10n.t(.anthropicDashboardOnlyDiagnostic, language: language)
         case .claudeAPIUsage, .codexAPIUsage:
             return L10n.t(.quotaCheckNotSupportedDiagnostic, language: language)
-        case .claudeSubscription, .codexSubscription:
+        case .codexSubscription:
             return L10n.t(.businessInvocationKeyUnsupportedDiagnostic, language: language)
+        case .claudeSubscription, .kimiSubscription:
+            return L10n.t(.dashboardCookieCapabilityNote, language: language)
         case .aliyunCodingPlan:
             return L10n.t(.businessInvocationKeyUnsupportedDiagnostic, language: language)
         case .tavily, .brave, .serpapi, .serper, .bocha, .anysearch, .wxmp, .deepseek, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
@@ -679,6 +727,8 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return "https://platform.openai.com/usage"
         case .codexSubscription:
             return "https://chatgpt.com"
+        case .kimiSubscription:
+            return "https://www.kimi.com/membership/subscription?tab=quota"
         case .deepseek:
             return "https://platform.deepseek.com/usage"
         case .xfyunCodingPlan:
@@ -767,14 +817,14 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         case .claudeSubscription:
             return ProviderCapability(
                 credentialKind: .dashboardCookie,
-                usageSource: .unavailable,
-                resetCycle: .notExposed,
+                usageSource: .dashboardAPI,
+                resetCycle: .dashboard,
                 consumesQuota: false,
                 supportsCurlImport: true,
-                canTestConnection: false,
-                notes: L10n.t(.businessInvocationKeyUnsupportedDiagnostic)
+                canTestConnection: true,
+                notes: L10n.t(.dashboardCookieCapabilityNote)
             )
-        case .codexSubscription:
+        case .codexSubscription, .kimiSubscription:
             return ProviderCapability(
                 credentialKind: .dashboardCookie,
                 usageSource: .dashboardAPI,
@@ -805,11 +855,11 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
             return .localPolicy
         case .tavily, .serpapi, .serper, .bocha, .wxmp, .deepseek:
             return .officialAPI
-        case .querit, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan:
+        case .querit, .claudeSubscription, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan:
             return .dashboardAPI
         case .exa, .tencentCloudTokenPlan:
             return .officialAPI
-        case .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage:
+        case .anthropic, .claudeAPIUsage, .codexAPIUsage:
             return .unavailable
         case .codexSubscription:
             return .dashboardAPI
@@ -820,11 +870,11 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .tavily, .serpapi, .tencentCloudTokenPlan:
             return .monthly
-        case .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan:
+        case .claudeSubscription, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan:
             return .dashboard
         case .deepseek, .bocha, .wxmp, .anysearch:
             return .none
-        case .brave, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage:
+        case .brave, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .codexAPIUsage:
             return .notExposed
         case .codexSubscription:
             return .dashboard
@@ -1015,7 +1065,7 @@ struct MenuQuotaItem: Identifiable, Equatable {
         key.isActive && !key.key.isEmpty
     }
 
-    static func topItems(from stats: [ProviderStats], limit: Int = 5) -> [MenuQuotaItem] {
+    static func topItems(from stats: [ProviderStats], limit: Int = 5, providerOrder: [Provider] = Provider.visibleCases) -> [MenuQuotaItem] {
         Array(
             stats
                 .flatMap { stat in
@@ -1024,12 +1074,12 @@ struct MenuQuotaItem: Identifiable, Equatable {
                         .map { MenuQuotaItem(provider: stat.provider, key: $0) }
                 }
                 .filter { $0.key.isActive }
-                .sorted(by: shouldRankBefore)
+                .sorted { shouldRankBefore($0, $1, providerOrder: providerOrder) }
                 .prefix(limit)
         )
     }
 
-    static func attentionItems(from stats: [ProviderStats], limit: Int = 5) -> [MenuQuotaItem] {
+    static func attentionItems(from stats: [ProviderStats], limit: Int = 5, providerOrder: [Provider] = Provider.visibleCases) -> [MenuQuotaItem] {
         Array(
             stats
                 .flatMap { stat in
@@ -1038,12 +1088,12 @@ struct MenuQuotaItem: Identifiable, Equatable {
                         .map { MenuQuotaItem(provider: stat.provider, key: $0) }
                 }
                 .filter { $0.key.isActive && $0.key.needsStatusBarAttention }
-                .sorted(by: shouldRankBefore)
+                .sorted { shouldRankBefore($0, $1, providerOrder: providerOrder) }
                 .prefix(limit)
         )
     }
 
-    private static func shouldRankBefore(_ lhs: MenuQuotaItem, _ rhs: MenuQuotaItem) -> Bool {
+    private static func shouldRankBefore(_ lhs: MenuQuotaItem, _ rhs: MenuQuotaItem, providerOrder: [Provider]) -> Bool {
         let lhsKey = lhs.priorityKey
         let rhsKey = rhs.priorityKey
 
@@ -1059,8 +1109,8 @@ struct MenuQuotaItem: Identifiable, Equatable {
             return lhsKey.remaining < rhsKey.remaining
         }
 
-        let lhsProviderIndex = Provider.visibleCases.firstIndex(of: lhs.provider) ?? Int.max
-        let rhsProviderIndex = Provider.visibleCases.firstIndex(of: rhs.provider) ?? Int.max
+        let lhsProviderIndex = providerOrder.firstIndex(of: lhs.provider) ?? Int.max
+        let rhsProviderIndex = providerOrder.firstIndex(of: rhs.provider) ?? Int.max
         if lhsProviderIndex != rhsProviderIndex {
             return lhsProviderIndex < rhsProviderIndex
         }
@@ -1408,7 +1458,7 @@ struct APIKey: Identifiable, Codable, Equatable {
         switch provider {
         case .brave:
             return .responseHeader
-        case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .tencentCloudCodingPlan:
+        case .querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .tencentCloudCodingPlan, .kimiSubscription:
             return .dashboardAPI
         case .tencentCloudTokenPlan:
             return .officialAPI
@@ -1455,14 +1505,14 @@ struct APIKey: Identifiable, Codable, Equatable {
             return L10n.t(.resetsMonthlyDay1)
         case .deepseek, .wxmp, .bocha, .anysearch:
             return L10n.t(.noResetCycle)
-        case .brave, .serpapi, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .brave, .serpapi, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return L10n.t(.resetNotExposed)
         }
     }
 
     var visibleQuotaResetSummary: String {
         guard isActive else { return "" }
-        if provider == .codexSubscription, !quotaWindowDetails.isEmpty {
+        if (provider == .claudeSubscription || provider == .codexSubscription), !quotaWindowDetails.isEmpty {
             return ""
         }
         if derivesPlanEndFromMonthlyQuotaReset,
@@ -1476,7 +1526,7 @@ struct APIKey: Identifiable, Codable, Equatable {
         switch provider {
         case .tavily, .deepseek, .wxmp, .bocha, .anysearch:
             return quotaResetSummary
-        case .brave, .serpapi, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
+        case .brave, .serpapi, .serper, .exa, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .codexSubscription, .kimiSubscription, .xfyunCodingPlan, .xfyunTokenPlan, .volcengineCodingPlan, .volcengineTokenPlan, .opencodeGo, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
             return ""
         }
     }
@@ -1862,9 +1912,9 @@ struct ProviderStats: Identifiable {
 
     private var usesPercentageQuota: Bool {
         switch provider {
-        case .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .tencentCloudCodingPlan, .tencentCloudTokenPlan, .codexSubscription:
+        case .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .aliyunCodingPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan, .claudeSubscription, .codexSubscription, .kimiSubscription:
             return true
-        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .claudeSubscription, .codexAPIUsage, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunCodingPlan, .aliyunTokenPlan:
+        case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .querit, .anthropic, .claudeAPIUsage, .codexAPIUsage, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan:
             return false
         }
     }

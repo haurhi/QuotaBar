@@ -666,6 +666,143 @@ enum QuotaParsers {
             ?? parseISO8601Date(response.expires_at)
     }
 
+    static func parseClaudeOrganizationID(_ data: Data) throws -> String {
+        let object = try JSONSerialization.jsonObject(with: data)
+        let candidates = claudeOrganizationCandidates(from: object)
+        guard !candidates.isEmpty else {
+            throw QuotaError.invalidResponse
+        }
+
+        let selected = candidates.first { $0.isActive == true }
+            ?? candidates.first { $0.isDefault == true }
+            ?? candidates.first
+        guard let id = selected?.id, !id.isEmpty else {
+            throw QuotaError.invalidResponse
+        }
+
+        return id
+    }
+
+    static func parseClaudeSubscriptionUsage(_ data: Data) throws -> QuotaResult {
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw QuotaError.invalidResponse
+        }
+
+        let usage = object["usage"] as? [String: Any] ?? object
+        let specs = [
+            (field: "five_hour", name: "5h"),
+            (field: "seven_day", name: "week"),
+        ]
+        let windows = specs.compactMap { spec -> PercentQuotaWindow? in
+            guard let window = usage[spec.field] as? [String: Any],
+                  let usedPercent = firstDoubleValue(
+                    in: window,
+                    keys: ["utilization", "used_percentage", "usedPercent"]
+                  ) else {
+                return nil
+            }
+
+            return PercentQuotaWindow(
+                name: spec.name,
+                remainingPercent: max(0, 100 - usedPercent),
+                resetAt: firstDateValue(
+                    in: window,
+                    keys: ["resets_at", "reset_at", "resetsAt", "resetAt"]
+                )
+            )
+        }
+
+        guard !windows.isEmpty else {
+            throw QuotaError.invalidResponse
+        }
+
+        let orderedWindows = orderPercentWindows(windows)
+        return percentQuotaResult(
+            windows: orderedWindows,
+            label: orderedWindows
+                .map { window in "\(window.name) \(formatPercent(window.remainingPercent))" }
+                .joined(separator: " · ")
+        )
+    }
+
+    static func parseClaudeSubscriptionDetails(_ data: Data) throws -> Date? {
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw QuotaError.invalidResponse
+        }
+
+        return firstDateValue(
+            in: object,
+            keys: [
+                "next_charge_at",
+                "next_charge_date",
+                "current_period_end",
+                "active_until",
+                "expires_at",
+                "ends_at",
+            ]
+        )
+        ?? (object["subscription"] as? [String: Any]).flatMap {
+            firstDateValue(
+                in: $0,
+                keys: [
+                    "next_charge_at",
+                    "next_charge_date",
+                    "current_period_end",
+                    "active_until",
+                    "expires_at",
+                    "ends_at",
+                ]
+            )
+        }
+    }
+
+    static func parseKimiSubscriptionUsage(subscriptionData: Data, usageData: Data?) throws -> QuotaResult {
+        guard let subscription = try JSONSerialization.jsonObject(with: subscriptionData) as? [String: Any] else {
+            throw QuotaError.invalidResponse
+        }
+        let usage = try usageData.flatMap { data -> [String: Any]? in
+            try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        }
+
+        let planEndsAt = kimiPlanEndDate(from: subscription)
+            ?? usage.flatMap(kimiPlanEndDate)
+
+        var windows: [PercentQuotaWindow] = []
+        if let usage {
+            windows.append(contentsOf: kimiUsageWindows(from: usage))
+        }
+        if let balanceWindow = kimiSubscriptionBalanceWindow(from: subscription, planEndsAt: planEndsAt)
+            ?? usage.flatMap({ kimiSubscriptionBalanceWindow(from: $0, planEndsAt: planEndsAt) }) {
+            windows.append(balanceWindow)
+        }
+
+        if !windows.isEmpty {
+            let orderedWindows = orderPercentWindows(windows)
+            return percentQuotaResult(
+                windows: orderedWindows,
+                planEndsAt: planEndsAt,
+                label: orderedWindows
+                    .map { window in "\(window.name) \(formatPercent(window.remainingPercent))" }
+                    .joined(separator: " · ")
+            )
+        }
+
+        if let subscribed = subscription["subscribed"] as? Bool, subscribed == false {
+            throw QuotaError.noSubscription
+        }
+
+        return QuotaResult(
+            remaining: Int.max,
+            limit: Int.max,
+            resetAt: nil,
+            planEndsAt: planEndsAt,
+            quotaLabel: "Usable · quota unknown",
+            quotaText: .localized(.usableUnknownQuota),
+            diagnosticMessage: "Kimi membership endpoint returned subscription status, but quota was not exposed.",
+            diagnosticText: .localized(.usableUnknownQuota)
+        )
+    }
+
     static func parseTencentCloudCodingPlanDescribePkg(_ data: Data) throws -> QuotaResult {
         struct ResponseEnvelope: Decodable {
             let code: Int?
@@ -836,6 +973,10 @@ enum QuotaParsers {
             throw QuotaError.invalidResponse
         }
 
+        if let instanceInfos = payload["codingPlanInstanceInfos"] as? [[String: Any]] {
+            return try parseAliyunCodingPlanInstanceInfos(instanceInfos)
+        }
+
         if let hasCodingPlan = payload["hasCodingPlan"] as? Bool,
            !hasCodingPlan {
             throw QuotaError.noSubscription
@@ -871,6 +1012,47 @@ enum QuotaParsers {
             quotaText: .localized(.usableUnknownQuota),
             diagnosticMessage: "Aliyun Coding Plan returned subscription status, but usage quota was not exposed.",
             diagnosticText: .localized(.usableUnknownQuota)
+        )
+    }
+
+    private static func parseAliyunCodingPlanInstanceInfos(_ instanceInfos: [[String: Any]]) throws -> QuotaResult {
+        guard !instanceInfos.isEmpty else {
+            throw QuotaError.noSubscription
+        }
+
+        let usableInstances = instanceInfos.filter { instance in
+            guard let status = stringValue(instance["status"])?.uppercased() else {
+                return true
+            }
+            return ["VALID", "NORMAL", "ACTIVE"].contains(status)
+        }
+
+        guard let selected = usableInstances.first(where: { aliyunCodingPlanQuotaInfo(from: $0) != nil }) ?? usableInstances.first else {
+            throw QuotaError.noSubscription
+        }
+
+        guard let quotaInfo = aliyunCodingPlanQuotaInfo(from: selected) else {
+            throw QuotaError.invalidResponse
+        }
+
+        let windows = aliyunCodingPlanInstanceWindows(from: quotaInfo)
+        guard !windows.isEmpty else {
+            throw QuotaError.invalidResponse
+        }
+
+        let orderedWindows = orderPercentWindows(windows)
+        return percentQuotaResult(
+            windows: orderedWindows,
+            planEndsAt: aliyunTimestampDate(
+                selected["instanceEndTime"]
+                    ?? selected["endTime"]
+                    ?? selected["EndTime"]
+                    ?? selected["expireTime"]
+                    ?? selected["expirationTime"]
+            ),
+            label: orderedWindows
+                .map { window in "\(window.name) \(formatPercent(window.remainingPercent))" }
+                .joined(separator: " · ")
         )
     }
 
@@ -1053,7 +1235,15 @@ enum QuotaParsers {
             return date
         }
         formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: value)
+        if let date = formatter.date(from: value) {
+            return date
+        }
+
+        let dayFormatter = DateFormatter()
+        dayFormatter.locale = Locale(identifier: "en_US_POSIX")
+        dayFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        dayFormatter.dateFormat = "yyyy-MM-dd"
+        return dayFormatter.date(from: value)
     }
 
     private static func aliyunDataPayload(from envelope: [String: Any]) -> [String: Any]? {
@@ -1117,6 +1307,67 @@ enum QuotaParsers {
         return nil
     }
 
+    private static func aliyunCodingPlanQuotaInfo(from instance: [String: Any]) -> [String: Any]? {
+        firstDictionary(
+            in: instance,
+            keys: [
+                "codingPlanQuotaInfo",
+                "quotaInfo",
+                "usageDetail",
+                "codingPlanUsageDTO",
+                "codingPlanUsage",
+            ]
+        )
+    }
+
+    private static func aliyunCodingPlanInstanceWindows(from quotaInfo: [String: Any]) -> [PercentQuotaWindow] {
+        [
+            aliyunCodingPlanFlatWindow(
+                name: "5h",
+                source: quotaInfo,
+                usedKeys: ["per5HourUsedQuota", "perFiveHourUsedQuota", "rp5hUsage", "perFiveHourUsage", "fiveHourUsage"],
+                totalKeys: ["per5HourTotalQuota", "perFiveHourTotalQuota", "rp5hLimit", "perFiveHourLimit", "fiveHourLimit"],
+                resetKeys: ["per5HourQuotaNextRefreshTime", "perFiveHourQuotaNextRefreshTime", "rp5hNextRefreshTime", "perFiveHourNextRefreshTime"]
+            ),
+            aliyunCodingPlanFlatWindow(
+                name: "week",
+                source: quotaInfo,
+                usedKeys: ["perWeekUsedQuota", "rpwUsage", "perWeekUsage", "weekUsage", "weeklyUsage"],
+                totalKeys: ["perWeekTotalQuota", "rpwLimit", "perWeekLimit", "weekLimit", "weeklyLimit"],
+                resetKeys: ["perWeekQuotaNextRefreshTime", "rpwNextRefreshTime", "perWeekNextRefreshTime", "weekNextRefreshTime"]
+            ),
+            aliyunCodingPlanFlatWindow(
+                name: "month",
+                source: quotaInfo,
+                usedKeys: ["perBillMonthUsedQuota", "perMonthUsedQuota", "packageUsage", "perMonthUsage", "monthUsage", "monthlyUsage"],
+                totalKeys: ["perBillMonthTotalQuota", "perMonthTotalQuota", "packageLimit", "perMonthLimit", "monthLimit", "monthlyLimit"],
+                resetKeys: ["perBillMonthQuotaNextRefreshTime", "perMonthQuotaNextRefreshTime", "packageNextRefreshTime", "monthNextRefreshTime"]
+            ),
+        ].compactMap { $0 }
+    }
+
+    private static func aliyunCodingPlanFlatWindow(
+        name: String,
+        source: [String: Any],
+        usedKeys: [String],
+        totalKeys: [String],
+        resetKeys: [String]
+    ) -> PercentQuotaWindow? {
+        guard let total = firstDoubleValue(in: source, keys: totalKeys),
+              total > 0 else {
+            return nil
+        }
+
+        let used = firstDoubleValue(in: source, keys: usedKeys) ?? 0
+        let remaining = max(0, total - used)
+        return PercentQuotaWindow(
+            name: name,
+            remainingPercent: remaining / total * 100,
+            resetAt: firstTimestampDate(in: source, keys: resetKeys),
+            remainingText: "\(Int(remaining.rounded(.down))) / \(Int(total.rounded(.down)))"
+        )
+    }
+
     private static func aliyunCodingPlanWindow(
         name: String,
         source: [String: Any],
@@ -1142,10 +1393,300 @@ enum QuotaParsers {
         )
     }
 
+    private static func kimiPlanEndDate(from object: [String: Any]) -> Date? {
+        firstDateValue(
+            in: object,
+            keys: [
+                "next_billing_time",
+                "nextBillingTime",
+                "expire_time",
+                "expireTime",
+                "expires_at",
+                "expiresAt",
+                "end_time",
+                "endTime",
+            ]
+        )
+        ?? firstDictionary(in: object, keys: ["subscription", "purchase_subscription", "purchaseSubscription"]).flatMap(kimiPlanEndDate)
+        ?? (object["balances"] as? [[String: Any]])?.compactMap { balance in
+            firstDateValue(in: balance, keys: ["expire_time", "expireTime", "upcoming_expiration", "upcomingExpiration"])
+        }.first
+        ?? firstDictionary(in: object, keys: ["subscription_balance", "subscriptionBalance"]).flatMap { balance in
+            firstDateValue(in: balance, keys: ["expire_time", "expireTime", "upcoming_expiration", "upcomingExpiration"])
+        }
+    }
+
+    private static func kimiRateLimitWindows(from object: [String: Any]) -> [PercentQuotaWindow] {
+        [
+            firstKimiRateLimitWindow(
+                name: "5h",
+                object: object,
+                primaryKeys: ["ratelimit_5h", "rate_limit_5h", "rateLimit5h", "ratelimit5h"],
+                fallbackKeys: ["ratelimit_code_5h", "rate_limit_code_5h", "rateLimitCode5h", "ratelimitCode5h"]
+            ),
+            firstKimiRateLimitWindow(
+                name: "week",
+                object: object,
+                primaryKeys: ["ratelimit_7d", "rate_limit_7d", "rateLimit7d", "ratelimit7d"],
+                fallbackKeys: ["ratelimit_code_7d", "rate_limit_code_7d", "rateLimitCode7d", "ratelimitCode7d"]
+            ),
+        ].compactMap { $0 }
+    }
+
+    private static func kimiUsageWindows(from object: [String: Any]) -> [PercentQuotaWindow] {
+        var windows: [PercentQuotaWindow] = []
+
+        if let summary = firstDictionary(in: object, keys: ["usage", "detail"]) {
+            if let window = kimiUsageDetailWindow(name: "week", source: summary) {
+                windows.append(window)
+            }
+        }
+
+        if let limits = object["limits"] as? [[String: Any]] {
+            windows.append(contentsOf: limits.compactMap(kimiUsageLimitWindow))
+        }
+
+        if let usages = object["usages"] as? [[String: Any]] {
+            let selected = usages.first { usage in
+                stringValue(usage["scope"])?.uppercased() == "FEATURE_CODING"
+            } ?? usages.first
+
+            if let selected {
+                if let detail = firstDictionary(in: selected, keys: ["detail", "usage"]),
+                   let window = kimiUsageDetailWindow(name: "week", source: detail) {
+                    windows.append(window)
+                }
+                if let limits = selected["limits"] as? [[String: Any]] {
+                    windows.append(contentsOf: limits.compactMap(kimiUsageLimitWindow))
+                }
+            }
+        }
+
+        if windows.isEmpty {
+            windows.append(contentsOf: kimiRateLimitWindows(from: object))
+        }
+
+        var seen = Set<String>()
+        return windows.filter { window in
+            seen.insert(window.name).inserted
+        }
+    }
+
+    private static func kimiUsageLimitWindow(from item: [String: Any]) -> PercentQuotaWindow? {
+        let detail = firstDictionary(in: item, keys: ["detail", "usage"]) ?? item
+        let window = firstDictionary(in: item, keys: ["window"]) ?? [:]
+        let name = kimiUsageWindowName(item: item, detail: detail, window: window)
+        return kimiUsageDetailWindow(name: name, source: detail)
+    }
+
+    private static func kimiUsageDetailWindow(name: String, source: [String: Any]) -> PercentQuotaWindow? {
+        guard let limit = firstDoubleValue(in: source, keys: ["limit", "total", "quota", "amount"]),
+              limit > 0 else {
+            return nil
+        }
+        let remaining = firstDoubleValue(in: source, keys: ["remaining", "remain", "left", "amountLeft", "amount_left"])
+            ?? firstDoubleValue(in: source, keys: ["used", "usage", "amountUsed"]).map { max(0, limit - $0) }
+        guard let remaining else {
+            return nil
+        }
+        let safeRemaining = max(0, min(limit, remaining))
+        return PercentQuotaWindow(
+            name: name,
+            remainingPercent: safeRemaining / limit * 100,
+            resetAt: firstDateValue(
+                in: source,
+                keys: ["resetTime", "resetAt", "reset_time", "reset_at"]
+            ),
+            remainingText: "\(compactNumber(safeRemaining)) / \(compactNumber(limit))"
+        )
+    }
+
+    private static func kimiUsageWindowName(
+        item: [String: Any],
+        detail: [String: Any],
+        window: [String: Any]
+    ) -> String {
+        for source in [item, detail] {
+            for key in ["name", "title", "scope"] {
+                if let normalized = normalizedKimiUsageWindowName(stringValue(source[key])) {
+                    return normalized
+                }
+            }
+        }
+
+        let duration = firstDoubleValue(in: window, keys: ["duration"])
+            ?? firstDoubleValue(in: item, keys: ["duration"])
+            ?? firstDoubleValue(in: detail, keys: ["duration"])
+        let unit = (
+            stringValue(window["timeUnit"])
+            ?? stringValue(item["timeUnit"])
+            ?? stringValue(detail["timeUnit"])
+            ?? ""
+        ).uppercased()
+
+        guard let duration else { return "week" }
+        if unit.contains("MINUTE") {
+            if duration == 300 { return "5h" }
+            if duration >= 10_000 && duration <= 10_200 { return "week" }
+            if duration >= 40_000 && duration <= 45_000 { return "month" }
+        }
+        if unit.contains("HOUR") {
+            if duration == 5 { return "5h" }
+            if duration == 168 { return "week" }
+            if duration >= 672 && duration <= 744 { return "month" }
+        }
+        if unit.contains("DAY") {
+            if duration == 7 { return "week" }
+            if duration >= 28 && duration <= 31 { return "month" }
+        }
+        if unit.contains("SECOND"), let name = quotaWindowName(seconds: Int(duration)) {
+            return name
+        }
+        return "week"
+    }
+
+    private static func normalizedKimiUsageWindowName(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized.contains("5h") || normalized.contains("five") || normalized.contains("300") {
+            return "5h"
+        }
+        if normalized.contains("week") || normalized.contains("weekly") || normalized.contains("7d") {
+            return "week"
+        }
+        if normalized.contains("month") || normalized.contains("monthly") {
+            return "month"
+        }
+        return nil
+    }
+
+    private static func firstKimiRateLimitWindow(
+        name: String,
+        object: [String: Any],
+        primaryKeys: [String],
+        fallbackKeys: [String]
+    ) -> PercentQuotaWindow? {
+        let source = firstDictionary(in: object, keys: primaryKeys)
+            ?? firstDictionary(in: object, keys: fallbackKeys)
+        return source.flatMap { kimiRateLimitWindow(name: name, source: $0) }
+    }
+
+    private static func kimiRateLimitWindow(name: String, source: [String: Any]) -> PercentQuotaWindow? {
+        if let enabled = boolValue(source["enabled"]), !enabled {
+            return nil
+        }
+        guard let ratio = firstDoubleValue(
+            in: source,
+            keys: ["ratio", "used_ratio", "usedRatio", "usage_ratio", "usageRatio", "utilization"]
+        ) else {
+            return nil
+        }
+
+        return PercentQuotaWindow(
+            name: name,
+            remainingPercent: max(0, 100 - normalizedKimiUsedPercent(ratio)),
+            resetAt: firstDateValue(in: source, keys: ["reset_time", "resetTime", "reset_at", "resetAt"])
+        )
+    }
+
+    private static func kimiSubscriptionBalanceWindow(from object: [String: Any], planEndsAt: Date?) -> PercentQuotaWindow? {
+        if let balance = firstDictionary(in: object, keys: ["subscription_balance", "subscriptionBalance", "creditBalance"]) {
+            return kimiBalanceWindow(from: balance, planEndsAt: planEndsAt)
+        }
+
+        guard let balances = object["balances"] as? [[String: Any]] else {
+            return nil
+        }
+        let selected = balances.first { balance in
+            let type = stringValue(balance["type"])?.lowercased() ?? ""
+            return type.contains("subscription") && firstDoubleValue(in: balance, keys: ["amount", "total", "quota", "limit"]) != nil
+        }
+        ?? balances.first { firstDoubleValue(in: $0, keys: ["amount", "total", "quota", "limit"]) != nil }
+
+        return selected.flatMap { kimiBalanceWindow(from: $0, planEndsAt: planEndsAt) }
+    }
+
+    private static func kimiBalanceWindow(from source: [String: Any], planEndsAt: Date?) -> PercentQuotaWindow? {
+        let amount = firstDoubleValue(in: source, keys: ["amount", "total", "quota", "limit"])
+        let amountLeft = firstDoubleValue(
+            in: source,
+            keys: ["amount_left", "amountLeft", "left", "remaining", "remain"]
+        )
+        let usedRatio = firstDoubleValue(
+            in: source,
+            keys: ["amount_used_ratio", "amountUsedRatio", "used_ratio", "usedRatio", "usage_ratio", "usageRatio"]
+        )
+
+        let remainingPercent: Double
+        let remainingText: String?
+        if let amount, amount > 0 {
+            let remaining = amountLeft ?? usedRatio.map { amount * max(0, 1 - normalizedKimiUsedPercent($0) / 100) }
+            guard let remaining else { return nil }
+            remainingPercent = max(0, remaining / amount * 100)
+            remainingText = "\(compactNumber(remaining)) / \(compactNumber(amount))"
+        } else if let usedRatio {
+            remainingPercent = max(0, 100 - normalizedKimiUsedPercent(usedRatio))
+            remainingText = nil
+        } else {
+            return nil
+        }
+
+        return PercentQuotaWindow(
+            name: "month",
+            remainingPercent: remainingPercent,
+            resetAt: firstDateValue(
+                in: source,
+                keys: ["reset_time", "resetTime", "expire_time", "expireTime", "upcoming_expiration", "upcomingExpiration"]
+            ) ?? planEndsAt,
+            remainingText: remainingText
+        )
+    }
+
+    private static func normalizedKimiUsedPercent(_ ratio: Double) -> Double {
+        abs(ratio) <= 1 ? ratio * 100 : ratio
+    }
+
+    private static func boolValue(_ value: Any?) -> Bool? {
+        if let bool = value as? Bool {
+            return bool
+        }
+        if let number = value as? NSNumber {
+            return number.boolValue
+        }
+        if let string = value as? String {
+            switch string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+            case "true", "1", "yes":
+                return true
+            case "false", "0", "no":
+                return false
+            default:
+                return nil
+            }
+        }
+        return nil
+    }
+
+    private static func compactNumber(_ value: Double) -> String {
+        let rounded = value.rounded()
+        if abs(value - rounded) < 0.0001 {
+            return "\(Int(rounded))"
+        }
+        return String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), value)
+    }
+
     private static func firstDictionary(in source: [String: Any], keys: [String]) -> [String: Any]? {
         for key in keys {
             if let value = source[key] as? [String: Any] {
                 return value
+            }
+        }
+        return nil
+    }
+
+    private static func firstTimestampDate(in source: [String: Any], keys: [String]) -> Date? {
+        for key in keys {
+            if let date = aliyunTimestampDate(source[key]) {
+                return date
             }
         }
         return nil
@@ -1187,6 +1728,81 @@ enum QuotaParsers {
         }
         if let number = value as? NSNumber {
             return number.stringValue
+        }
+        return nil
+    }
+
+    private struct ClaudeOrganizationCandidate {
+        let id: String?
+        let isActive: Bool?
+        let isDefault: Bool?
+    }
+
+    private static func claudeOrganizationCandidates(from object: Any) -> [ClaudeOrganizationCandidate] {
+        if let organizations = object as? [[String: Any]] {
+            return organizations.flatMap(claudeOrganizationCandidates)
+        }
+
+        guard let dictionary = object as? [String: Any] else {
+            return []
+        }
+
+        let id = stringValue(dictionary["uuid"])
+            ?? stringValue(dictionary["id"])
+            ?? stringValue(dictionary["organization_uuid"])
+            ?? stringValue(dictionary["organizationUuid"])
+        var candidates: [ClaudeOrganizationCandidate] = []
+        if id != nil {
+            candidates.append(
+                ClaudeOrganizationCandidate(
+                    id: id,
+                    isActive: dictionary["active"] as? Bool ?? dictionary["is_active"] as? Bool,
+                    isDefault: dictionary["default"] as? Bool ?? dictionary["is_default"] as? Bool
+                )
+            )
+        }
+
+        for key in ["organizations", "data", "results", "items"] {
+            if let nested = dictionary[key] {
+                candidates.append(contentsOf: claudeOrganizationCandidates(from: nested))
+            }
+        }
+
+        return candidates
+    }
+
+    private static func firstDateValue(in source: [String: Any], keys: [String]) -> Date? {
+        for key in keys {
+            if let date = dateValue(source[key]) {
+                return date
+            }
+        }
+        return nil
+    }
+
+    private static func dateValue(_ value: Any?) -> Date? {
+        if let date = value as? Date {
+            return date
+        }
+        if let number = value as? NSNumber {
+            let seconds = number.doubleValue > 10_000_000_000 ? number.doubleValue / 1000 : number.doubleValue
+            return seconds > 0 ? Date(timeIntervalSince1970: seconds) : nil
+        }
+        if let dictionary = value as? [String: Any] {
+            if let timestamp = firstDateValue(in: dictionary, keys: ["timestamp", "time", "date"]) {
+                return timestamp
+            }
+            if let seconds = doubleValue(dictionary["seconds"] ?? dictionary["_seconds"]), seconds > 0 {
+                let nanos = doubleValue(dictionary["nanos"] ?? dictionary["_nanos"]) ?? 0
+                return Date(timeIntervalSince1970: seconds + nanos / 1_000_000_000)
+            }
+        }
+        if let string = value as? String {
+            if let timestamp = Double(string) {
+                let seconds = timestamp > 10_000_000_000 ? timestamp / 1000 : timestamp
+                return seconds > 0 ? Date(timeIntervalSince1970: seconds) : nil
+            }
+            return parseISO8601Date(string)
         }
         return nil
     }
@@ -1414,6 +2030,42 @@ private struct ChatGPTSessionContext {
     let accountID: String?
 }
 
+private struct KimiDashboardCredential {
+    let accessToken: String
+    let cookie: String?
+    let deviceID: String?
+    let sessionID: String?
+    let trafficID: String?
+
+    init?(_ raw: String) {
+        let credential = DashboardCredential(raw)
+        let cookieHeader = credential.cookie
+        let fieldToken = credential.value(
+            for: ["accessToken", "access_token", "authorization", "bearerToken", "bearer_token", "token"]
+        )
+        let token = fieldToken
+            ?? credential.cookieValue(named: "kimi-auth")
+            ?? (cookieHeader.contains("=") ? nil : cookieHeader)
+        guard let token, !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        self.accessToken = Self.stripBearerPrefix(token)
+        self.cookie = cookieHeader.contains("=") ? cookieHeader : nil
+        self.deviceID = credential.value(for: ["deviceID", "deviceId", "x-msh-device-id"])
+        self.sessionID = credential.value(for: ["sessionID", "sessionId", "x-msh-session-id"])
+        self.trafficID = credential.value(for: ["trafficID", "trafficId", "x-traffic-id"])
+    }
+
+    private static func stripBearerPrefix(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("bearer ") {
+            return String(trimmed.dropFirst("Bearer ".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return trimmed
+    }
+}
+
 actor QuotaService {
     private let session: URLSession
     private var lastCheck: [String: Date] = [:]
@@ -1457,9 +2109,11 @@ actor QuotaService {
         case .claudeAPIUsage, .codexAPIUsage:
             throw QuotaError.notSupported
         case .claudeSubscription:
-            throw QuotaError.notSupported
+            return try await checkClaudeSubscriptionQuota(key: key)
         case .codexSubscription:
             return try await checkCodexSubscriptionQuota(key: key)
+        case .kimiSubscription:
+            return try await checkKimiSubscriptionQuota(key: key)
         case .deepseek:
             return try await checkDeepSeekQuota(key: key)
         case .xfyunCodingPlan:
@@ -1765,6 +2419,227 @@ actor QuotaService {
         throw QuotaError.notSupported
     }
 
+    /// Claude Subscription: claude.ai organization dashboard usage endpoint.
+    /// The secret is a Claude web login Cookie header captured by reauthentication.
+    private func checkClaudeSubscriptionQuota(key: APIKey) async throws -> QuotaResult {
+        let credential = DashboardCredential(key.key)
+        guard !credential.cookie.isEmpty else {
+            throw QuotaError.unauthorized
+        }
+
+        let organizationID = try await fetchClaudeOrganizationID(cookie: credential.cookie)
+        guard let encodedOrganizationID = organizationID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            throw QuotaError.invalidResponse
+        }
+
+        var request = URLRequest(url: URL(string: "https://claude.ai/api/organizations/\(encodedOrganizationID)/usage")!)
+        request.httpMethod = "GET"
+        applyClaudeDashboardHeaders(
+            to: &request,
+            cookie: credential.cookie,
+            referer: "https://claude.ai/settings/usage"
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw QuotaError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw QuotaError.unauthorized
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw QuotaError.invalidResponse
+        }
+
+        var result = try QuotaParsers.parseClaudeSubscriptionUsage(data)
+        if let planEndsAt = try? await fetchClaudeSubscriptionPlanEnd(
+            cookie: credential.cookie,
+            organizationID: encodedOrganizationID
+        ) {
+            result.planEndsAt = planEndsAt
+        }
+
+        return withHTTPStatus(result, from: httpResponse)
+    }
+
+    private func fetchClaudeOrganizationID(cookie: String) async throws -> String {
+        var request = URLRequest(url: URL(string: "https://claude.ai/api/organizations")!)
+        request.httpMethod = "GET"
+        applyClaudeDashboardHeaders(
+            to: &request,
+            cookie: cookie,
+            referer: "https://claude.ai/settings/usage"
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw QuotaError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw QuotaError.unauthorized
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw QuotaError.invalidResponse
+        }
+
+        return try QuotaParsers.parseClaudeOrganizationID(data)
+    }
+
+    private func fetchClaudeSubscriptionPlanEnd(cookie: String, organizationID: String) async throws -> Date? {
+        var request = URLRequest(url: URL(string: "https://claude.ai/api/organizations/\(organizationID)/subscription_details")!)
+        request.httpMethod = "GET"
+        applyClaudeDashboardHeaders(
+            to: &request,
+            cookie: cookie,
+            referer: "https://claude.ai/settings/usage"
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw QuotaError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw QuotaError.unauthorized
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw QuotaError.invalidResponse
+        }
+
+        return try QuotaParsers.parseClaudeSubscriptionDetails(data)
+    }
+
+    private func applyClaudeDashboardHeaders(to request: inout URLRequest, cookie: String, referer: String) {
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("zh-CN,zh;q=0.9", forHTTPHeaderField: "Accept-Language")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        request.setValue(cookie, forHTTPHeaderField: "Cookie")
+        request.setValue(referer, forHTTPHeaderField: "Referer")
+        request.setValue("\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"", forHTTPHeaderField: "sec-ch-ua")
+        request.setValue("?0", forHTTPHeaderField: "sec-ch-ua-mobile")
+        request.setValue("\"macOS\"", forHTTPHeaderField: "sec-ch-ua-platform")
+        request.setValue("empty", forHTTPHeaderField: "sec-fetch-dest")
+        request.setValue("cors", forHTTPHeaderField: "sec-fetch-mode")
+        request.setValue("same-origin", forHTTPHeaderField: "sec-fetch-site")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
+    }
+
+    /// Kimi Subscription: Kimi membership and billing dashboard endpoints.
+    /// The secret is either a JSON credential with accessToken/cookie/x-msh metadata,
+    /// a raw kimi-auth Cookie header, or a raw Bearer token.
+    private func checkKimiSubscriptionQuota(key: APIKey) async throws -> QuotaResult {
+        guard let credential = KimiDashboardCredential(key.key) else {
+            throw QuotaError.unauthorized
+        }
+
+        let usageData: Data?
+        do {
+            usageData = try await fetchKimiBillingUsage(
+                credential: credential
+            ).data
+        } catch QuotaError.invalidResponse {
+            usageData = nil
+        }
+
+        let subscriptionResponse = try await fetchKimiMembershipEndpoint(
+            "GetSubscription",
+            credential: credential
+        )
+        var result = try QuotaParsers.parseKimiSubscriptionUsage(
+            subscriptionData: subscriptionResponse.data,
+            usageData: usageData
+        )
+        result.httpStatus = subscriptionResponse.response.statusCode
+        return result
+    }
+
+    private func fetchKimiBillingUsage(
+        credential: KimiDashboardCredential
+    ) async throws -> (data: Data, response: HTTPURLResponse) {
+        let url = URL(string: "https://www.kimi.com/apiv2/kimi.gateway.billing.v1.BillingService/GetUsages")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyKimiMembershipHeaders(to: &request, credential: credential)
+        request.setValue("https://www.kimi.com/code/console", forHTTPHeaderField: "Referer")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["scope": ["FEATURE_CODING"]])
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw QuotaError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw QuotaError.unauthorized
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw QuotaError.invalidResponse
+        }
+        return (data, httpResponse)
+    }
+
+    private func fetchKimiMembershipEndpoint(
+        _ method: String,
+        credential: KimiDashboardCredential
+    ) async throws -> (data: Data, response: HTTPURLResponse) {
+        let endpointPath: String
+        switch method {
+        case "GetSubscription":
+            endpointPath = "MembershipService/GetSubscription"
+        default:
+            throw QuotaError.invalidResponse
+        }
+        let url = URL(string: "https://www.kimi.com/apiv2/kimi.gateway.membership.v2.\(endpointPath)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        applyKimiMembershipHeaders(to: &request, credential: credential)
+        request.httpBody = Data("{}".utf8)
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw QuotaError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw QuotaError.unauthorized
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw QuotaError.invalidResponse
+        }
+        return (data, httpResponse)
+    }
+
+    private func applyKimiMembershipHeaders(to request: inout URLRequest, credential: KimiDashboardCredential) {
+        request.setValue("*/*", forHTTPHeaderField: "Accept")
+        request.setValue("zh-CN,zh;q=0.9", forHTTPHeaderField: "Accept-Language")
+        request.setValue("Bearer \(credential.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("1", forHTTPHeaderField: "connect-protocol-version")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("https://www.kimi.com", forHTTPHeaderField: "Origin")
+        request.setValue("https://www.kimi.com/membership/subscription?tab=quota", forHTTPHeaderField: "Referer")
+        request.setValue(TimeZone.current.identifier, forHTTPHeaderField: "r-timezone")
+        request.setValue("zh-CN", forHTTPHeaderField: "x-language")
+        request.setValue("web", forHTTPHeaderField: "x-msh-platform")
+        request.setValue("1.0.0", forHTTPHeaderField: "x-msh-version")
+        request.setValue("\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"", forHTTPHeaderField: "sec-ch-ua")
+        request.setValue("?0", forHTTPHeaderField: "sec-ch-ua-mobile")
+        request.setValue("\"macOS\"", forHTTPHeaderField: "sec-ch-ua-platform")
+        request.setValue("empty", forHTTPHeaderField: "sec-fetch-dest")
+        request.setValue("cors", forHTTPHeaderField: "sec-fetch-mode")
+        request.setValue("same-origin", forHTTPHeaderField: "sec-fetch-site")
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
+
+        if let cookie = credential.cookie {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+        }
+        if let deviceID = credential.deviceID {
+            request.setValue(deviceID, forHTTPHeaderField: "x-msh-device-id")
+        }
+        if let sessionID = credential.sessionID {
+            request.setValue(sessionID, forHTTPHeaderField: "x-msh-session-id")
+        }
+        if let trafficID = credential.trafficID {
+            request.setValue(trafficID, forHTTPHeaderField: "x-traffic-id")
+        }
+    }
+
     /// DeepSeek: 通过 API 获取 quota
     private func checkDeepSeekQuota(key: APIKey) async throws -> QuotaResult {
         var request = URLRequest(url: URL(string: "https://api.deepseek.com/user/balance")!)
@@ -1946,7 +2821,7 @@ actor QuotaService {
 
         let region = credential.value(for: ["region", "aliyunRegion"]) ?? "cn-beijing"
         let secToken = try await fetchAliyunConsoleSecToken(cookie: credential.cookie)
-        let api = "zeldaEasy.broadscope-bailian.aliclaw.coding-plan"
+        let api = "zeldaEasy.broadscope-bailian.codingPlan.queryCodingPlanInstanceInfoV2"
 
         var components = URLComponents(string: "https://bailian-cs.console.aliyun.com/data/api.json")!
         components.queryItems = [
@@ -1964,6 +2839,10 @@ actor QuotaService {
             "V": "1.0",
             "Data": [
                 "cornerstoneParam": [:] as [String: Any],
+                "queryCodingPlanInstanceInfoRequest": [
+                    "commodityCode": "sfm_codingplan_public",
+                    "onlyLatestOne": true,
+                ] as [String: Any],
             ],
         ]
         let paramsData = try JSONSerialization.data(withJSONObject: params)
@@ -1984,7 +2863,7 @@ actor QuotaService {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue(credential.cookie, forHTTPHeaderField: "Cookie")
         request.setValue("https://bailian.console.aliyun.com", forHTTPHeaderField: "Origin")
-        request.setValue("https://bailian.console.aliyun.com/?tab=plan#/efm/subscription/coding-plan", forHTTPHeaderField: "Referer")
+        request.setValue("https://bailian.console.aliyun.com/cn-beijing?tab=model#/efm/coding_plan", forHTTPHeaderField: "Referer")
         request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
         request.httpBody = form.percentEncodedQuery?.data(using: .utf8)
 

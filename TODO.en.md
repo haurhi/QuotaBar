@@ -43,6 +43,17 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Run screenshot QA for v0.2.2 menu bar transparency and make Chinese / English README pages use screenshots in their own language.
 - [x] Fill in the provider capability matrix as the entry point for future provider additions.
 
+## Fixed In v0.3.1
+
+- [x] Provider order can be customized and explicitly enabled or disabled in `Settings`; when disabled, Quota Radar keeps the locked default order.
+- [x] Provider-order configuration moved into a focused Settings sheet instead of occupying the `Quota Overview` page.
+- [x] Ordering now uses direct drag-and-drop provider rows instead of repetitive up/down buttons.
+- [x] Custom order is shared by `Quota Overview`, `Credentials`, `Diagnostics`, and the menu bar popover so every surface stays consistent.
+- [x] The order sheet now uses a more compact macOS preference-panel style, grouped by `AI Search` and `LLM`, reducing distraction from the main monitoring workflow.
+- [x] The default product order remains a safe fallback: hidden or removed providers are filtered, and new providers are appended in default order.
+- [x] Kimi Subscription was added and documented in README plus the provider capability matrix, including web login authorization, five-hour/weekly windows, balance, and subscription-cycle boundaries.
+- [x] Release behavior tests now cover the provider-order entry point, draggable ordering structure, global order synchronization, and release secret scanning.
+
 ## Fixed In v0.3.0
 
 - [x] Updated the provider capability matrix with real browser login-state checks and local redacted checks for each provider's `quota`, `resetAt`, and `planEndsAt` boundaries.
@@ -57,7 +68,7 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Changed the quota overview toward provider-first summaries, reducing repeated API-key detail rows while keeping sortable and expandable key-level detail inside each provider.
 - [x] Stopped diagnostics from creating duplicate quota rows for copy-only companion API keys. Those API keys now reuse the paired web-login authorization's health and HTTP status.
 - [x] Supported storing both a provider API key and web-login authorization: the API key is available for copying and management, while web-login authorization is used only for quota checks.
-- [x] Refreshed Chinese and English README screenshots from the current v0.3.0 running app, with credentials masked by Quota Radar.
+- [x] Refreshed Chinese and English README screenshots from the v0.3.0 running app, with credentials masked by Quota Radar.
 - [x] Hardened release hygiene by ignoring `.playwright-mcp/`, `test-results/`, and similar temporary screenshot/debug directories, and by keeping a secret scan in the release checklist.
 
 ## Fixed In v0.2.2
@@ -93,6 +104,7 @@ The broader UI redesign toward a native, dense, low-distraction macOS monitoring
   - Extract `csrfToken`, `ProjectName`, and related fields from Volcengine cURL.
   - Extract `workspaceID`, `serverID`, and `serverInstance` from OpenCode Go cURL.
   - For Querit, `QUERIT_API_KEY` is stored only as a copyable API key; quota monitoring still stores web login authorization and uses the dashboard Account API.
+  - For Kimi, extract the Bearer access token, `x-msh-device-id`, `x-msh-session-id`, `x-traffic-id`, and optional `kimi-auth` cookie.
 - [x] Make reauthentication auto-save:
   - Open the provider dashboard login page.
   - After the user logs in, read cookies from allowed domains.
@@ -107,6 +119,7 @@ The broader UI redesign toward a native, dense, low-distraction macOS monitoring
   - `Quota API Unavailable`
   - `Check Consumes Quota`
 - [ ] Add export/backup for credential metadata, but do not export secrets by default.
+- [ ] Extend WebView reauthentication persistence beyond cookie store: support confirmed providers whose login token is stored in localStorage. Kimi should use this when the web session writes `access_token` without a `kimi-auth` cookie.
 
 ## P2: Connectivity Tests And Diagnostics
 
@@ -144,6 +157,7 @@ Acceptance criteria for a new provider:
 
 - [ ] Find an official usage API, billing API, dashboard API, or confirm that only manual/web-login monitoring is possible.
 - [ ] Confirm quota units, reset cycle, and whether checking quota consumes real quota.
+- [ ] Confirm and display the plan name / plan tier, such as Claude `Pro` / `Max`, Codex `Plus` / `Pro`, and cloud-provider values like `Coding Plan Pro`, package names, or membership names. If an endpoint only returns internal enums, add a local display mapping with localization instead of showing only the provider name.
 - [ ] Add parser fixtures; do not rely only on manual testing.
 - [x] Add browser/API verification records for currently integrated providers, including quota, resetAt, and planEndsAt field boundaries.
 - [x] Add provider icon fallback, category, default credential name, and localized copy.
@@ -167,13 +181,23 @@ Acceptance criteria for a new provider:
 - [ ] OpenRouter: check credits and usage API.
 - [ ] Gemini / Google AI Studio: check quota, billing, and project scope.
 - [ ] Qwen / DashScope: check Alibaba Cloud usage and resource packages.
-- [ ] Moonshot / Kimi: check balance and resource packages.
+- [x] Moonshot / Kimi: Kimi Subscription is wired through web login authorization / Bearer access token. `BillingService/GetUsages` reads five-hour/weekly windows, remaining counts, and reset times, while `GetSubscription` reads subscription balance and expiry fields. No independent monthly rate-limit window is confirmed yet.
+- [ ] Kimi Code OAuth unified authentication: the official `/coding/v1/usages` path returns a compatible `usage/limits` shape, but it requires a Device Code OAuth token. Add it later as a fallback/advanced path under one "Authenticate Kimi" action, not as a second primary button.
+- [ ] Plan-name detection: add a `planDisplayName` field for subscription / coding-plan providers such as Claude, Codex, Kimi, XFYun Spark, Volcengine, Aliyun, and Tencent Cloud. Show the user's concrete plan name in the quota overview, menu bar popover, and diagnostics, with fixtures covering typical values such as `Pro`, `Max`, `Plus`, and `Coding Plan Pro`.
 - [ ] Zhipu / GLM: check account balance and call quota.
 - [ ] MiniMax: check balance and token usage.
 - [ ] Baidu Qianfan: check account resource packages.
 - [ ] Tencent Hunyuan: check account resource packages.
 - [ ] SiliconFlow: check balance and API-key usage.
 - [ ] Anthropic: currently hidden from the main UI; re-evaluate only if the user wants it and usage can be queried reliably.
+
+### Pay-as-you-go / Prepaid Credits Candidates
+
+Keep this separate from Claude / Codex subscription quota. Subscription quota tracks five-hour, weekly, monthly windows and plan expiry. Prepaid credits track API / Workbench / platform-call balances, so future integrations should be shown as separate provider types instead of pretending to be subscription remaining quota.
+
+- [ ] Anthropic prepaid credits: research the Console prepaid credits balance endpoint, organization scope, required web-login authorization fields, and replay stability. If confirmed, expose it as a Claude API credits / Anthropic credits provider, not Claude Subscription.
+- [ ] OpenAI prepaid credits: research OpenAI platform billing / credit grant / prepaid balance readability, organization/project scope, and whether it requires an Admin key or web-login authorization. If confirmed, expose it as an OpenAI API credits provider, not Codex Subscription.
+- [ ] Claude Subscription follow-up: the current `claude.ai/api/organizations` path can expose five-hour/weekly windows in some login sessions, but `subscription_details` and organization selection are not stable enough. Claude Code style OAuth login is confirmed as a viable auth direction; next, verify whether an OAuth usage/limits endpoint reliably returns five-hour windows, weekly windows, reset times, and subscription-cycle dates, then keep the web organization endpoint as a fallback instead of the final source of truth.
 
 ## P4: Frontend Aesthetics And Interaction
 

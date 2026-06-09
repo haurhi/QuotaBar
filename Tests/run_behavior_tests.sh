@@ -50,9 +50,9 @@ assert_match 'CFBundleDisplayName' \
 assert_match 'Quota Radar' \
   "QuotaRadar/Info.plist" \
   "App bundle display name should be Quota Radar"
-assert_match '0\.3\.0' \
+assert_match '0\.3\.1' \
   "QuotaRadar/Info.plist" \
-  "Quota Radar 0.3.0 should be recorded in Info.plist"
+  "Quota Radar 0.3.1 should be recorded in Info.plist"
 assert_no_match 'LSUIElement' \
   "QuotaRadar/Info.plist" \
   "QuotaRadar must appear in the macOS Dock after launch"
@@ -84,9 +84,9 @@ for icon_name in aliyun tencentCloud volcengine xfyun; do
   test -s "QuotaRadar/Assets.xcassets/ProviderIcons/${icon_name}.iconset/icon_32x32@2x.png" \
     || fail "shared official provider icon asset is missing: ${icon_name}"
 done
-for icon_name in claude codex; do
+for icon_name in claude codex kimi; do
   test -s "QuotaRadar/Assets.xcassets/ProviderIcons/${icon_name}.iconset/icon_32x32@2x.png" \
-    || fail "Claude/Codex provider icon asset is missing: ${icon_name}"
+    || fail "Claude/Codex/Kimi provider icon asset is missing: ${icon_name}"
 done
 python3 - <<'PY'
 from pathlib import Path
@@ -160,12 +160,60 @@ assert_match 'func displayName\(language: AppLanguage = AppLanguageStore\.shared
 assert_match 'static var visibleCases: \[Provider\]' \
   "QuotaRadar/Models/APIKey.swift" \
   "Provider UI lists should use a visible provider list so unsupported providers can be kept out without breaking legacy decoding"
+assert_match 'orderedVisibleCases\(from storedOrder:' \
+  "QuotaRadar/Models/APIKey.swift" \
+  "Provider UI lists should support a persisted custom provider order while filtering stale hidden providers"
 assert_match 'static let categoryDisplayOrder = \["AI Search", "LLM"\]' \
   "QuotaRadar/Models/APIKey.swift" \
   "Provider category display order should be defined once as AI Search before LLM"
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
   "QuotaRadar/Models/QuotaMonitor.swift" \
   "Status bar provider category groups should use the shared AI Search then LLM order"
+assert_match 'orderedVisibleProviders' \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
+  "QuotaMonitor should expose one persisted provider order source for every page and the status bar"
+assert_match 'isCustomProviderOrderEnabled' \
+  "QuotaRadar/Models/QuotaMonitor.swift" \
+  "Provider order customization should be explicitly gated so users can keep the product-defined locked order"
+assert_match 'Toggle\("", isOn: \$monitor\.isCustomProviderOrderEnabled\)' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Settings should expose a switch that unlocks or locks custom provider ordering"
+assert_match '@State private var showingProviderOrderSheet = false' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order configuration should open from Settings as a focused sheet instead of occupying the quota overview page"
+assert_match 'ProviderOrderSheet\(monitor: monitor\)' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Settings should present a provider order sheet for focused ordering work"
+assert_match 'ProviderOrderDragRow' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order editing should use draggable rows instead of one-by-one move buttons"
+assert_match 'ProviderOrderSheetToolbar' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order sheet should use a compact preference toolbar instead of a large content-page header"
+assert_match 'ProviderOrderCategoryCard' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order sheet should render each category as a compact material list card"
+assert_match 'ProviderOrderCategoryHeader' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order category cards should use compact list headers with counts"
+assert_match '\.onDrag' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order rows should support direct drag reordering"
+assert_match '\.onDrop' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order rows should accept drops for direct drag reordering"
+assert_no_match 'ProviderOrderPanel\(monitor: monitor\)' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Quota overview should not embed provider-order configuration as a second settings page"
+assert_no_match 'moveProviderUp|moveProviderDown' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order editing should not rely on repetitive up/down move buttons"
+assert_no_match 'arrow\.up\.arrow\.down\.circle\.fill' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order sheet should avoid a large decorative header icon that makes the utility panel feel heavy"
+assert_no_match 'SettingsFootnote\(icon: "hand\.draw\.fill"' \
+  "QuotaRadar/Views/SettingsView.swift" \
+  "Provider order sheet should avoid a separate oversized instruction block inside the list"
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
   "QuotaRadar/Views/SettingsView.swift" \
   "Quota overview and credential configuration should use the shared AI Search then LLM order"
@@ -400,6 +448,28 @@ assert_match 'DiagnosticsView\(monitor: monitor\)' \
 assert_match 'CredentialDiagnosticRow' \
   "QuotaRadar/Views/SettingsView.swift" \
   "Diagnostics should render credential-level rows"
+python3 - <<'PY'
+from pathlib import Path
+import sys
+
+source = Path("QuotaRadar/Views/SettingsView.swift").read_text()
+try:
+    diagnostics = source.split("struct DiagnosticsView: View", 1)[1].split("struct CredentialDiagnosticProviderSection", 1)[0]
+    diagnostic_section = source.split("struct CredentialDiagnosticProviderSection: View", 1)[1].split("struct CredentialDiagnosticRow", 1)[0]
+except IndexError:
+    print("FAIL: Diagnostics view structure should be present", file=sys.stderr)
+    sys.exit(1)
+
+if "monitor.orderedVisibleProviders.map" not in diagnostics:
+    print("FAIL: Diagnostics should use the same custom provider order as credentials and quota monitoring", file=sys.stderr)
+    sys.exit(1)
+if "guard !keys.isEmpty" in diagnostics:
+    print("FAIL: Diagnostics should not hide visible providers just because no credential is configured", file=sys.stderr)
+    sys.exit(1)
+if "credentialDiagnosticItems.isEmpty" not in diagnostic_section or "ProviderQuotaEmptyKeyRow()" not in diagnostic_section:
+    print("FAIL: Diagnostics should render an explicit no-credential state for visible providers without keys", file=sys.stderr)
+    sys.exit(1)
+PY
 assert_match 'startPopoverMouseExitMonitor' \
   "QuotaRadar/AppDelegate.swift" \
   "Status bar popover should start a mouse-exit monitor when shown"
@@ -1014,7 +1084,7 @@ assert_no_match 'URLSession|http|https|apiKey|Bearer|sk-' \
 assert_match 'menuTopQuotaItems: \[MenuQuotaItem\]' \
   "QuotaRadar/Models/QuotaMonitor.swift" \
   "QuotaMonitor should expose a compact status bar item set"
-assert_match 'MenuQuotaItem\.topItems\(from: homeProviderStats, limit: 3\)' \
+assert_match 'MenuQuotaItem\.topItems\(from: homeProviderStats, limit: 3, providerOrder: orderedVisibleProviders\)' \
   "QuotaRadar/Models/QuotaMonitor.swift" \
   "Status bar summary should cap top items at three to avoid vertical clipping"
 assert_match 'statusBarProviderQuotaText' \
@@ -1047,7 +1117,7 @@ assert_no_match 'struct EditKeySheet: View[[:space:][:print:]]*Form \{' \
 assert_match '@State private var provider: Provider' \
   "QuotaRadar/Views/SettingsView.swift" \
   "Edit Credential should allow changing the provider of an existing credential"
-assert_match 'AddCredentialProviderList\(provider: \$provider\)' \
+assert_match 'AddCredentialProviderList\(provider: \$provider, providers: providers\)' \
   "QuotaRadar/Views/SettingsView.swift" \
   "Edit Credential should reuse the provider picker so existing credentials can move providers"
 assert_match 'companionAPIKeyCredentialForCurrentProvider' \
@@ -1173,6 +1243,28 @@ assert_match 'ModernPage\(' \
 assert_match 'keyProviderCategories' \
   "QuotaRadar/Views/SettingsView.swift" \
   "API Keys tab should group configured keys by AI Search and LLM so OpenCode Go is visible under LLM"
+python3 - <<'PY'
+from pathlib import Path
+import sys
+
+source = Path("QuotaRadar/Views/SettingsView.swift").read_text()
+try:
+    keys_view = source.split("struct KeysManagementView: View", 1)[1].split("// MARK: - Add Key Sheet", 1)[0]
+    provider_rows = source.split("struct ProviderKeyRowsSection: View", 1)[1].split("struct APIKeyProviderBanner", 1)[0]
+except IndexError:
+    print("FAIL: Credential configuration view structure should be present", file=sys.stderr)
+    sys.exit(1)
+
+if "monitor.orderedVisibleProviders.map" not in keys_view:
+    print("FAIL: Credential configuration should show the same custom provider order as quota monitoring and diagnostics", file=sys.stderr)
+    sys.exit(1)
+if "guard !providerKeys.isEmpty" in keys_view:
+    print("FAIL: Credential configuration should not hide visible providers that have no saved credentials yet", file=sys.stderr)
+    sys.exit(1)
+if "stat.sortedKeysByCurrentQuota.isEmpty" not in provider_rows or "ProviderQuotaEmptyKeyRow()" not in provider_rows:
+    print("FAIL: Credential configuration should show an explicit empty provider state instead of a blank expanded panel", file=sys.stderr)
+    sys.exit(1)
+PY
 assert_match 'Provider\.categoryDisplayOrder\.compactMap' \
   "QuotaRadar/Views/SettingsView.swift" \
   "API Keys tab should use the shared AI Search then LLM category order"
@@ -1641,24 +1733,24 @@ assert_match 'WKNavigationDelegate' \
 assert_match 'webView\(_ webView: WKWebView, didFinish navigation: WKNavigation!\)' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should check cookies when the WebView finishes loading a dashboard page"
-assert_match 'onCookiesAvailable' \
+assert_match 'onCredentialAvailable' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
-  "Dashboard reauthentication should expose an automatic cookie-save callback"
+  "Dashboard reauthentication should expose an automatic credential-save callback"
 assert_match 'reauthenticatedSecret' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should preserve non-cookie JSON credential metadata when refreshing cookies"
 assert_no_match 'updatedKey\.key = cookieHeader' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication must not overwrite JSON dashboard credentials with a raw Cookie header"
-assert_match 'validateAndPersistCookies' \
+assert_match 'validateAndPersistCredential' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
-  "Dashboard reauthentication should validate captured cookies before saving and closing"
-assert_match 'persistCookies\(cookieHeader, allowEmptyStatus: false, dismissAfterSave: false\)' \
+  "Dashboard reauthentication should validate captured credentials before saving and closing"
+assert_match 'persistCredential\(credential, allowEmptyStatus: false, dismissAfterSave: false\)' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
-  "Automatic dashboard cookie capture should save in place instead of closing the WebView like a crash"
-assert_match 'persistCookies\(cookieHeader, allowEmptyStatus: true, dismissAfterSave: true\)' \
+  "Automatic dashboard credential capture should save in place instead of closing the WebView like a crash"
+assert_match 'persistCredential\(capturedCredential, allowEmptyStatus: true, dismissAfterSave: true\)' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
-  "Manual dashboard cookie save can close the reauthentication WebView after validation"
+  "Manual dashboard credential save can close the reauthentication WebView after validation"
 assert_match 'try await QuotaService\(\)\.checkQuota\(for: candidateKey, bypassCooldown: true\)' \
   "QuotaRadar/Views/DashboardReauthView.swift" \
   "Dashboard reauthentication should call the provider quota endpoint before accepting captured cookies"
@@ -1698,6 +1790,21 @@ assert_match 'if provider\.supportsDashboardReauthentication' \
 assert_match 'DashboardReauthSheet\(monitor: monitor, provider: provider, key: nil\)' \
   "QuotaRadar/Views/SettingsView.swift" \
   "Add Credential reauthentication should create or update provider cookie credentials through the same flow as Volcengine"
+python3 - <<'PY'
+from pathlib import Path
+import sys
+
+source = Path("QuotaRadar/Views/DashboardReauthView.swift").read_text()
+if "existingQuotaAuthorizationKey" not in source:
+    print("FAIL: Dashboard reauthentication should match existing quota authorization credentials separately from stored API keys", file=sys.stderr)
+    sys.exit(1)
+if "key ?? monitor.apiKeys.first(where: { $0.provider == provider })" in source:
+    print("FAIL: Dashboard reauthentication must not overwrite the first provider credential when it may be a copy-only API key", file=sys.stderr)
+    sys.exit(1)
+if "catch QuotaError.noSubscription" not in source or ".noSubscribedPlan" not in source:
+    print("FAIL: Dashboard reauthentication should save valid dashboard authorization even when the account has no subscribed package", file=sys.stderr)
+    sys.exit(1)
+PY
 assert_match 'Credential expired' \
   "QuotaRadar/Models/AppLanguage.swift" \
   "Expired dashboard credentials should have an English localized label"
@@ -1900,6 +2007,30 @@ assert_match 'parseVolcengineCodingPlanUsage' \
 assert_match 'parseOpenCodeGoUsage' \
   "QuotaRadar/Services/QuotaService.swift" \
   "OpenCode Go dashboard responses should be parsed as coding quota windows"
+assert_match 'https://claude\.ai/api/organizations' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Claude subscription should discover the active organization through claude.ai organizations"
+assert_match 'https://claude\.ai/api/organizations/.*/usage' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Claude subscription should query organization usage windows"
+assert_match 'https://claude\.ai/api/organizations/.*/subscription_details' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Claude subscription should query subscription details for plan-cycle end"
+assert_match 'parseClaudeSubscriptionUsage' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Claude subscription usage responses should be parsed as rolling quota windows"
+assert_match 'BillingService/GetUsages' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Kimi subscription should query the Kimi billing usage endpoint for five-hour and weekly quota"
+assert_no_match 'MembershipService/GetSubscriptionStat' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Kimi subscription should not query the unimplemented membership stat endpoint"
+assert_match 'MembershipService/GetSubscription' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Kimi subscription should query the membership subscription endpoint"
+assert_match 'parseKimiSubscriptionUsage' \
+  "QuotaRadar/Services/QuotaService.swift" \
+  "Kimi subscription responses should be parsed as confirmed quota windows and subscription balance"
 assert_match 'private func withHTTPStatus' \
   "QuotaRadar/Services/QuotaService.swift" \
   "QuotaService should centralize successful HTTP status propagation for Diagnostics"
@@ -2027,6 +2158,7 @@ import sys
 expected = {
     "aliyunCodingPlan", "aliyunTokenPlan",
     "anysearch", "bocha", "brave", "claude", "codex", "deepseek", "exa",
+    "kimi",
     "querit", "serpapi", "serper", "tavily",
     "tencentCloudCodingPlan", "tencentCloudTokenPlan",
     "volcengineCodingPlan", "volcengineTokenPlan",
@@ -2053,6 +2185,7 @@ legacy_placeholder_colors = {
     "codex": (16, 163, 127),
     "deepseek": (77, 107, 250),
     "exa": (255, 105, 180),
+    "kimi": (17, 17, 17),
     "querit": (63, 81, 181),
     "serpapi": (52, 168, 83),
     "serper": (3, 169, 244),
@@ -2229,6 +2362,7 @@ require(!Provider.visibleCases.contains(.claudeAPIUsage), "Claude API usage shou
 require(Provider.visibleCases.contains(.claudeSubscription), "Claude subscription should appear in provider pickers and visible app sections")
 require(!Provider.visibleCases.contains(.codexAPIUsage), "Codex API usage should stay hidden until the user has admin usage monitoring configured")
 require(Provider.visibleCases.contains(.codexSubscription), "Codex subscription should appear in provider pickers and visible app sections")
+require(Provider.visibleCases.contains(.kimiSubscription), "Kimi subscription should appear in provider pickers and visible app sections")
 require(Provider.pendingQuotaIntegrationCases == [.xfyunTokenPlan, .volcengineTokenPlan, .aliyunTokenPlan, .tencentCloudTokenPlan], "Pending quota integration cases should include providers without confirmed user key evidence")
 require(!Provider.visibleCases.contains(.xfyunTokenPlan), "XFYun Token Plan should not appear in visible provider lists yet")
 require(!Provider.visibleCases.contains(.volcengineTokenPlan), "Volcengine Token Plan should not appear in visible provider lists yet")
@@ -2236,6 +2370,10 @@ require(!Provider.visibleCases.contains(.aliyunTokenPlan), "Aliyun Token Plan sh
 require(Provider.visibleCases.contains(.aliyunCodingPlan), "Aliyun Coding Plan should be visible as a verification candidate when the user has a business key/account")
 require(Provider.visibleCases.contains(.tencentCloudCodingPlan), "Tencent Cloud Coding Plan should be visible as a verification candidate when the user has a business key/account")
 require(!Provider.visibleCases.contains(.tencentCloudTokenPlan), "Tencent Cloud Token Plan should stay hidden until the user has a real key to validate")
+let customOrderedProviders = Provider.orderedVisibleCases(from: [.deepseek, .anthropic, .tavily, .brave])
+require(customOrderedProviders.prefix(3) == [.deepseek, .tavily, .brave], "Custom provider order should filter hidden stale providers and preserve saved visible providers")
+require(customOrderedProviders.count == Provider.visibleCases.count, "Custom provider order should append visible providers that are not in the saved order")
+require(Set(customOrderedProviders) == Set(Provider.visibleCases), "Custom provider order should never drop current visible providers")
 
 let masked = APIKey(name: "TAVILY_API_KEY", key: "abcd1234wxyz", provider: .tavily).maskedKey
 require(masked == "abcd••••wxyz", "APIKey.maskedKey should expose the first four and last four characters")
@@ -2254,6 +2392,7 @@ require(Provider.tencentCloudCodingPlan.category == "LLM", "Tencent Cloud Coding
 require(Provider.tencentCloudTokenPlan.category == "LLM", "Tencent Cloud Token Plan should be grouped as an LLM quota provider")
 require(Provider.claudeAPIUsage.category == "LLM", "Claude API usage should be grouped as an LLM quota provider")
 require(Provider.codexSubscription.category == "LLM", "Codex subscription should be grouped as an LLM quota provider")
+require(Provider.kimiSubscription.category == "LLM", "Kimi subscription should be grouped as an LLM quota provider")
 require(Provider.xfyunCodingPlan.providerFamilyDisplayName(language: .simplifiedChinese) == "讯飞星火", "XFYun Coding Plan should expose XFYun Spark as the first-level provider family")
 require(Provider.xfyunCodingPlan.planTypeDisplayName(language: .simplifiedChinese) == "coding plan", "XFYun Coding Plan should expose coding plan as the second-level plan name")
 require(Provider.xfyunTokenPlan.planTypeDisplayName(language: .simplifiedChinese) == "Token plan", "XFYun Token Plan should expose Token plan as the second-level plan name")
@@ -2266,7 +2405,10 @@ require(Provider.claudeAPIUsage.planTypeDisplayName(language: .english) == "API 
 require(Provider.claudeSubscription.planTypeDisplayName(language: .english) == "Subscription", "Claude subscription should expose Subscription as second-level plan name")
 require(Provider.codexAPIUsage.providerFamilyDisplayName(language: .english) == "Codex", "Codex API usage should expose Codex as provider family")
 require(Provider.codexSubscription.planTypeDisplayName(language: .english) == "Subscription", "Codex subscription should expose Subscription as second-level plan name")
+require(Provider.kimiSubscription.providerFamilyDisplayName(language: .english) == "Kimi", "Kimi subscription should expose Kimi as provider family")
+require(Provider.kimiSubscription.planTypeDisplayName(language: .simplifiedChinese) == "订阅", "Kimi subscription should expose a localized subscription plan name")
 require(Provider.tavily.planTypeDisplayName(language: .simplifiedChinese) == nil, "Plain AI Search providers should not expose a second-level plan name")
+require(Provider.kimiSubscription.dashboardURL == "https://www.kimi.com/membership/subscription?tab=quota", "Kimi subscription should open the membership quota page")
 require(Provider.tencentCloudCodingPlan.dashboardURL == "https://console.cloud.tencent.com/tokenhub/codingplan", "Tencent Cloud Coding Plan should open the TokenHub Coding Plan page")
 require(Provider.tencentCloudTokenPlan.dashboardURL == "https://console.cloud.tencent.com/tokenhub/tokenplan", "Tencent Cloud Token Plan should open the TokenHub Token Plan page")
 require(Provider.xfyunCodingPlan.supportsQuotaQuery, "XFYun Coding Plan should support dashboard quota checks")
@@ -2274,16 +2416,17 @@ require(!Provider.xfyunTokenPlan.supportsQuotaQuery, "XFYun Token Plan should no
 require(Provider.volcengineCodingPlan.supportsQuotaQuery, "Volcengine Coding Plan should support dashboard quota checks")
 require(!Provider.volcengineTokenPlan.supportsQuotaQuery, "Volcengine Token Plan should not claim quota checks until official API wiring is implemented and verified")
 require(Provider.opencodeGo.supportsQuotaQuery, "OpenCode Go should support dashboard quota checks")
-require(Provider.aliyunCodingPlan.supportsQuotaQuery, "Aliyun Coding Plan should support dashboard subscription checks through aliclaw.coding-plan")
+require(Provider.aliyunCodingPlan.supportsQuotaQuery, "Aliyun Coding Plan should support dashboard subscription checks through queryCodingPlanInstanceInfoV2")
 require(!Provider.aliyunTokenPlan.supportsQuotaQuery, "Aliyun Token Plan should not claim quota checks until an official or dashboard API is implemented")
 require(Provider.tencentCloudCodingPlan.supportsQuotaQuery, "Tencent Cloud Coding Plan should support dashboard quota checks through DescribePkg")
 require(Provider.tencentCloudTokenPlan.supportsQuotaQuery, "Tencent Cloud Token Plan should expose quota checks through the official TokenHub API")
 require(!Provider.claudeAPIUsage.supportsQuotaQuery, "Claude API usage should not claim quota checks until Admin API credentials are modeled and verified")
-require(!Provider.claudeSubscription.supportsQuotaQuery, "Claude subscription should not claim quota checks until a stable subscription quota endpoint is verified")
+require(Provider.claudeSubscription.supportsQuotaQuery, "Claude subscription should support quota checks through verified claude.ai organization usage endpoints")
 require(!Provider.codexAPIUsage.supportsQuotaQuery, "Codex API usage should not claim quota checks until OpenAI Admin usage credentials are modeled and verified")
 require(Provider.codexSubscription.supportsQuotaQuery, "Codex subscription should support quota checks through the verified ChatGPT wham endpoint")
+require(Provider.kimiSubscription.supportsQuotaQuery, "Kimi subscription should support quota checks through the Kimi membership endpoints")
 require(Provider.aliyunCodingPlan.capability.credentialKind == .dashboardCookie, "Aliyun Coding Plan quota monitoring should use dashboard cookies")
-require(Provider.aliyunCodingPlan.capability.usageSource == .dashboardAPI, "Aliyun Coding Plan should expose subscription status through the dashboard aliclaw.coding-plan API")
+require(Provider.aliyunCodingPlan.capability.usageSource == .dashboardAPI, "Aliyun Coding Plan should expose subscription status through the dashboard queryCodingPlanInstanceInfoV2 API")
 require(Provider.aliyunCodingPlan.capability.canTestConnection, "Aliyun Coding Plan should offer a non-consuming dashboard subscription check")
 require(Provider.xfyunTokenPlan.capability.credentialKind == .dashboardCookie, "XFYun Token Plan quota monitoring should use dashboard cookies until an official usage endpoint is confirmed")
 require(Provider.xfyunTokenPlan.capability.usageSource == .unavailable, "XFYun Token Plan should not expose quota status until a safe usage endpoint is confirmed")
@@ -2301,6 +2444,11 @@ require(!Provider.tencentCloudTokenPlan.capability.consumesQuota, "Tencent Cloud
 require(Provider.codexSubscription.capability.credentialKind == .dashboardCookie, "Codex subscription should store web login authorization separately from API keys")
 require(Provider.codexSubscription.capability.usageSource == .dashboardAPI, "Codex subscription should expose the verified ChatGPT usage endpoint as a dashboard API")
 require(Provider.codexSubscription.capability.canTestConnection, "Codex subscription should expose refresh after the wham endpoint is wired in QuotaService")
+require(Provider.claudeSubscription.capability.usageSource == .dashboardAPI, "Claude subscription should expose quota status through claude.ai organization dashboard APIs")
+require(Provider.claudeSubscription.capability.canTestConnection, "Claude subscription should expose refresh after organization usage endpoints are wired in QuotaService")
+require(Provider.kimiSubscription.capability.credentialKind == .dashboardCookie, "Kimi subscription should store web login authorization separately from API keys")
+require(Provider.kimiSubscription.capability.usageSource == .dashboardAPI, "Kimi subscription should expose quota status through Kimi membership dashboard APIs")
+require(Provider.kimiSubscription.capability.canTestConnection, "Kimi subscription should offer a non-consuming membership quota check")
 require(Provider.querit.supportsQuotaQuery, "Querit should support dashboard-cookie quota checks through the user account endpoint")
 require(Provider.querit.capability.resetCycle == .notExposed, "Querit account endpoint exposes monthly usage but no reset/end date")
 require(Provider.querit.supportsCompanionAPIKeyStorage, "Querit should allow storing an optional API key separately from dashboard authorization")
@@ -2310,15 +2458,22 @@ require(Provider.exa.localizedUnsupportedQuotaLabel(language: .simplifiedChinese
 require(Provider.exa.localizedUnsupportedQuotaLabel(language: .traditionalChinese) == "需要 API 金鑰", "Exa plain search keys should ask for an API key without confusing admin credential wording in Traditional Chinese")
 require(Provider.exa.localizedUnsupportedQuotaLabel(language: .japanese) == "API キーが必要", "Exa plain search keys should ask for an API key without confusing admin credential wording in Japanese")
 require(Provider.exa.localizedUnsupportedQuotaLabel(language: .korean) == "API 키 필요", "Exa plain search keys should ask for an API key without confusing admin credential wording in Korean")
-require(Provider.deepseek.homeVisibleWithoutKeys, "DeepSeek should appear on the home view before a key is configured")
-require(Provider.xfyunCodingPlan.homeVisibleWithoutKeys, "XFYun Coding Plan should appear on the home view before a key is configured")
-require(Provider.volcengineCodingPlan.homeVisibleWithoutKeys, "Volcengine Coding Plan should appear on the home view before a key is configured")
-require(Provider.opencodeGo.homeVisibleWithoutKeys, "OpenCode Go should appear on the home view before a key is configured")
+require(Provider.tavily.homeVisibleWithoutKeys, "Tavily should appear as an AI Search home placeholder before a key is configured")
+require(Provider.brave.homeVisibleWithoutKeys, "Brave should appear as an AI Search home placeholder before a key is configured")
+require(Provider.serpapi.homeVisibleWithoutKeys, "SerpAPI should appear as an AI Search home placeholder before a key is configured")
+require(Provider.bocha.homeVisibleWithoutKeys, "Bocha should appear as an AI Search home placeholder before a key is configured")
+require(Provider.claudeSubscription.homeVisibleWithoutKeys, "Claude should appear as an LLM home placeholder before a key is configured")
+require(Provider.codexSubscription.homeVisibleWithoutKeys, "Codex should appear as an LLM home placeholder before a key is configured")
+require(Provider.deepseek.homeVisibleWithoutKeys, "DeepSeek should appear as an LLM home placeholder before a key is configured")
+require(Provider.aliyunCodingPlan.homeVisibleWithoutKeys, "Aliyun Coding Plan should appear as an LLM home placeholder before a key is configured")
+require(!Provider.kimiSubscription.homeVisibleWithoutKeys, "Kimi should not expand the empty-home LLM placeholder set until the user configures it")
+require(!Provider.xfyunCodingPlan.homeVisibleWithoutKeys, "XFYun Coding Plan should stay off empty home placeholders after the LLM placeholder set moves to Claude/Codex/DeepSeek/Aliyun")
+require(!Provider.volcengineCodingPlan.homeVisibleWithoutKeys, "Volcengine Coding Plan should stay off empty home placeholders after the LLM placeholder set moves to Claude/Codex/DeepSeek/Aliyun")
+require(!Provider.opencodeGo.homeVisibleWithoutKeys, "OpenCode Go should stay off empty home placeholders after the LLM placeholder set moves to Claude/Codex/DeepSeek/Aliyun")
 require(!Provider.tencentCloudTokenPlan.homeVisibleWithoutKeys, "Tencent Cloud Token Plan should stay off the home view until a real key is available")
 require(!Provider.anthropic.homeVisibleWithoutKeys, "Anthropic should stay off the home view unless explicitly configured")
 require(!Provider.xfyunTokenPlan.homeVisibleWithoutKeys, "XFYun Token Plan should stay off the home view until quota parsing is implemented")
 require(!Provider.volcengineTokenPlan.homeVisibleWithoutKeys, "Volcengine Token Plan should stay off the home view until quota parsing is implemented")
-require(!Provider.aliyunCodingPlan.homeVisibleWithoutKeys, "Aliyun Coding Plan should stay off empty home placeholders but appear once a business key or dashboard cookie is configured")
 require(!Provider.aliyunTokenPlan.homeVisibleWithoutKeys, "Aliyun Token Plan should stay off the home view until quota parsing is implemented")
 require(!Provider.tencentCloudCodingPlan.homeVisibleWithoutKeys, "Tencent Cloud Coding Plan should stay off empty home placeholders but appear once a business key or dashboard cookie is configured")
 let categoryStats = ProviderCategoryStats(title: "LLM", stats: [
@@ -2614,6 +2769,18 @@ let codexWindowResetKey = APIKey(
 require(codexWindowResetKey.visibleQuotaResetSummary == "", "Codex subscription should not duplicate reset timing above the plan expiry column")
 require(codexWindowResetKey.quotaWindowDetails.count == 2, "Codex subscription should keep reset timing attached to the five-hour and weekly quota rows")
 require(codexWindowResetKey.quotaWindowDetails.allSatisfy { $0.detailValueText != nil }, "Codex subscription quota rows should expose reset timing per window")
+let claudeWindowResetKey = APIKey(
+    name: "CLAUDE_SUBSCRIPTION_SESSION",
+    key: "cookie",
+    provider: .claudeSubscription,
+    resetAt: localizedResetDate,
+    quotaText: LocalizedTextDescriptor.quotaWindows([
+        QuotaWindowText(name: "5h", percentText: "98%", resetAt: localizedResetDate),
+        QuotaWindowText(name: "week", percentText: "100%", resetAt: localizedResetDate)
+    ])
+)
+require(claudeWindowResetKey.visibleQuotaResetSummary == "", "Claude subscription should not duplicate 5h/week reset timing in the last-updated timing column")
+require(claudeWindowResetKey.quotaWindowDetails.count == 2, "Claude subscription should keep reset timing attached to the five-hour and weekly quota rows")
 let planOnlyKey = APIKey(
     name: "XFYUN_CODING_PLAN_COOKIE",
     key: "cookie",
@@ -2785,6 +2952,11 @@ require(
     rankedMenuItems.map { $0.key.name } == ["usageLimited", "empty", "low"],
     "MenuQuotaItem.topItems should rank exhausted and lowest numeric quotas for the compact status bar summary"
 )
+let samePriorityMenuItems = MenuQuotaItem.topItems(from: [
+    ProviderStats(provider: .tavily, keys: [APIKey(name: "TAVILY_LOW", key: "tvly-low", provider: .tavily, remaining: 100, limit: 1000)]),
+    ProviderStats(provider: .brave, keys: [APIKey(name: "BRAVE_LOW", key: "brave-low", provider: .brave, remaining: 100, limit: 1000)]),
+], limit: 2, providerOrder: [.brave, .tavily])
+require(samePriorityMenuItems.map { $0.provider } == [.brave, .tavily], "Status bar menu items should use the user's provider order as the stable ranking tie-breaker")
 let menuSummary = MenuQuotaSummary(keys: [
     APIKey(name: "healthy", key: "tvly-healthy", provider: .tavily, remaining: 900, limit: 1000),
     APIKey(name: "low", key: "tvly-low", provider: .tavily, remaining: 20, limit: 1000),
@@ -2883,6 +3055,24 @@ curl 'https://www.querit.ai/api/v1/user/account' \
 let querit = try! CurlCredentialParser.parse(queritCurl, provider: .querit)
 require(querit.cookie.contains("osduss=session-redacted"), "Querit cURL parse should extract dashboard cookie")
 require(querit.serializedCredential.contains("\"cookie\""), "Querit parser should serialize dashboard cookie")
+
+let kimiCurl = """
+curl 'https://www.kimi.com/apiv2/kimi.gateway.membership.v2.MembershipService/GetSubscription' \
+  -H 'authorization: Bearer kimi-token' \
+  -H 'x-msh-device-id: device-redacted' \
+  -H 'x-msh-session-id: session-redacted' \
+  -H 'x-traffic-id: traffic-redacted' \
+  -b 'kimi-auth=kimi-cookie-token-redacted; locale_mode=implicit' \
+  --data-raw '{}'
+"""
+let kimi = try! CurlCredentialParser.parse(kimiCurl, provider: .kimiSubscription)
+require(kimi.provider == .kimiSubscription, "Kimi cURL parse should preserve provider")
+require(kimi.cookie.contains("kimi-auth=kimi-cookie-token-redacted"), "Kimi cURL parse should extract web login cookie")
+require(kimi.fields["accessToken"] == "kimi-token", "Kimi cURL parse should extract the Bearer token without the prefix")
+require(kimi.fields["deviceID"] == "device-redacted", "Kimi cURL parse should extract x-msh-device-id")
+require(kimi.fields["sessionID"] == "session-redacted", "Kimi cURL parse should extract x-msh-session-id")
+require(kimi.fields["trafficID"] == "traffic-redacted", "Kimi cURL parse should extract x-traffic-id")
+require(kimi.serializedCredential.contains("\"accessToken\""), "Kimi parser should serialize Bearer token metadata as JSON")
 
 do {
     _ = try CurlCredentialParser.parse("curl https://example.com", provider: .querit)
@@ -3160,6 +3350,7 @@ require(!Provider.claudeAPIUsage.supportsDashboardReauthentication, "Claude API 
 require(Provider.claudeSubscription.supportsDashboardReauthentication, "Claude subscription should support web-login authorization capture")
 require(!Provider.codexAPIUsage.supportsDashboardReauthentication, "Codex API usage should use API keys instead of web-login reauthentication")
 require(Provider.codexSubscription.supportsDashboardReauthentication, "Codex subscription should support web-login authorization capture")
+require(Provider.kimiSubscription.supportsDashboardReauthentication, "Kimi subscription should support web-login authorization capture")
 require(!Provider.brave.supportsDashboardReauthentication, "Brave should not use dashboard-cookie reauthentication")
 require(DashboardReauthConfig(provider: .opencodeGo)?.cookieDomains == ["opencode.ai"], "OpenCode Go should capture only opencode.ai cookies")
 require(DashboardReauthConfig(provider: .xfyunCodingPlan)?.cookieDomains == ["xfyun.cn", "maas.xfyun.cn"], "XFYun should capture maas.xfyun.cn and domain-wide xfyun.cn cookies")
@@ -3172,6 +3363,7 @@ require(DashboardReauthConfig(provider: .aliyunTokenPlan) == nil, "Aliyun Token 
 require(DashboardReauthConfig(provider: .tencentCloudCodingPlan)?.cookieDomains == ["cloud.tencent.com", "console.cloud.tencent.com"], "Tencent Cloud Coding Plan should capture Tencent Cloud web login authorization for quota endpoint verification")
 require(DashboardReauthConfig(provider: .claudeSubscription)?.cookieDomains == ["claude.ai"], "Claude subscription should capture claude.ai web-login authorization")
 require(DashboardReauthConfig(provider: .codexSubscription)?.cookieDomains == ["chatgpt.com"], "Codex subscription should capture ChatGPT web-login authorization")
+require(DashboardReauthConfig(provider: .kimiSubscription)?.cookieDomains == ["kimi.com", "www.kimi.com"], "Kimi subscription should capture kimi.com web-login authorization")
 require(DashboardReauthConfig(provider: .claudeAPIUsage) == nil, "Claude API usage should not expose dashboard reauthentication")
 require(DashboardReauthConfig(provider: .codexAPIUsage) == nil, "Codex API usage should not expose dashboard reauthentication")
 require(DashboardReauthConfig(provider: .opencodeGo)?.requiredCookieNames == ["auth"], "OpenCode Go should auto-save only after auth cookies exist")
@@ -3186,8 +3378,25 @@ require(DashboardCookieBuilder.containsRequiredCookie(
     inCookieHeader: "__Secure-next-auth.session-token.0=part-a; __Secure-next-auth.session-token.1=part-b",
     requiredNames: codexRequiredCookies
 ), "Codex subscription should accept chunked NextAuth session cookies")
+require(DashboardCookieBuilder.containsRequiredCookie(
+    inCookieHeader: "kimi-auth=kimi-session",
+    requiredNames: Provider.kimiSubscription.dashboardAuthenticationCookieNames
+), "Kimi subscription should accept the observed kimi-auth login cookie")
+let kimiCapturedFromStorage = DashboardCapturedCredential(
+    provider: .kimiSubscription,
+    cookieHeader: "locale_mode=implicit",
+    webStorageFields: ["kimi-auth": "kimi-storage-token", "x-msh-device-id": "device-redacted"]
+)
+require(kimiCapturedFromStorage.fields["accessToken"] == "kimi-storage-token", "Kimi reauthentication should normalize the web storage kimi-auth token into accessToken")
+require(kimiCapturedFromStorage.fields["deviceID"] == "device-redacted", "Kimi reauthentication should preserve x-msh device metadata from web storage")
+require(DashboardCookieBuilder.missingRequiredCredentialNames(
+    cookieHeader: kimiCapturedFromStorage.cookieHeader,
+    fields: kimiCapturedFromStorage.fields,
+    requiredNames: Provider.kimiSubscription.dashboardAuthenticationCookieNames
+).isEmpty, "Kimi reauthentication should accept accessToken captured from web storage when the auth cookie is not exposed")
+require(kimiCapturedFromStorage.reauthenticatedSecret(existingSecret: nil).contains("\"accessToken\""), "Kimi reauthentication should save storage-derived token metadata as JSON instead of a raw preference cookie")
 
-for provider in [Provider.querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .claudeSubscription, .codexSubscription] {
+for provider in [Provider.querit, .xfyunCodingPlan, .volcengineCodingPlan, .opencodeGo, .claudeSubscription, .codexSubscription, .kimiSubscription] {
     guard let config = DashboardReauthConfig(provider: provider) else {
         require(false, "\(provider.rawValue) should expose dashboard reauthentication config")
         continue
@@ -3622,16 +3831,35 @@ do {
     fail("Aliyun Coding Plan no-plan response should throw noSubscription, got \(error)")
 }
 
-let aliyunCodingPlan = try! QuotaParsers.parseAliyunCodingPlanStatus(Data("""
-{"code":"200","data":{"DataV2":{"data":{"data":{"hasCodingPlan":true,"clawQuota":2,"codingPlanInfo":{"instanceType":"Lite","status":"VALID","startTime":1780858373000,"endTime":1783448373000,"remainingDays":30}},"success":true,"failed":false},"success":true}},"successResponse":true}
+do {
+    _ = try QuotaParsers.parseAliyunCodingPlanStatus(Data("""
+{"code":"200","data":{"DataV2":{"ret":["SUCCESS::接口调用成功"],"data":{"data":{"codingPlanInstanceInfos":[],"userId":"redacted"},"success":true,"failed":false}},"success":true,"httpStatus":200,"api":"zeldaEasy.broadscope-bailian.codingPlan.queryCodingPlanInstanceInfoV2","errorMsg":""},"successResponse":true}
 """.utf8))
-require(aliyunCodingPlan.remaining == Int.max, "Aliyun Coding Plan should not invent a percentage quota when the dashboard only exposes subscription status")
-require(aliyunCodingPlan.limit == Int.max, "Aliyun Coding Plan should keep unknown quota as unknown")
-require(aliyunCodingPlan.quotaText?.key == .usableUnknownQuota, "Aliyun Coding Plan active subscriptions should display usable unknown quota until usage details are confirmed")
+    fail("Aliyun Coding Plan should report noSubscription when queryCodingPlanInstanceInfoV2 returns an empty subscription list")
+} catch QuotaError.noSubscription {
+} catch {
+    fail("Aliyun Coding Plan empty subscription list should throw noSubscription, got \(error)")
+}
+
+let aliyunCodingPlan = try! QuotaParsers.parseAliyunCodingPlanStatus(Data("""
+{"code":"200","data":{"DataV2":{"ret":["SUCCESS::接口调用成功"],"data":{"data":{"codingPlanInstanceInfos":[{"instanceName":"Coding Plan Pro","instanceType":"pro","status":"VALID","instanceStartTime":1772064682000,"instanceEndTime":1782489600000,"remainingDays":17,"codingPlanQuotaInfo":{"per5HourUsedQuota":43,"per5HourTotalQuota":6000,"per5HourQuotaNextRefreshTime":1780980997000,"perWeekUsedQuota":165,"perWeekTotalQuota":45000,"perWeekQuotaNextRefreshTime":1781452800000,"perBillMonthUsedQuota":2913,"perBillMonthTotalQuota":90000,"perBillMonthQuotaNextRefreshTime":1782489600000}}],"userId":"redacted"},"success":true,"failed":false}},"success":true,"httpStatus":200,"api":"zeldaEasy.broadscope-bailian.codingPlan.queryCodingPlanInstanceInfoV2","errorMsg":""},"successResponse":true}
+""".utf8))
+require(aliyunCodingPlan.remaining == 9676, "Aliyun Coding Plan should use the tightest request-count window from queryCodingPlanInstanceInfoV2")
+require(aliyunCodingPlan.limit == 10000, "Aliyun Coding Plan usage-window percentage limit should be 10000 basis points")
+require(aliyunCodingPlan.quotaLabel == "5h 99.3% · week 99.6% · month 96.8%", "Aliyun Coding Plan should display queryCodingPlanInstanceInfoV2 usage windows")
 let aliyunDisplayKey = APIKey(name: "ALIYUN_CODING_PLAN_COOKIE", key: "cookie", provider: .aliyunCodingPlan, quotaText: aliyunCodingPlan.quotaText, quotaLabel: aliyunCodingPlan.quotaLabel)
-require(aliyunDisplayKey.quotaWindowDetails.isEmpty, "Aliyun Coding Plan should not render cycle detail rows until a real usage sample exposes window counts")
-require(aliyunCodingPlan.resetAt == nil, "Aliyun Coding Plan subscription-status endpoint should not treat the plan end as a quota reset")
+require(aliyunDisplayKey.quotaWindowDetails.count == 3, "Aliyun Coding Plan should render cycle detail rows when queryCodingPlanInstanceInfoV2 exposes window counts")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "5h" })?.remainingText == "5957 / 6000", "Aliyun Coding Plan should preserve five-hour remaining and maximum request counts")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "week" })?.remainingText == "44835 / 45000", "Aliyun Coding Plan should preserve weekly remaining and maximum request counts")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "month" })?.remainingText == "87087 / 90000", "Aliyun Coding Plan should preserve monthly remaining and maximum request counts")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "5h" })?.resetAt != nil, "Aliyun Coding Plan should preserve the five-hour quota reset timestamp")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "week" })?.resetAt != nil, "Aliyun Coding Plan should preserve the weekly quota reset timestamp")
+require(aliyunCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "month" })?.resetAt != nil, "Aliyun Coding Plan should preserve the monthly quota reset timestamp")
+require(aliyunCodingPlan.resetAt != nil, "Aliyun Coding Plan should expose the tightest quota window reset timestamp")
 require(aliyunCodingPlan.planEndsAt != nil, "Aliyun Coding Plan should expose the subscription end time when present")
+let aliyunProviderStat = ProviderStats(provider: .aliyunCodingPlan, keys: [aliyunDisplayKey])
+require(aliyunProviderStat.totalLimitDisplayText == "month 96.8%", "Aliyun Coding Plan provider total should display the monthly percentage window")
+require(aliyunProviderStat.totalRemainingDisplayText == "month 96.8%", "Aliyun Coding Plan provider remaining should display the tightest quota cycle")
 
 let aliyunCodingPlanWithUsage = try! QuotaParsers.parseAliyunCodingPlanStatus(Data("""
 {"code":"200","data":{"DataV2":{"data":{"data":{"hasCodingPlan":true,"clawQuota":2,"codingPlanInfo":{"instanceType":"Lite","status":"VALID","startTime":1780858373000,"endTime":1783448373000,"remainingDays":30,"usageDetail":{"perFiveHour":{"used":20,"total":1000},"perWeek":{"used":1200,"total":6000},"perMonth":{"used":2000,"total":10000}}}},"success":true,"failed":false},"success":true}},"successResponse":true}
@@ -3659,6 +3887,39 @@ require(tencentCodingPlan.quotaText?.quotaWindows.first(where: { $0.name == "mon
 require(tencentCodingPlan.resetAt != nil, "Tencent Cloud Coding Plan should expose the tightest quota window reset timestamp")
 require(tencentCodingPlan.planEndsAt != nil, "Tencent Cloud Coding Plan should expose the package EndTime as the plan end date")
 
+let claudeOrganizationID = try! QuotaParsers.parseClaudeOrganizationID(Data("""
+[{"uuid":"org-redacted","name":"Personal","active":true}]
+""".utf8))
+require(claudeOrganizationID == "org-redacted", "Claude subscription should discover an organization uuid from claude.ai organizations")
+
+let claudeUsage = try! QuotaParsers.parseClaudeSubscriptionUsage(Data("""
+{"five_hour":{"utilization":24.5,"resets_at":"2026-06-09T10:00:00Z"},"seven_day":{"utilization":"70","resets_at":"2026-06-15T00:00:00Z"},"seven_day_opus":{"utilization":95,"resets_at":"2026-06-15T00:00:00Z"}}
+""".utf8))
+require(claudeUsage.remaining == 3000, "Claude subscription should use the tightest remaining percentage from 5h and weekly windows")
+require(claudeUsage.limit == 10000, "Claude subscription percentage limit should use basis points")
+require(claudeUsage.quotaLabel == "5h 75.5% · week 30%", "Claude subscription should display five-hour and weekly remaining percentages")
+require(claudeUsage.quotaText?.kind == .quotaWindows, "Claude subscription should carry structured quota-window descriptors")
+require(claudeUsage.quotaText?.quotaWindows.count == 2, "Claude subscription should keep the stable five-hour and weekly windows in compact UI")
+require(claudeUsage.quotaText?.quotaWindows.first(where: { $0.name == "5h" })?.resetAt != nil, "Claude five-hour quota window should preserve reset timestamp")
+require(claudeUsage.quotaText?.quotaWindows.first(where: { $0.name == "week" })?.resetAt != nil, "Claude weekly quota window should preserve reset timestamp")
+require(claudeUsage.resetAt != nil, "Claude subscription should expose the tightest quota window reset timestamp")
+require(claudeUsage.planEndsAt == nil, "Claude usage endpoint should not invent subscription end time")
+let claudeSubscriptionDisplayKey = APIKey(name: "CLAUDE_SUBSCRIPTION_COOKIE", key: "cookie", provider: .claudeSubscription, quotaText: claudeUsage.quotaText, quotaLabel: claudeUsage.quotaLabel)
+let claudeSubscriptionStat = ProviderStats(provider: .claudeSubscription, keys: [claudeSubscriptionDisplayKey])
+require(claudeSubscriptionStat.totalRemainingDisplayText == "week 30%", "Claude subscription provider remaining should display the tightest percentage window")
+
+let claudePlanEndsAt = try! QuotaParsers.parseClaudeSubscriptionDetails(Data("""
+{"subscription_type":"pro","next_charge_date":"2026-07-08T16:42:25Z"}
+""".utf8))
+require(claudePlanEndsAt != nil, "Claude subscription details should parse next_charge_date as the plan-cycle end date")
+let claudePlanEndsAtFromChargeAt = try! QuotaParsers.parseClaudeSubscriptionDetails(Data("""
+{"status":"active","billing_interval":"monthly","next_charge_date":"2026-07-09","next_charge_at":"2026-07-09T09:57:27Z"}
+""".utf8))
+require(claudePlanEndsAtFromChargeAt != nil, "Claude subscription details should parse next_charge_at when next_charge_date is date-only")
+let claudePlanFormatter = ISO8601DateFormatter()
+let expectedClaudePlanEnd = claudePlanFormatter.date(from: "2026-07-09T09:57:27Z")!
+require(abs(claudePlanEndsAtFromChargeAt!.timeIntervalSince1970 - expectedClaudePlanEnd.timeIntervalSince1970) < 1, "Claude subscription details should prefer next_charge_at over date-only next_charge_date")
+
 let codexUsage = try! QuotaParsers.parseCodexWhamUsage(Data("""
 {"plan_type":"pro","rate_limit":{"allowed":true,"limit_reached":false,"primary_window":{"used_percent":0,"limit_window_seconds":18000,"reset_after_seconds":18000,"reset_at":1780924878},"secondary_window":{"used_percent":70,"limit_window_seconds":604800,"reset_after_seconds":233270,"reset_at":1781140147}},"additional_rate_limits":[{"limit_name":"GPT-5.3-Codex-Spark","rate_limit":{"allowed":true,"limit_reached":false,"primary_window":{"used_percent":0,"limit_window_seconds":18000,"reset_after_seconds":18000,"reset_at":1780924878},"secondary_window":{"used_percent":0,"limit_window_seconds":604800,"reset_after_seconds":604800,"reset_at":1781511678}}}],"credits":{"has_credits":false,"unlimited":false,"balance":"0"}}
 """.utf8))
@@ -3672,6 +3933,43 @@ let codexPlanEndsAt = try! QuotaParsers.parseCodexSubscriptionLifecycle(Data("""
 {"active_start":"2026-06-08T16:42:25Z","active_until":"2026-07-08T16:42:25Z","billing_period":"monthly","plan_type":"pro","will_renew":true}
 """.utf8))
 require(codexPlanEndsAt != nil, "Codex subscription lifecycle should parse active_until as the plan end date")
+
+let kimiUsage = try! QuotaParsers.parseKimiSubscriptionUsage(
+    subscriptionData: Data("""
+{"subscription":{"goods":{"title":"Kimi Plus"},"next_billing_time":"2026-07-01T00:00:00Z"},"balances":[{"feature":"CHAT","type":"SUBSCRIPTION","unit":"CREDIT","amount":"10000","amount_left":"3000","amount_used_ratio":0.7,"expire_time":"2026-07-01T00:00:00Z"}],"subscribed":true}
+""".utf8),
+    usageData: Data("""
+{"usages":[{"scope":"FEATURE_CODING","detail":{"limit":100,"remaining":30,"used":70,"resetTime":"2026-06-15T00:00:00Z"},"limits":[{"window":{"duration":300,"timeUnit":"TIME_UNIT_MINUTE"},"detail":{"limit":100,"remaining":75,"used":25,"resetTime":"2026-06-09T10:00:00Z"}}]}],"totalQuota":100}
+""".utf8)
+)
+require(kimiUsage.remaining == 3000, "Kimi subscription should use the tightest remaining percentage across returned windows")
+require(kimiUsage.limit == 10000, "Kimi subscription percentage limit should use basis points")
+require(kimiUsage.quotaLabel == "5h 75% · week 30% · month 30%", "Kimi subscription should display confirmed five-hour, weekly, and subscription-balance windows")
+require(kimiUsage.quotaText?.quotaWindows.first(where: { $0.name == "5h" })?.resetAt != nil, "Kimi five-hour quota window should preserve reset timestamp")
+require(kimiUsage.quotaText?.quotaWindows.first(where: { $0.name == "week" })?.resetAt != nil, "Kimi weekly quota window should preserve reset timestamp")
+require(kimiUsage.quotaText?.quotaWindows.first(where: { $0.name == "month" })?.remainingText == "3000 / 10000", "Kimi subscription balance should preserve remaining and total credits")
+require(kimiUsage.planEndsAt != nil, "Kimi subscription should expose next billing or balance expiry as plan end")
+
+let kimiOAuthUsageShape = try! QuotaParsers.parseKimiSubscriptionUsage(
+    subscriptionData: Data("""
+{"subscription":{"goods":{"title":"Kimi Code"}},"balances":[],"subscribed":true}
+""".utf8),
+    usageData: Data("""
+{"usage":{"name":"Weekly limit","limit":100,"remaining":78,"resetAt":"2026-06-10T08:54:48.859647Z"},"limits":[{"window":{"duration":300,"timeUnit":"MINUTE"},"detail":{"limit":100,"remaining":96,"resetAt":"2026-06-09T13:54:48.859647Z"}}]}
+""".utf8)
+)
+require(kimiOAuthUsageShape.quotaLabel == "5h 96% · week 78%", "Kimi parser should support the official Kimi Code OAuth /coding/v1/usages shape")
+require(kimiOAuthUsageShape.quotaText?.quotaWindows.first(where: { $0.name == "5h" })?.remainingText == "96 / 100", "Kimi OAuth usage parser should preserve five-hour remaining counts")
+require(kimiOAuthUsageShape.quotaText?.quotaWindows.first(where: { $0.name == "week" })?.remainingText == "78 / 100", "Kimi OAuth usage parser should preserve weekly remaining counts")
+
+let kimiUnknownQuota = try! QuotaParsers.parseKimiSubscriptionUsage(
+    subscriptionData: Data("""
+{"subscription":{"goods":{"title":"Kimi Free"}},"balances":[],"subscribed":true}
+""".utf8),
+    usageData: nil
+)
+require(kimiUnknownQuota.quotaText?.render(language: .english) == "Usable · quota unknown", "Kimi subscription should not invent quota when membership data lacks usage windows")
+require(kimiUnknownQuota.planEndsAt == nil, "Kimi unknown-quota fallback should not invent a plan end date")
 
 do {
     _ = try QuotaParsers.parseTencentCloudCodingPlanDescribePkg(Data("""

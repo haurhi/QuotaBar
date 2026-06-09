@@ -70,6 +70,8 @@ The menu bar popover groups providers by `AI Search` and `LLM`, supports collaps
 
 Use `Settings` to switch Simplified Chinese, Traditional Chinese, English, Japanese, and Korean; adjust menu bar popover transparency; configure launch at login; and set the automatic refresh interval. Automatic refresh can also be turned off.
 
+To keep frequently used providers near the top, enable `Custom Provider Order`, click `Configure`, and drag provider rows. This order is shared by Quota Overview, Credentials, Diagnostics, and the menu bar popover.
+
 ## 7. Local Data Locations
 
 Secret file:

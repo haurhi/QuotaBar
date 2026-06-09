@@ -10,25 +10,43 @@ enum RefreshMode {
 @MainActor
 class QuotaMonitor: ObservableObject {
     static let shared = QuotaMonitor()
+    private static let providerOrderDefaultsKey = "providerOrder"
+    private static let customProviderOrderEnabledDefaultsKey = "customProviderOrderEnabled"
 
     @Published var apiKeys: [APIKey] = []
     @Published var isRefreshing = false
     @Published var refreshingProviders: Set<Provider> = []
     @Published var lastError: String?
     @Published var refreshMessage: String?
+    @Published private(set) var providerOrder: [Provider] = []
+    @Published var isCustomProviderOrderEnabled = false {
+        didSet {
+            defaults.set(isCustomProviderOrderEnabled, forKey: Self.customProviderOrderEnabledDefaultsKey)
+        }
+    }
 
     private let service = QuotaService()
     private let store: APIKeyStore
+    private let defaults: UserDefaults
     private var cancellables = Set<AnyCancellable>()
 
-    init(store: APIKeyStore = APIKeyStore()) {
+    init(store: APIKeyStore = APIKeyStore(), defaults: UserDefaults = .standard) {
         self.store = store
+        self.defaults = defaults
+        isCustomProviderOrderEnabled = defaults.bool(forKey: Self.customProviderOrderEnabledDefaultsKey)
+        providerOrder = Provider.orderedVisibleCases(
+            fromRawValues: defaults.stringArray(forKey: Self.providerOrderDefaultsKey) ?? []
+        )
         loadKeys()
+    }
+
+    var orderedVisibleProviders: [Provider] {
+        isCustomProviderOrderEnabled ? Provider.orderedVisibleCases(from: providerOrder) : Provider.visibleCases
     }
 
     var providerStats: [ProviderStats] {
         let grouped = Dictionary(grouping: apiKeys) { $0.provider }
-        let stats: [ProviderStats] = Provider.visibleCases.compactMap { provider in
+        let stats: [ProviderStats] = orderedVisibleProviders.compactMap { provider in
             guard let keys = grouped[provider], !keys.isEmpty else { return nil }
             return ProviderStats(provider: provider, keys: keys)
         }
@@ -37,7 +55,7 @@ class QuotaMonitor: ObservableObject {
 
     var homeProviderStats: [ProviderStats] {
         let grouped = Dictionary(grouping: apiKeys) { $0.provider }
-        let stats: [ProviderStats] = Provider.visibleCases.compactMap { provider in
+        let stats: [ProviderStats] = orderedVisibleProviders.compactMap { provider in
             let keys = grouped[provider] ?? []
             guard !keys.isEmpty || provider.homeVisibleWithoutKeys else { return nil }
             return ProviderStats(provider: provider, keys: keys)
@@ -47,15 +65,15 @@ class QuotaMonitor: ObservableObject {
 
     var homeCategoryStats: [ProviderCategoryStats] {
         let stats = homeProviderStats
-        let grouped = Dictionary(grouping: stats) { $0.provider.statusBarCategoryTitle }
         return Provider.categoryDisplayOrder.compactMap { title in
-            guard let providerStats = grouped[title], !providerStats.isEmpty else { return nil }
+            let providerStats = stats.filter { $0.provider.statusBarCategoryTitle == title }
+            guard !providerStats.isEmpty else { return nil }
             return ProviderCategoryStats(title: title, stats: providerStats)
         }
     }
 
     var menuTopQuotaItems: [MenuQuotaItem] {
-        MenuQuotaItem.topItems(from: homeProviderStats, limit: 3)
+        MenuQuotaItem.topItems(from: homeProviderStats, limit: 3, providerOrder: orderedVisibleProviders)
     }
 
     var menuQuotaSummary: MenuQuotaSummary {
@@ -63,7 +81,31 @@ class QuotaMonitor: ObservableObject {
     }
 
     var menuAttentionQuotaItems: [MenuQuotaItem] {
-        MenuQuotaItem.attentionItems(from: homeProviderStats, limit: 3)
+        MenuQuotaItem.attentionItems(from: homeProviderStats, limit: 3, providerOrder: orderedVisibleProviders)
+    }
+
+    func moveProvider(_ provider: Provider, before targetProvider: Provider) {
+        guard isCustomProviderOrderEnabled else { return }
+        guard provider != targetProvider else { return }
+        guard provider.statusBarCategoryTitle == targetProvider.statusBarCategoryTitle else { return }
+
+        var nextOrder = orderedVisibleProviders
+        guard
+            let currentIndex = nextOrder.firstIndex(of: provider),
+            let targetIndex = nextOrder.firstIndex(of: targetProvider)
+        else {
+            return
+        }
+
+        let movedProvider = nextOrder.remove(at: currentIndex)
+        let adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex
+        nextOrder.insert(movedProvider, at: adjustedTargetIndex)
+        setProviderOrder(nextOrder)
+    }
+
+    func resetProviderOrder() {
+        providerOrder = Provider.visibleCases
+        defaults.removeObject(forKey: Self.providerOrderDefaultsKey)
     }
 
     func refreshAll(mode: RefreshMode = .manual) {
@@ -270,6 +312,11 @@ class QuotaMonitor: ObservableObject {
 
     private func saveKeys() {
         store.save(apiKeys)
+    }
+
+    private func setProviderOrder(_ order: [Provider]) {
+        providerOrder = Provider.orderedVisibleCases(from: order)
+        defaults.set(providerOrder.map(\.rawValue), forKey: Self.providerOrderDefaultsKey)
     }
 
     private func loadKeys() {

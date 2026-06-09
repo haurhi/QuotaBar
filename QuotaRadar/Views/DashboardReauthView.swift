@@ -12,6 +12,7 @@ struct DashboardReauthSheet: View {
     @State private var statusMessage: String?
     @State private var isSaving = false
     @State private var didAutoSave = false
+    @State private var latestCapturedCredential: DashboardCapturedCredential?
 
     private var config: DashboardReauthConfig? {
         DashboardReauthConfig(provider: provider)
@@ -36,11 +37,13 @@ struct DashboardReauthSheet: View {
 
             if let config {
                 DashboardWebView(
+                    provider: provider,
                     url: config.loginURL,
                     cookieDomains: config.cookieDomains,
                     requiredCookieNames: config.requiredCookieNames,
-                    onCookiesAvailable: { cookieHeader in
-                        autoSaveCookies(cookieHeader)
+                    onCredentialAvailable: { credential in
+                        latestCapturedCredential = credential
+                        autoSaveCredential(credential)
                     }
                 )
                     .frame(width: 760, height: 520)
@@ -87,6 +90,13 @@ struct DashboardReauthSheet: View {
 
     private func saveCookies() {
         guard let config else { return }
+        if let latestCapturedCredential {
+            isSaving = true
+            statusMessage = L10n.t(.autoSavingCookie)
+            persistCredential(latestCapturedCredential, allowEmptyStatus: true, dismissAfterSave: true)
+            return
+        }
+
         isSaving = true
         statusMessage = L10n.t(.autoSavingCookie)
 
@@ -97,25 +107,30 @@ struct DashboardReauthSheet: View {
             )
 
             DispatchQueue.main.async {
-                persistCookies(cookieHeader, allowEmptyStatus: true, dismissAfterSave: true)
+                let capturedCredential = DashboardCapturedCredential(
+                    provider: provider,
+                    cookieHeader: cookieHeader
+                )
+                latestCapturedCredential = capturedCredential
+                persistCredential(capturedCredential, allowEmptyStatus: true, dismissAfterSave: true)
             }
         }
     }
 
-    private func autoSaveCookies(_ cookieHeader: String) {
+    private func autoSaveCredential(_ credential: DashboardCapturedCredential) {
         guard !didAutoSave, !isSaving else { return }
         isSaving = true
         statusMessage = L10n.t(.autoSavingCookie)
-        persistCookies(cookieHeader, allowEmptyStatus: false, dismissAfterSave: false)
+        persistCredential(credential, allowEmptyStatus: false, dismissAfterSave: false)
     }
 
-    private func persistCookies(_ cookieHeader: String, allowEmptyStatus: Bool, dismissAfterSave: Bool) {
+    private func persistCredential(_ capturedCredential: DashboardCapturedCredential, allowEmptyStatus: Bool, dismissAfterSave: Bool) {
         guard let config else {
             isSaving = false
             return
         }
 
-        guard !cookieHeader.isEmpty else {
+        guard capturedCredential.hasCredentialMaterial else {
             isSaving = false
             if allowEmptyStatus {
                 statusMessage = L10n.t(.noCookiesFound)
@@ -123,8 +138,9 @@ struct DashboardReauthSheet: View {
             return
         }
 
-        let missingCookieNames = DashboardCookieBuilder.missingRequiredCookieNames(
-            inCookieHeader: cookieHeader,
+        let missingCookieNames = DashboardCookieBuilder.missingRequiredCredentialNames(
+            cookieHeader: capturedCredential.cookieHeader,
+            fields: capturedCredential.fields,
             requiredNames: config.requiredCookieNames
         )
         guard missingCookieNames.isEmpty else {
@@ -133,18 +149,17 @@ struct DashboardReauthSheet: View {
             return
         }
 
-        validateAndPersistCookies(cookieHeader, config: config, dismissAfterSave: dismissAfterSave)
+        validateAndPersistCredential(capturedCredential, config: config, dismissAfterSave: dismissAfterSave)
     }
 
-    private func validateAndPersistCookies(_ cookieHeader: String, config: DashboardReauthConfig, dismissAfterSave: Bool) {
+    private func validateAndPersistCredential(_ capturedCredential: DashboardCapturedCredential, config: DashboardReauthConfig, dismissAfterSave: Bool) {
         didAutoSave = true
         statusMessage = L10n.t(.checkingCookie)
 
-        let existingKey = key ?? monitor.apiKeys.first(where: { $0.provider == provider })
+        let existingKey = existingQuotaAuthorizationKey
         let candidateKey: APIKey
-        if var updatedKey = key ?? monitor.apiKeys.first(where: { $0.provider == provider }) {
-            updatedKey.key = DashboardCookieBuilder.reauthenticatedSecret(
-                cookieHeader: cookieHeader,
+        if var updatedKey = existingKey {
+            updatedKey.key = capturedCredential.reauthenticatedSecret(
                 existingSecret: updatedKey.key
             )
             if updatedKey.name.isEmpty || updatedKey.isBusinessInvocationCredential {
@@ -158,7 +173,7 @@ struct DashboardReauthSheet: View {
         } else {
             candidateKey = APIKey(
                 name: config.defaultKeyName,
-                key: cookieHeader,
+                key: capturedCredential.reauthenticatedSecret(existingSecret: nil),
                 provider: provider,
                 note: L10n.t(.dashboardSession),
                 lastUpdated: Date(),
@@ -215,6 +230,32 @@ struct DashboardReauthSheet: View {
                     didAutoSave = false
                     statusMessage = L10n.t(.reauthStillUnauthorized)
                 }
+            } catch QuotaError.noSubscription {
+                await MainActor.run {
+                    var verifiedKey = candidateKey
+                    verifiedKey.remaining = nil
+                    verifiedKey.limit = nil
+                    verifiedKey.resetAt = nil
+                    verifiedKey.planEndsAt = nil
+                    verifiedKey.quotaLabel = "No subscribed plan"
+                    verifiedKey.quotaText = LocalizedTextDescriptor.localized(.noSubscribedPlan)
+                    verifiedKey.lastHTTPStatus = 200
+                    verifiedKey.lastDiagnosticMessage = "No subscribed plan"
+                    verifiedKey.lastDiagnosticText = LocalizedTextDescriptor.localized(.noSubscribedPlan)
+                    verifiedKey.lastUpdated = Date()
+
+                    if existingKey == nil {
+                        monitor.addKey(verifiedKey)
+                    } else {
+                        monitor.updateKey(verifiedKey)
+                    }
+
+                    isSaving = false
+                    statusMessage = L10n.t(.cookieSaved)
+                    if dismissAfterSave {
+                        dismiss()
+                    }
+                }
             } catch {
                 await MainActor.run {
                     isSaving = false
@@ -222,6 +263,21 @@ struct DashboardReauthSheet: View {
                     statusMessage = L10n.format(.reauthValidationFailed, error.localizedDescription)
                 }
             }
+        }
+    }
+
+    private var selectedQuotaAuthorizationKey: APIKey? {
+        guard let key,
+              key.provider == provider,
+              key.isQuotaMonitoringAuthorizationCredential else {
+            return nil
+        }
+        return key
+    }
+
+    private var existingQuotaAuthorizationKey: APIKey? {
+        selectedQuotaAuthorizationKey ?? monitor.apiKeys.first {
+            $0.provider == provider && $0.isQuotaMonitoringAuthorizationCredential
         }
     }
 }
@@ -241,10 +297,11 @@ final class OAuthPopupWindow: NSWindow {
 }
 
 struct DashboardWebView: NSViewRepresentable {
+    let provider: Provider
     let url: URL
     let cookieDomains: [String]
     let requiredCookieNames: [String]
-    let onCookiesAvailable: (String) -> Void
+    let onCredentialAvailable: (DashboardCapturedCredential) -> Void
 
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -266,26 +323,34 @@ struct DashboardWebView: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
+            provider: provider,
             cookieDomains: cookieDomains,
             requiredCookieNames: requiredCookieNames,
-            onCookiesAvailable: onCookiesAvailable
+            onCredentialAvailable: onCredentialAvailable
         )
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKHTTPCookieStoreObserver, NSWindowDelegate {
+        private let provider: Provider
         private let cookieDomains: [String]
         private let requiredCookieNames: [String]
-        private let onCookiesAvailable: (String) -> Void
+        private let onCredentialAvailable: (DashboardCapturedCredential) -> Void
         private var didEmitCookies = false
         private weak var webView: WKWebView?
         private var observedCookieStore: WKHTTPCookieStore?
         private var oauthPopupWindows: [ObjectIdentifier: OAuthPopupWindow] = [:]
         private(set) var hasStartedLoading = false
 
-        init(cookieDomains: [String], requiredCookieNames: [String], onCookiesAvailable: @escaping (String) -> Void) {
+        init(
+            provider: Provider,
+            cookieDomains: [String],
+            requiredCookieNames: [String],
+            onCredentialAvailable: @escaping (DashboardCapturedCredential) -> Void
+        ) {
+            self.provider = provider
             self.cookieDomains = cookieDomains
             self.requiredCookieNames = requiredCookieNames
-            self.onCookiesAvailable = onCookiesAvailable
+            self.onCredentialAvailable = onCredentialAvailable
         }
 
         deinit {
@@ -339,7 +404,7 @@ struct DashboardWebView: NSViewRepresentable {
                 return
             }
 
-            captureCookiesIfReady()
+            captureCredentialIfReady()
         }
 
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
@@ -422,10 +487,10 @@ struct DashboardWebView: NSViewRepresentable {
         }
 
         func cookiesDidChange(in cookieStore: WKHTTPCookieStore) {
-            captureCookiesIfReady()
+            captureCredentialIfReady()
         }
 
-        private func captureCookiesIfReady() {
+        private func captureCredentialIfReady() {
             guard !didEmitCookies,
                   let webView,
                   let host = webView.url?.host,
@@ -439,19 +504,68 @@ struct DashboardWebView: NSViewRepresentable {
                     from: cookies,
                     domains: self.cookieDomains
                 )
-                guard !cookieHeader.isEmpty else { return }
-                guard DashboardCookieBuilder.containsRequiredCookie(
-                    from: cookies,
-                    domains: self.cookieDomains,
-                    requiredNames: self.requiredCookieNames
-                ) else {
+
+                self.captureWebStorageFields(from: webView) { [weak self] webStorageFields in
+                    guard let self, !self.didEmitCookies else { return }
+                    let capturedCredential = DashboardCapturedCredential(
+                        provider: self.provider,
+                        cookieHeader: cookieHeader,
+                        webStorageFields: webStorageFields
+                    )
+                    guard capturedCredential.hasCredentialMaterial else { return }
+                    guard DashboardCookieBuilder.missingRequiredCredentialNames(
+                        cookieHeader: capturedCredential.cookieHeader,
+                        fields: capturedCredential.fields,
+                        requiredNames: self.requiredCookieNames
+                    ).isEmpty else {
+                        return
+                    }
+
+                    self.didEmitCookies = true
+                    DispatchQueue.main.async {
+                        self.onCredentialAvailable(capturedCredential)
+                    }
+                }
+            }
+        }
+
+        private func captureWebStorageFields(from webView: WKWebView, completion: @escaping ([String: String]) -> Void) {
+            let script = """
+            (() => {
+              const keys = [
+                'kimi-auth', 'accessToken', 'access_token', 'authorization', 'bearerToken', 'bearer_token', 'token',
+                'deviceID', 'deviceId', 'x-msh-device-id',
+                'sessionID', 'sessionId', 'x-msh-session-id',
+                'trafficID', 'trafficId', 'x-traffic-id'
+              ];
+              const output = {};
+              for (const storageName of ['localStorage', 'sessionStorage']) {
+                try {
+                  const storage = window[storageName];
+                  if (!storage) continue;
+                  for (const key of keys) {
+                    const value = storage.getItem(key);
+                    if (value && !output[key]) output[key] = value;
+                  }
+                } catch (_) {}
+              }
+              return output;
+            })();
+            """
+
+            webView.evaluateJavaScript(script) { value, _ in
+                guard let object = value as? [String: Any] else {
+                    completion([:])
                     return
                 }
-
-                self.didEmitCookies = true
-                DispatchQueue.main.async {
-                    self.onCookiesAvailable(cookieHeader)
+                let fields = object.reduce(into: [String: String]()) { result, item in
+                    guard let value = item.value as? String,
+                          !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                        return
+                    }
+                    result[item.key] = value
                 }
+                completion(fields)
             }
         }
 

@@ -106,6 +106,9 @@ struct EnvImporter {
                     && !uppercased.contains("SESSION")
                     && !uppercased.contains("COOKIE") {
             return .codexAPIUsage
+        } else if uppercased.contains("KIMI")
+                    && (uppercased.contains("COOKIE") || uppercased.contains("SESSION") || uppercased.contains("AUTH") || uppercased.contains("ACCESS_TOKEN")) {
+            return .kimiSubscription
         } else if uppercased.contains("WX") && uppercased.contains("SEARCH") {
             return .wxmp
         } else if uppercased.contains("WECHAT") {

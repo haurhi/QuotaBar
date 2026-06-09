@@ -311,6 +311,9 @@ enum L10n {
         case languageTitle
         case languageDescription
         case appLanguage
+        case customProviderOrder
+        case customProviderOrderDescription
+        case configureProviderOrder
         case settingsGeneralSection
         case settingsRefreshSection
         case settingsAppearanceSection
@@ -381,6 +384,15 @@ enum L10n {
         case delete
         case save
         case providersHeader
+        case providerOrder
+        case providerOrderDescription
+        case providerOrderLockedDescription
+        case providerOrderSheetTitle
+        case providerOrderSheetDescription
+        case dragProviderOrderHint
+        case resetProviderOrder
+        case moveProviderUp
+        case moveProviderDown
         case providersSupported
         case total
         case remaining
@@ -972,6 +984,9 @@ enum L10n {
         .languageTitle: "Language",
         .languageDescription: "Adjust app behavior, refresh cadence, language, and menu bar appearance.",
         .appLanguage: "App Language",
+        .customProviderOrder: "Custom Provider Order",
+        .customProviderOrderDescription: "Unlock provider ordering. When off, Quota Radar keeps the product-defined order.",
+        .configureProviderOrder: "Configure",
         .settingsGeneralSection: "General",
         .settingsRefreshSection: "Refresh",
         .settingsAppearanceSection: "Appearance",
@@ -1042,6 +1057,15 @@ enum L10n {
         .delete: "Delete",
         .save: "Save",
         .providersHeader: "Quota Overview",
+        .providerOrder: "Provider Order",
+        .providerOrderDescription: "Move providers to adjust the order used by quota monitoring, credentials, diagnostics, and the menu bar.",
+        .providerOrderLockedDescription: "Provider order is locked in Settings. Turn on Custom Provider Order to move providers.",
+        .providerOrderSheetTitle: "Provider Order",
+        .providerOrderSheetDescription: "Drag providers to set the order shared by quota monitoring, credentials, diagnostics, and the menu bar.",
+        .dragProviderOrderHint: "Drag a provider row and drop it where you want it. AI Search and LLM stay grouped.",
+        .resetProviderOrder: "Reset Order",
+        .moveProviderUp: "Move up",
+        .moveProviderDown: "Move down",
         .providersSupported: "%d configured · %d supported",
         .total: "Total",
         .remaining: "Remaining",
@@ -1050,7 +1074,7 @@ enum L10n {
         .featureRealtime: "Provider-level quota refresh",
         .featureGlass: "Frosted glass menu bar UI",
         .featureMenuBar: "Menu bar quick access",
-        .version: "Version 0.3.0",
+        .version: "Version 0.3.1",
         .importNoKeys: "No supported API keys found in %@.",
         .importSummary: "Imported %d new and updated %d key(s).",
         .refreshAlreadyRunning: "Refresh already running",
@@ -1161,6 +1185,9 @@ enum L10n {
         .languageTitle: "语言",
         .languageDescription: "调整应用行为、刷新频率、语言和状态栏外观。",
         .appLanguage: "应用语言",
+        .customProviderOrder: "自定义 Provider 顺序",
+        .customProviderOrderDescription: "开启后可以调整服务商顺序；关闭时使用默认锁定顺序。",
+        .configureProviderOrder: "调整顺序",
         .settingsGeneralSection: "通用",
         .settingsRefreshSection: "刷新",
         .settingsAppearanceSection: "外观",
@@ -1231,6 +1258,15 @@ enum L10n {
         .delete: "删除",
         .save: "保存",
         .providersHeader: "额度监控",
+        .providerOrder: "Provider 顺序",
+        .providerOrderDescription: "调整服务商在额度监控、配置凭据、诊断和状态栏中的显示顺序。",
+        .providerOrderLockedDescription: "Provider 顺序已在设置中锁定。开启自定义 Provider 顺序后即可移动。",
+        .providerOrderSheetTitle: "Provider 顺序",
+        .providerOrderSheetDescription: "拖动服务商，设置额度监控、配置凭据、诊断和状态栏共享的显示顺序。",
+        .dragProviderOrderHint: "长按或拖动服务商行，放到目标位置。AI 搜索和 LLM 会保持分组。",
+        .resetProviderOrder: "重置顺序",
+        .moveProviderUp: "上移",
+        .moveProviderDown: "下移",
         .providersSupported: "已配置 %d 个 · 支持 %d 个",
         .total: "总量",
         .remaining: "剩余",
@@ -1239,7 +1275,7 @@ enum L10n {
         .featureRealtime: "按服务商单独刷新额度",
         .featureGlass: "磨砂玻璃状态栏界面",
         .featureMenuBar: "状态栏快速访问",
-        .version: "版本 0.3.0",
+        .version: "版本 0.3.1",
         .importNoKeys: "在 %@ 中没有找到支持的 API 密钥。",
         .importSummary: "已导入 %d 个，新更新 %d 个密钥。",
         .refreshAlreadyRunning: "刷新正在进行",
@@ -1345,6 +1381,9 @@ enum L10n {
         .apiKeyConfigurationDescription: "新增 API 金鑰或網頁登入授權。新增憑證會按服務商顯示在下方。",
         .addKey: "新增憑證",
         .languageDescription: "調整應用程式行為、刷新頻率、語言和狀態列外觀。",
+        .customProviderOrder: "自訂 Provider 順序",
+        .customProviderOrderDescription: "開啟後可以調整服務商順序；關閉時使用預設鎖定順序。",
+        .configureProviderOrder: "調整順序",
         .settingsGeneralSection: "通用",
         .settingsRefreshSection: "刷新",
         .settingsAppearanceSection: "外觀",
@@ -1389,8 +1428,17 @@ enum L10n {
         .quotaStatus: "額度狀態",
         .lastUpdated: "上次更新",
         .providersHeader: "額度監控",
+        .providerOrder: "Provider 順序",
+        .providerOrderDescription: "調整服務商在額度監控、配置憑證、診斷和狀態列中的顯示順序。",
+        .providerOrderLockedDescription: "Provider 順序已在設定中鎖定。開啟自訂 Provider 順序後即可移動。",
+        .providerOrderSheetTitle: "Provider 順序",
+        .providerOrderSheetDescription: "拖動服務商，設定額度監控、配置憑證、診斷和狀態列共用的顯示順序。",
+        .dragProviderOrderHint: "長按或拖動服務商列，放到目標位置。AI 搜尋和 LLM 會保持分組。",
+        .resetProviderOrder: "重設順序",
+        .moveProviderUp: "上移",
+        .moveProviderDown: "下移",
         .remaining: "剩餘",
-        .version: "版本 0.3.0",
+        .version: "版本 0.3.1",
         .credentialExpired: "憑證已過期",
         .importedFromEnv: "從 .env 匯入",
         .importedFromClaude: "從 ~/.claude/settings.json 匯入",
@@ -1441,6 +1489,9 @@ enum L10n {
         .languageTitle: "言語",
         .languageDescription: "アプリの動作、更新間隔、言語、メニューバー表示を調整します。",
         .appLanguage: "アプリの言語",
+        .customProviderOrder: "プロバイダー順序をカスタム",
+        .customProviderOrderDescription: "オンにするとプロバイダーの順序を変更できます。オフでは既定の順序を固定します。",
+        .configureProviderOrder: "順序を調整",
         .settingsGeneralSection: "一般",
         .settingsRefreshSection: "更新",
         .settingsAppearanceSection: "外観",
@@ -1511,6 +1562,15 @@ enum L10n {
         .delete: "削除",
         .save: "保存",
         .providersHeader: "クォータ監視",
+        .providerOrder: "プロバイダー順序",
+        .providerOrderDescription: "クォータ監視、認証情報、診断、メニューバーで使うプロバイダー順序を調整します。",
+        .providerOrderLockedDescription: "プロバイダー順序は設定でロックされています。カスタム順序をオンにすると移動できます。",
+        .providerOrderSheetTitle: "プロバイダー順序",
+        .providerOrderSheetDescription: "プロバイダーをドラッグして、クォータ監視、認証情報、診断、メニューバーで共有する順序を設定します。",
+        .dragProviderOrderHint: "プロバイダー行を長押しまたはドラッグして目的の位置に置きます。AI 検索と LLM はグループのままです。",
+        .resetProviderOrder: "順序をリセット",
+        .moveProviderUp: "上へ移動",
+        .moveProviderDown: "下へ移動",
         .providersSupported: "%d 設定済み · %d 対応",
         .total: "合計",
         .remaining: "残り",
@@ -1519,7 +1579,7 @@ enum L10n {
         .featureRealtime: "プロバイダー単位のクォータ更新",
         .featureGlass: "フロストガラスのメニューバー UI",
         .featureMenuBar: "メニューバーから素早くアクセス",
-        .version: "バージョン 0.3.0",
+        .version: "バージョン 0.3.1",
         .importNoKeys: "%@ に対応する認証情報が見つかりません。",
         .importSummary: "%d 件を新規インポートし、%d 件を更新しました。",
         .refreshAlreadyRunning: "更新中です",
@@ -1629,6 +1689,9 @@ enum L10n {
         .languageTitle: "언어",
         .languageDescription: "앱 동작, 새로 고침 주기, 언어 및 메뉴 막대 모양을 조정합니다.",
         .appLanguage: "앱 언어",
+        .customProviderOrder: "공급자 순서 사용자화",
+        .customProviderOrderDescription: "켜면 공급자 순서를 조정할 수 있습니다. 끄면 기본 순서를 고정합니다.",
+        .configureProviderOrder: "순서 조정",
         .settingsGeneralSection: "일반",
         .settingsRefreshSection: "새로 고침",
         .settingsAppearanceSection: "모양",
@@ -1699,6 +1762,15 @@ enum L10n {
         .delete: "삭제",
         .save: "저장",
         .providersHeader: "할당량 모니터링",
+        .providerOrder: "공급자 순서",
+        .providerOrderDescription: "할당량 모니터링, 자격 증명, 진단 및 메뉴 막대에 사용할 공급자 순서를 조정합니다.",
+        .providerOrderLockedDescription: "공급자 순서가 설정에서 잠겨 있습니다. 사용자 지정 순서를 켜면 이동할 수 있습니다.",
+        .providerOrderSheetTitle: "공급자 순서",
+        .providerOrderSheetDescription: "공급자를 드래그하여 할당량 모니터링, 자격 증명, 진단 및 메뉴 막대가 공유할 순서를 설정합니다.",
+        .dragProviderOrderHint: "공급자 행을 길게 누르거나 드래그하여 원하는 위치에 놓습니다. AI 검색과 LLM은 그룹으로 유지됩니다.",
+        .resetProviderOrder: "순서 재설정",
+        .moveProviderUp: "위로 이동",
+        .moveProviderDown: "아래로 이동",
         .providersSupported: "설정됨 %d개 · 지원 %d개",
         .total: "전체",
         .remaining: "남음",
@@ -1707,7 +1779,7 @@ enum L10n {
         .featureRealtime: "공급자별 할당량 새로 고침",
         .featureGlass: "반투명 메뉴 막대 UI",
         .featureMenuBar: "메뉴 막대 빠른 접근",
-        .version: "버전 0.3.0",
+        .version: "버전 0.3.1",
         .importNoKeys: "%@에서 지원되는 자격 증명을 찾을 수 없습니다.",
         .importSummary: "새로 %d개 가져오고 %d개 키를 업데이트했습니다.",
         .refreshAlreadyRunning: "새로 고침 중입니다",

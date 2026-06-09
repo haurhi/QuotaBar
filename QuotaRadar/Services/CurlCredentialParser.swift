@@ -67,6 +67,21 @@ struct CurlCredentialParser {
                let workspaceID = firstRegexMatch(in: referer, pattern: #"/workspace/([^/?#]+)"#) {
                 fields["workspaceID"] = workspaceID
             }
+        case .kimiSubscription:
+            if let authorization = headers["authorization"] {
+                fields["accessToken"] = stripBearerPrefix(authorization)
+            } else if let cookieToken = cookieValue(named: "kimi-auth", in: cookie) {
+                fields["accessToken"] = cookieToken
+            }
+            if let deviceID = headers["x-msh-device-id"] {
+                fields["deviceID"] = deviceID
+            }
+            if let sessionID = headers["x-msh-session-id"] {
+                fields["sessionID"] = sessionID
+            }
+            if let trafficID = headers["x-traffic-id"] {
+                fields["trafficID"] = trafficID
+            }
         case .querit, .xfyunCodingPlan, .claudeSubscription, .codexSubscription:
             break
         case .tavily, .brave, .serpapi, .serper, .exa, .bocha, .anysearch, .wxmp, .anthropic, .claudeAPIUsage, .codexAPIUsage, .deepseek, .xfyunTokenPlan, .volcengineTokenPlan, .aliyunCodingPlan, .aliyunTokenPlan, .tencentCloudCodingPlan, .tencentCloudTokenPlan:
@@ -150,6 +165,14 @@ struct CurlCredentialParser {
             return pieces[1]
         }
         return nil
+    }
+
+    private static func stripBearerPrefix(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("bearer ") {
+            return String(trimmed.dropFirst("Bearer ".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return trimmed
     }
 
     private static func firstRegexMatch(in text: String, pattern: String) -> String? {

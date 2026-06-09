@@ -41,18 +41,18 @@ jobs:
             Quota Radar macOS build.
 
             What's new in ${{ github.ref_name }}:
-            - Easier quota overview: see which providers still have quota, which are low, and which checks failed without opening every provider dashboard.
-            - Cleaner credential management: API keys can be saved and copied, while web login authorization is used only for quota checks.
-            - Better provider coverage notes for Codex, Claude, Aliyun Coding Plan, Tencent Cloud Coding Plan, XFYun Spark, Volcengine, Querit, Exa, Serper, and other providers.
-            - Provider-level diagnostics now avoid duplicate rows for copy-only companion API keys.
-            - Chinese and English screenshots and the provider capability matrix were refreshed for this release.
+            - Provider order can now be customized from Settings and is shared by Quota Overview, Credentials, Diagnostics, and the menu bar popover.
+            - The order editor uses direct drag-and-drop rows in a focused Settings sheet instead of taking space in the quota overview.
+            - The default product order remains locked unless Custom Provider Order is enabled.
+            - Kimi Subscription was added and documented, including web login authorization, five-hour/weekly windows, balance, and subscription-cycle boundaries.
+            - Release preparation includes behavior tests, app bundle build validation, and a secret scan.
 
             中文说明：
-            - 主窗口和状态栏先按服务商汇总额度，更容易看出哪些还能用、哪些快用完、哪些检查失败。
-            - API Key 和网页登录授权分开管理：API Key 可以保存和复制；网页登录授权只用于查询额度，不会当成 API Key 展示。
-            - Codex、Claude、阿里云 Coding Plan、腾讯云 Coding Plan、讯飞星火、火山引擎、Querit、Exa、Serper 等服务商的额度来源和限制已经写入文档。
-            - 诊断页不再为“仅用于保存/复制”的配套 API Key 生成重复额度行。
-            - 本次发布更新了中英文截图和 provider capability matrix。
+            - Provider 顺序现在可以在设置中自定义，并同步到额度监控、配置凭据、诊断和状态栏弹窗。
+            - 顺序编辑器改为设置页独立弹窗，支持直接拖拽 provider 行，不占用额度监控主页面。
+            - 默认仍保持锁定的产品顺序，只有开启“自定义 Provider 顺序”后才使用用户排序。
+            - 新增 Kimi 订阅 provider，并补充网页登录授权、5 小时/周窗口、余额和订阅周期边界说明。
+            - 发布前会运行行为测试、App bundle 构建校验和敏感信息扫描。
 
             This DMG is unsigned and not notarized because the project does not use a paid Apple Developer ID. macOS Gatekeeper may block the first launch after download. Only install it if you trust this repository and release.
 

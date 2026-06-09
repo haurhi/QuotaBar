@@ -16,19 +16,20 @@ Naming convention: the GitHub repository, Swift package, and DMG use `QuotaRadar
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Current version: `v0.3.0`.
+Current version: `v0.3.1`.
 
 See [TODO / Roadmap](./TODO.en.md) for the next development plan.
 
 For credential type, usage source, and automatic-refresh constraints by provider, see the [Provider Capability Matrix](./docs/provider-capabilities.en.md).
 
-## What's New In v0.3.0
+## What's New In v0.3.1
 
-- Quota Radar now behaves more like a quota radar: the main window and menu bar summarize providers first, so it is easier to see what still works, what is low, and what failed.
-- API keys and web login authorizations are managed separately. API keys can be stored and copied; web login authorization is used only for quota checks and is not displayed as an API key.
-- Business invocation keys can be paired with quota-monitoring authorization. For example, Aliyun, Tencent Cloud, and Querit API keys can be stored for management, while quota checks still use the verified web login authorization path.
-- Codex, Claude, Aliyun Coding Plan, Tencent Cloud Coding Plan, XFYun Spark, Volcengine, and related providers now have clearer documentation for what exposes quota, reset times, plan end times, or subscription state only.
-- Chinese and English screenshots, the provider capability matrix, and unsigned-DMG release notes were refreshed. Release preparation includes behavior tests and a secret scan.
+- Provider order can now be customized. Enable `Custom Provider Order` in Settings, then open `Configure` and drag provider rows into the order you prefer.
+- The custom order is shared by `Quota Overview`, `Credentials`, `Diagnostics`, and the menu bar popover, so every surface stays consistent.
+- The product-defined order remains locked by default. Turning custom order off returns to the default order without deleting your saved custom order.
+- Provider-order editing now lives in a focused Settings sheet instead of taking over the quota overview page, and it no longer uses repetitive up/down buttons.
+- The order sheet uses a compact macOS preference-panel style and keeps `AI Search` and `LLM` grouped.
+- Kimi Subscription was added, while Claude, Codex, Aliyun/Tencent Cloud Coding Plan, and related provider quota/reset/plan-end boundaries remain documented.
 
 ## Screenshots
 
@@ -77,14 +78,17 @@ For credential type, usage source, and automatic-refresh constraints by provider
 
 | Provider | Credential Type |
 | --- | --- |
-| Claude | Subscription web login authorization can be stored; API Usage is hidden until an admin usage monitor is configured |
+| Claude | Subscription web login authorization; five-hour/weekly refresh, reset times, and subscription-cycle end date are wired. API Usage remains hidden |
 | Codex | Subscription web login authorization can be stored; Codex Cloud five-hour/weekly refresh and plan expiry are wired |
+| Kimi | Subscription web login authorization; Kimi BillingService usage and MembershipService subscription balance are wired. Five-hour/weekly windows are shown, and monthly subscription balance is shown when exposed |
 | DeepSeek | API key, shown as CNY account balance |
 | XFYun Spark Coding Plan | Web login authorization, 5-hour/weekly/monthly request-count windows implemented |
 | Volcengine Coding Plan | Web login authorization, quota cycles implemented |
 | OpenCode Go | Web login authorization |
 | Aliyun Coding Plan | Web login authorization, subscription-state checks implemented; if the dashboard exposes 5-hour/weekly/monthly request counts, Quota Radar renders them with the shared model |
 | Tencent Cloud Coding Plan | Web login authorization, dashboard `cgi/capi?cmd=DescribePkg&serviceType=hunyuan` subscription/request-count cycles implemented |
+
+Kimi uses web login authorization, not a model invocation API key. Quota Radar calls `BillingService/GetUsages` for Kimi Code five-hour/weekly windows, remaining counts, and reset times, and calls `GetSubscription` for subscription balance, billing cycle, or balance expiry. If the subscription endpoint only returns membership state without quota fields, Quota Radar shows "Usable · quota unknown" instead of inventing monthly quota. Kimi Code's official OAuth `/coding/v1/usages` path is tracked on the roadmap; the current main flow still uses one web login authorization to cover usage plus subscription balance.
 
 XFYun Spark Token Plan currently looks like seat/count quota, Aliyun Token Plan is expected to be credits-based, Tencent Cloud Token Plan keeps an official API parser but lacks a real user key sample, and Volcengine Token Plan still needs a stable usage endpoint. These Token Plan integrations remain modeled as code extension points, but they are hidden from the main UI and credential imports until usable quota fields and real credential samples are confirmed. See the [Provider Capability Matrix](./docs/provider-capabilities.en.md) for browser/API-verified `quota`, `resetAt`, and `planEndsAt` conclusions.
 
@@ -123,16 +127,16 @@ open build/QuotaRadar.dmg
 Manual GitHub Release upload:
 
 ```bash
-gh release create v0.3.0 build/QuotaRadar.dmg \
-  --title "Quota Radar v0.3.0" \
+gh release create v0.3.1 build/QuotaRadar.dmg \
+  --title "Quota Radar v0.3.1" \
   --notes "Unsigned DMG for trusted users. macOS may require removing quarantine on first launch."
 ```
 
 You can also push a tag and let GitHub Actions build the unsigned DMG and upload it to the Release:
 
 ```bash
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.3.1
+git push origin v0.3.1
 ```
 
 An unsigned DMG does not require Apple Developer Program membership, but macOS Gatekeeper may block the downloaded app. Install it only if you trust this source repository and release. If macOS says the app is damaged or cannot be opened, move the app into `/Applications` and run:
@@ -161,6 +165,8 @@ Without Developer ID signing and notarization, the DMG is suitable only for loca
 
 Use `Settings` to switch language, tune menu bar transparency, configure launch at login, and choose an automatic refresh interval. Automatic refresh can be disabled; providers such as Brave that consume a real search request are skipped by automatic refresh.
 
+To keep frequently used providers near the top, enable `Custom Provider Order` in `Settings`, click `Configure`, then drag provider rows. The order applies to all three main pages and the menu bar popover; `AI Search` and `LLM` remain grouped.
+
 ## `.env` Import
 
 Supported variable names include:
@@ -188,7 +194,7 @@ TENCENT_CLOUD_CODING_PLAN_API_KEY=...
 
 For web-login authorization providers, prefer the in-app re-authentication flow. You can also paste a browser-copied cURL command in the credential form so Quota Radar can extract the required login authorization fields. Never commit real authorization data to Git.
 
-Claude / Codex are split into subscription quota and API Usage. The main UI currently hides Claude/Codex API Usage to avoid dead placeholders when no admin usage monitor is configured; Claude/Codex subscription quota uses web login authorization. Claude currently exposes subscription tier and authorization state, but no stable five-hour/weekly/monthly remaining-quota endpoint is confirmed. Codex Cloud first resolves a ChatGPT session access token through `/api/auth/session`, then calls `/backend-api/wham/usage` for five-hour/weekly windows and reset times, and uses `/backend-api/subscriptions?account_id=...` `active_until` for plan expiry. The current usage response does not expose a monthly window.
+Claude / Codex are split into subscription quota and API Usage. The main UI currently hides Claude/Codex API Usage to avoid dead placeholders when no admin usage monitor is configured; Claude/Codex subscription quota uses web login authorization. Claude Subscription first discovers the active organization through `/api/organizations`, then calls `/api/organizations/{org_uuid}/usage` to parse `five_hour` and `seven_day` remaining percentages plus reset times, and uses `/api/organizations/{org_uuid}/subscription_details` `next_charge_at` or `next_charge_date` as the subscription-cycle end date. The compact UI does not show model-specific windows yet, and Anthropic API / prepaid credits remain separate. Codex Cloud first resolves a ChatGPT session access token through `/api/auth/session`, then calls `/backend-api/wham/usage` for five-hour/weekly windows and reset times, and uses `/backend-api/subscriptions?account_id=...` `active_until` for plan expiry. The current usage response does not expose a monthly window.
 
 Exa search API keys cannot query usage. To monitor Exa, use a Team Management service key plus the target API key id; Quota Radar displays the selected key's usage cost for the configured period.
 Querit `QUERIT_API_KEY` values can be stored and copied as API keys, but they cannot query dashboard account usage. Quota monitoring still requires web login authorization. The current Querit account endpoint returns monthly usage, but not the plan limit, reset time, or end date.
@@ -198,7 +204,7 @@ VOLCENGINE_CODING_PLAN_COOKIE='{"cookie":"<cookie-header-value>","csrfToken":"<c
 OPENCODE_GO_COOKIE='{"cookie":"<cookie-header-value>","workspaceID":"wrk_example","serverID":"server-example","serverInstance":"server-fn:11"}'
 ```
 
-Aliyun Coding Plan and Tencent Cloud Coding Plan business keys can be stored and shown, but quota monitoring uses web login authorizations. Aliyun Coding Plan checks subscription status through `aliclaw.coding-plan`; no subscription is shown as "No subscribed plan", and active subscriptions show "Usable · quota unknown" when the dashboard does not expose usage details. If Aliyun exposes 5-hour/weekly/monthly request-count windows, Quota Radar renders remaining/total counts with the same model used by XFYun Spark and Tencent Cloud. Tencent Cloud Coding Plan uses dashboard `cgi/capi?cmd=DescribePkg&serviceType=hunyuan`; subscribed packages can expose request counts, quota-window reset times, and the package end time. XFYun Spark Token Plan, Aliyun Token Plan, and Tencent Cloud Token Plan still need non-empty package or real-key samples before quota fields can be trusted; Volcengine Token Plan remains hidden until a stable usage endpoint is confirmed.
+Aliyun Coding Plan and Tencent Cloud Coding Plan business keys can be stored and shown, but quota monitoring uses web login authorizations. Aliyun Coding Plan now queries dashboard subscription instances through `codingPlan.queryCodingPlanInstanceInfoV2`; no subscription is shown as "No subscribed plan", while subscribed packages expose five-hour/weekly/monthly request-count windows, window reset times, and the package end date. Quota Radar renders those remaining/total counts with the same model used by XFYun Spark and Tencent Cloud. Tencent Cloud Coding Plan uses dashboard `cgi/capi?cmd=DescribePkg&serviceType=hunyuan`; subscribed packages can expose request counts, quota-window reset times, and the package end time. XFYun Spark Token Plan, Aliyun Token Plan, and Tencent Cloud Token Plan still need non-empty package or real-key samples before quota fields can be trusted; Volcengine Token Plan remains hidden until a stable usage endpoint is confirmed.
 
 ## Claude Code Import
 
