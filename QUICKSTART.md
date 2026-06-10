@@ -31,9 +31,11 @@ Dock 图标会打开主窗口；状态栏弹窗用于快速查看额度。
 
 打开主窗口左侧的 `配置凭据`。
 
-普通 provider 使用 API 密钥；Exa 使用用量查询专用 API key，不等同于搜索调用 key。Querit 可保存 API Key 方便复制，但额度监控仍需要网页登录授权；讯飞星火 coding plan、火山引擎 coding plan、OpenCode Go 也使用网页登录授权。阿里云/腾讯云 coding plan 可先保存业务 API Key 方便展示和复制，但额度监控仍需要通过重新认证获取网页登录授权。
+普通 provider 使用 API 密钥；Exa 使用用量查询专用 API key，不等同于搜索调用 key。Querit、Claude、Codex、Kimi、讯飞星火 coding plan、火山引擎 coding plan、OpenCode Go、阿里云/腾讯云 coding plan 可同时保存 API Key 和网页登录授权：API Key 用于管理和复制，网页登录授权用于额度监控。
 
 配置页会区分 `API 密钥` 和 `额度监控授权`：复制按钮只会出现在 API 密钥行；网页登录授权只供 Quota Radar 查询额度，不会作为 API key 展示或复制。
+
+`配置凭据` 页面只显示已经保存过凭据的 provider；还没配置的 provider 通过页面顶部的 `添加凭据` 新增。
 
 各 provider 能查到哪些额度、重置时间和套餐结束时间，见 [Provider Capability Matrix](./docs/provider-capabilities.md)。
 
@@ -62,13 +64,15 @@ TENCENT_CLOUD_CODING_PLAN_API_KEY=...
 
 ## 5. 观察额度
 
-左侧 `观察额度` 页面展示各 provider 的额度概览。
+左侧 `额度监控` 页面展示已配置 provider 的额度概览；没有保存凭据的 provider 不会在 `额度监控`、`配置凭据` 或 `诊断` 页面占位。
 
 状态栏弹窗按 `AI Search` 和 `LLM` 分组，可折叠 provider，并支持单个 provider 刷新。
 
 ## 6. 设置
 
-在 `设置` 页面切换简体中文、繁体中文、英文、日语、韩语，调整状态栏透明度，配置开机自启动和自动刷新间隔。也可以把自动刷新设为关闭。
+在 `设置` 页面切换简体中文、繁体中文、英文、日语、韩语，调整状态栏透明度，配置开机自启动、网络代理和自动刷新间隔。也可以把自动刷新设为关闭。
+
+网络代理支持跟随系统、直连和自定义代理。自定义代理可填写 `http://127.0.0.1:7890` 或 `socks5://127.0.0.1:7890`。
 
 如果想让常用 provider 排在前面，可以开启 `自定义 Provider 顺序`，点击 `调整顺序` 后拖动 provider 行。这个顺序会同步到额度监控、配置凭据、诊断和状态栏弹窗。
 

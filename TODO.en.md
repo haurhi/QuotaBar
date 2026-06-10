@@ -43,7 +43,7 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Run screenshot QA for v0.2.2 menu bar transparency and make Chinese / English README pages use screenshots in their own language.
 - [x] Fill in the provider capability matrix as the entry point for future provider additions.
 
-## Fixed In v0.3.1
+## Fixed In v0.3.2
 
 - [x] Provider order can be customized and explicitly enabled or disabled in `Settings`; when disabled, Quota Radar keeps the locked default order.
 - [x] Provider-order configuration moved into a focused Settings sheet instead of occupying the `Quota Overview` page.
@@ -52,6 +52,14 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] The order sheet now uses a more compact macOS preference-panel style, grouped by `AI Search` and `LLM`, reducing distraction from the main monitoring workflow.
 - [x] The default product order remains a safe fallback: hidden or removed providers are filtered, and new providers are appended in default order.
 - [x] Kimi Subscription was added and documented in README plus the provider capability matrix, including web login authorization, five-hour/weekly windows, balance, and subscription-cycle boundaries.
+- [x] Claude, Codex, Kimi, and OpenCode Go subscription providers can store companion API keys. API keys are only for copying and management; quota checks still use web login authorization.
+- [x] Added network proxy settings: system proxy, direct connection, and custom HTTP/SOCKS proxy, with centered menu controls in Settings.
+- [x] Adding or editing a credential immediately refreshes the matching provider, instead of waiting for automatic refresh or a second manual click.
+- [x] When multiple web login authorizations exist, the reauthentication window requires an explicit save target so the wrong account is not overwritten.
+- [x] The menu bar popover is now risk-first: `Quota Risk Today` plus `Needs Attention`, instead of squeezing the full provider grid into the small popover.
+- [x] The main quota overview table now uses `Key Quota / Credential Pool / Critical Time / Status`, covering providers with multiple keys, subscription accounts, and multi-window quota cycles.
+- [x] `Quota Overview`, `Credentials`, and `Diagnostics` now show only providers with saved credentials. Unconfigured providers no longer appear as empty placeholders.
+- [x] Multi-window subscription quotas no longer repeat the 5-hour/weekly/monthly text in the credential row when the cycle details are shown below; plan-expiry dates include the year so annual plans are unambiguous.
 - [x] Release behavior tests now cover the provider-order entry point, draggable ordering structure, global order synchronization, and release secret scanning.
 
 ## Fixed In v0.3.0
@@ -95,7 +103,7 @@ The broader UI redesign toward a native, dense, low-distraction macOS monitoring
 - [x] Simplify the credential page title hierarchy so the page title and local heading do not repeat the same wording.
 - [x] Show the basic expected credential type for each provider:
   - API key: Tavily, SerpAPI, Serper, Bocha, DeepSeek, Exa Team Management service key plus target API key id, and similar providers.
-  - Web login authorization: Querit, XFYun Spark Coding Plan, Volcengine Coding Plan, OpenCode Go, Aliyun Coding Plan, and Tencent Cloud Coding Plan.
+  - Web login authorization: Querit, Claude Subscription, Codex Subscription, Kimi Subscription, XFYun Spark Coding Plan, Volcengine Coding Plan, OpenCode Go, Aliyun Coding Plan, and Tencent Cloud Coding Plan.
   - Verified integrations: Aliyun Coding Plan can check subscription state through `aliclaw.coding-plan` and now parses 5-hour/weekly/monthly request-count fields when exposed; Tencent Cloud Coding Plan parses request-count quota cycles through dashboard `cgi/capi?cmd=DescribePkg&serviceType=hunyuan`. Business invocation API keys for both can be stored and shown, but they are not used for quota monitoring.
   - Sample still needed: the current Aliyun Coding Plan account returns no subscription; usage-field parsing is reserved, and if a subscribed account still does not expose usage details, keep "Usable · quota unknown".
   - Hidden extension stubs: XFYun Spark Token Plan, Volcengine Token Plan, Aliyun Token Plan, and Tencent Cloud Token Plan. They are not shown, imported, or refreshed until usable quota fields, measurement units, and real credential samples are confirmed.
@@ -105,6 +113,10 @@ The broader UI redesign toward a native, dense, low-distraction macOS monitoring
   - Extract `workspaceID`, `serverID`, and `serverInstance` from OpenCode Go cURL.
   - For Querit, `QUERIT_API_KEY` is stored only as a copyable API key; quota monitoring still stores web login authorization and uses the dashboard Account API.
   - For Kimi, extract the Bearer access token, `x-msh-device-id`, `x-msh-session-id`, `x-traffic-id`, and optional `kimi-auth` cookie.
+- [x] Add companion API-key storage for providers that use web login authorization for quota monitoring but still need user-facing API-key management:
+  - Querit, Claude Subscription, Codex Subscription, Kimi Subscription, XFYun Spark Coding Plan, Volcengine Coding Plan, OpenCode Go, Aliyun Coding Plan, and Tencent Cloud Coding Plan.
+  - Companion API keys are copyable and editable, but do not create separate quota-monitoring or diagnostic rows.
+  - Companion API keys are linked to the matching web login authorization; when multiple accounts exist, reauthentication requires an explicit save target.
 - [x] Make reauthentication auto-save:
   - Open the provider dashboard login page.
   - After the user logs in, read cookies from allowed domains.
@@ -135,7 +147,7 @@ The broader UI redesign toward a native, dense, low-distraction macOS monitoring
   - Whether a proxy was used.
   - Whether automatic refresh skipped this provider.
   - Next reset time or "provider does not expose reset time".
-- [ ] Add proxy settings:
+- [x] Add proxy settings:
   - Use system proxy.
   - Manual HTTP proxy, such as `http://127.0.0.1:7890`.
   - Manual SOCKS proxy, such as `socks5://127.0.0.1:7890`.
@@ -225,6 +237,12 @@ Keep this separate from Claude / Codex subscription quota. Subscription quota tr
   - The popover auto-closes when the pointer leaves, without activating the main window.
   - LLM coding plans show the cycle with the lowest remaining percentage instead of always showing the 5-hour cycle.
   - Menu bar transparency is wired through and README screenshots have been refreshed from the running app.
+  - The current menu bar main view keeps only `Quota Risk Today` and `Needs Attention`; full provider/key details live in the main window.
+- [x] Adjust the main quota overview information architecture:
+  - Provider rows changed from `Remaining/Total` to `Key Quota/Credential Pool/Critical Time/Status`.
+  - `Key Quota` shows the tightest window for subscription/coding-plan providers and the best usable key for plain API-key pools.
+  - `Credential Pool` counts only credentials that participate in quota monitoring, excluding copy-only companion API keys.
+  - Expanded provider rows still show per-key/account details, reset timing, and plan expiry.
 - [ ] Deepen the next menu bar visual pass:
   - Use compact metrics, fine separators, clear hierarchy, and no long scrolling dashboard.
   - Redesign the overall style toward native monitoring panels: tighter modules, fewer large cards, clearer metric hierarchy, and a cleaner action area.
@@ -290,7 +308,7 @@ Continue with P1 + P2. Reauthentication auto-save is already in place; the remai
 4. [ ] Add per-provider connectivity tests.
    - Main files: `QuotaRadar/Services/QuotaService.swift`, `QuotaRadar/Models/QuotaMonitor.swift`, `QuotaRadar/Views/SettingsView.swift`.
    - Goal: each provider can test credential usability and disclose whether the test consumes quota.
-5. [ ] Add proxy settings.
+5. [x] Add proxy settings.
    - Main files: `QuotaRadar/Models/AppAppearance.swift`, `QuotaRadar/Services/QuotaService.swift`, `QuotaRadar/Views/SettingsView.swift`.
    - Goal: support system proxy, manual HTTP/SOCKS proxy, and no proxy.
 6. [ ] Run a main-window and menu-popover visual QA pass.

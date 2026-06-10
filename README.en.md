@@ -16,13 +16,13 @@ Naming convention: the GitHub repository, Swift package, and DMG use `QuotaRadar
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-Current version: `v0.3.1`.
+Current version: `v0.3.2`.
 
 See [TODO / Roadmap](./TODO.en.md) for the next development plan.
 
 For credential type, usage source, and automatic-refresh constraints by provider, see the [Provider Capability Matrix](./docs/provider-capabilities.en.md).
 
-## What's New In v0.3.1
+## What's New In v0.3.2
 
 - Provider order can now be customized. Enable `Custom Provider Order` in Settings, then open `Configure` and drag provider rows into the order you prefer.
 - The custom order is shared by `Quota Overview`, `Credentials`, `Diagnostics`, and the menu bar popover, so every surface stays consistent.
@@ -30,6 +30,10 @@ For credential type, usage source, and automatic-refresh constraints by provider
 - Provider-order editing now lives in a focused Settings sheet instead of taking over the quota overview page, and it no longer uses repetitive up/down buttons.
 - The order sheet uses a compact macOS preference-panel style and keeps `AI Search` and `LLM` grouped.
 - Kimi Subscription was added, while Claude, Codex, Aliyun/Tencent Cloud Coding Plan, and related provider quota/reset/plan-end boundaries remain documented.
+- Claude, Codex, Kimi, and OpenCode Go subscription providers can now store both quota-monitoring web login authorization and a copyable API key. Quota checks still use web login authorization; API keys are kept only for management and copying.
+- Settings now include network proxy controls: system proxy, direct connection, and custom HTTP/SOCKS proxy. Adding or editing a credential immediately refreshes that provider.
+- The menu bar popover now prioritizes `Quota Risk Today`, low-quota providers, and items needing attention instead of a full provider grid. The main quota overview table now uses `Key Quota / Credential Pool / Critical Time / Status`, which fits multi-key and multi-window subscription providers better.
+- `Quota Overview`, `Credentials`, and `Diagnostics` now show only providers with saved credentials. Unconfigured providers no longer take space in the main window; add them from `Add Credential`.
 
 ## Screenshots
 
@@ -38,7 +42,7 @@ For credential type, usage source, and automatic-refresh constraints by provider
 </p>
 
 <p align="center">
-  <em>The main window summarizes remaining quota, total quota, and health status by provider. Screenshots are captured from the running app, with credentials masked by Quota Radar.</em>
+  <em>The main window summarizes key quota, credential pool, critical time, and quota status by provider, showing configured providers only. Screenshots are captured from the running app, with credentials masked by Quota Radar.</em>
 </p>
 
 <p align="center">
@@ -53,6 +57,7 @@ For credential type, usage source, and automatic-refresh constraints by provider
 
 - Frosted-glass menu bar popover grouped by `AI Search` and `LLM`.
 - Supports multiple providers and credentials, with credentials sorted by remaining quota inside each provider.
+- `Quota Overview`, `Credentials`, and `Diagnostics` show only providers with saved credentials, avoiding empty provider placeholders.
 - Supports API keys and web login authorizations.
 - Imports supported credentials from `.env` or `~/.claude/settings.json`.
 - Supports launch at login, configurable automatic refresh intervals, and fully disabling automatic refresh.
@@ -78,13 +83,13 @@ For credential type, usage source, and automatic-refresh constraints by provider
 
 | Provider | Credential Type |
 | --- | --- |
-| Claude | Subscription web login authorization; five-hour/weekly refresh, reset times, and subscription-cycle end date are wired. API Usage remains hidden |
-| Codex | Subscription web login authorization can be stored; Codex Cloud five-hour/weekly refresh and plan expiry are wired |
-| Kimi | Subscription web login authorization; Kimi BillingService usage and MembershipService subscription balance are wired. Five-hour/weekly windows are shown, and monthly subscription balance is shown when exposed |
+| Claude | Subscription web login authorization; optional `ANTHROPIC_API_KEY` storage for copying; five-hour/weekly refresh, reset times, and subscription-cycle end date are wired. API Usage remains hidden |
+| Codex | Subscription web login authorization; optional `OPENAI_API_KEY` storage for copying; Codex Cloud five-hour/weekly refresh and plan expiry are wired |
+| Kimi | Subscription web login authorization; optional `KIMI_API_KEY` storage for copying; Kimi BillingService usage and MembershipService subscription balance are wired. Five-hour/weekly windows are shown, and monthly subscription balance is shown when exposed |
 | DeepSeek | API key, shown as CNY account balance |
 | XFYun Spark Coding Plan | Web login authorization, 5-hour/weekly/monthly request-count windows implemented |
 | Volcengine Coding Plan | Web login authorization, quota cycles implemented |
-| OpenCode Go | Web login authorization |
+| OpenCode Go | Subscription web login authorization; optional `OPENCODE_GO_API_KEY` storage for copying |
 | Aliyun Coding Plan | Web login authorization, subscription-state checks implemented; if the dashboard exposes 5-hour/weekly/monthly request counts, Quota Radar renders them with the shared model |
 | Tencent Cloud Coding Plan | Web login authorization, dashboard `cgi/capi?cmd=DescribePkg&serviceType=hunyuan` subscription/request-count cycles implemented |
 
@@ -127,16 +132,16 @@ open build/QuotaRadar.dmg
 Manual GitHub Release upload:
 
 ```bash
-gh release create v0.3.1 build/QuotaRadar.dmg \
-  --title "Quota Radar v0.3.1" \
+gh release create v0.3.2 build/QuotaRadar.dmg \
+  --title "Quota Radar v0.3.2" \
   --notes "Unsigned DMG for trusted users. macOS may require removing quarantine on first launch."
 ```
 
 You can also push a tag and let GitHub Actions build the unsigned DMG and upload it to the Release:
 
 ```bash
-git tag v0.3.1
-git push origin v0.3.1
+git tag v0.3.2
+git push origin v0.3.2
 ```
 
 An unsigned DMG does not require Apple Developer Program membership, but macOS Gatekeeper may block the downloaded app. Install it only if you trust this source repository and release. If macOS says the app is damaged or cannot be opened, move the app into `/Applications` and run:
@@ -160,12 +165,14 @@ Without Developer ID signing and notarization, the DMG is suitable only for loca
 
 1. Click the menu bar quota-radar icon to open the quota panel.
 2. Open `Credentials` to add credentials or import from `.env`.
-3. Use API keys for normal providers. Exa requires a Team Management service key plus the target API key id. Querit API keys can be stored for copying, but quota monitoring still requires web login authorization. XFYun Spark Coding Plan, Volcengine Coding Plan, and OpenCode Go also use web login authorizations. Aliyun/Tencent Cloud Coding Plan business API keys can be stored for display/copying, but quota monitoring still requires reauthentication to capture web login authorization.
+3. Use API keys for normal providers. Exa requires a Team Management service key plus the target API key id. Querit, Claude, Codex, Kimi, XFYun Spark Coding Plan, Volcengine Coding Plan, OpenCode Go, and Aliyun/Tencent Cloud Coding Plan can store both a copyable API key and web login authorization. Quota monitoring still uses web login authorization; API keys are only for management and copying.
 4. Click a provider-level refresh button to update that provider.
 
-Use `Settings` to switch language, tune menu bar transparency, configure launch at login, and choose an automatic refresh interval. Automatic refresh can be disabled; providers such as Brave that consume a real search request are skipped by automatic refresh.
+Use `Settings` to switch language, tune menu bar transparency, configure launch at login, set the network proxy, and choose automatic refresh intervals. Automatic refresh can be disabled; providers such as Brave that consume a real search request are skipped by default and only join the longer `Search Refresh` cadence when explicitly enabled.
 
 To keep frequently used providers near the top, enable `Custom Provider Order` in `Settings`, click `Configure`, then drag provider rows. The order applies to all three main pages and the menu bar popover; `AI Search` and `LLM` remain grouped.
+
+`Quota Overview`, `Credentials`, and `Diagnostics` show only providers that already have saved credentials. Providers that have not been configured do not appear as empty placeholders; add them through `Add Credential`.
 
 ## `.env` Import
 
@@ -194,7 +201,7 @@ TENCENT_CLOUD_CODING_PLAN_API_KEY=...
 
 For web-login authorization providers, prefer the in-app re-authentication flow. You can also paste a browser-copied cURL command in the credential form so Quota Radar can extract the required login authorization fields. Never commit real authorization data to Git.
 
-Claude / Codex are split into subscription quota and API Usage. The main UI currently hides Claude/Codex API Usage to avoid dead placeholders when no admin usage monitor is configured; Claude/Codex subscription quota uses web login authorization. Claude Subscription first discovers the active organization through `/api/organizations`, then calls `/api/organizations/{org_uuid}/usage` to parse `five_hour` and `seven_day` remaining percentages plus reset times, and uses `/api/organizations/{org_uuid}/subscription_details` `next_charge_at` or `next_charge_date` as the subscription-cycle end date. The compact UI does not show model-specific windows yet, and Anthropic API / prepaid credits remain separate. Codex Cloud first resolves a ChatGPT session access token through `/api/auth/session`, then calls `/backend-api/wham/usage` for five-hour/weekly windows and reset times, and uses `/backend-api/subscriptions?account_id=...` `active_until` for plan expiry. The current usage response does not expose a monthly window.
+Claude / Codex are split into subscription quota and API Usage. The main UI currently hides Claude/Codex API Usage to avoid dead placeholders when no admin usage monitor is configured; Claude/Codex subscription quota uses web login authorization. The credential UI can also save `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `KIMI_API_KEY` alongside Claude/Codex/Kimi subscription authorization, but those API keys are only for copying and management, not subscription quota checks. Claude Subscription first discovers the active organization through `/api/organizations`, then calls `/api/organizations/{org_uuid}/usage` to parse `five_hour` and `seven_day` remaining percentages plus reset times, and uses `/api/organizations/{org_uuid}/subscription_details` `next_charge_at` or `next_charge_date` as the subscription-cycle end date. The compact UI does not show model-specific windows yet, and Anthropic API / prepaid credits remain separate. Codex Cloud first resolves a ChatGPT session access token through `/api/auth/session`, then calls `/backend-api/wham/usage` for five-hour/weekly windows and reset times, and uses `/backend-api/subscriptions?account_id=...` `active_until` for plan expiry. The current usage response does not expose a monthly window.
 
 Exa search API keys cannot query usage. To monitor Exa, use a Team Management service key plus the target API key id; Quota Radar displays the selected key's usage cost for the configured period.
 Querit `QUERIT_API_KEY` values can be stored and copied as API keys, but they cannot query dashboard account usage. Quota monitoring still requires web login authorization. The current Querit account endpoint returns monthly usage, but not the plan limit, reset time, or end date.

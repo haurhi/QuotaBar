@@ -16,13 +16,13 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 ![Swift](https://img.shields.io/badge/swift-5.9-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-当前版本：`v0.3.1`。
+当前版本：`v0.3.2`。
 
 下一阶段计划见 [TODO / Roadmap](./TODO.md)。
 
 服务商凭据类型、额度来源和自动刷新限制见 [Provider Capability Matrix](./docs/provider-capabilities.md)。
 
-## v0.3.1 新特性
+## v0.3.2 新特性
 
 - 支持 Provider 自定义顺序：在 `设置` 中开启后，点击 `调整顺序` 即可用拖拽调整常用 provider 的显示位置。
 - 自定义顺序会同步到 `额度监控`、`配置凭据`、`诊断` 和状态栏弹窗，避免不同页面顺序不一致。
@@ -30,6 +30,10 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 - Provider 顺序配置移动到设置页的独立弹窗，不再占用额度监控主页面，也不再用上下按钮逐个移动。
 - 排序弹窗改成更紧凑的 macOS 偏好设置风格，按 `AI Search` 和 `LLM` 分组展示。
 - 新增 Kimi 订阅 provider，并继续保留 Claude、Codex、阿里云/腾讯云 coding plan 等 provider 的额度、重置和套餐到期显示边界。
+- Claude、Codex、Kimi 和 OpenCode Go 订阅类 provider 现在支持同时保存“额度监控授权”和可复制 API Key；额度查询仍使用网页登录授权，API Key 只用于统一管理和复制。
+- 设置页新增网络代理选项：跟随系统、直连、自定义 HTTP/SOCKS 代理；保存或编辑凭据后会立即刷新对应 provider。
+- 状态栏弹窗改为“今日额度风险 + 额度紧张 + 需要关注”优先，不再塞入完整 provider 网格；主程序额度监控表格改为 `关键额度 / 凭据池 / 关键时间 / 状态`，更适合多 key 和多周期订阅场景。
+- `额度监控`、`配置凭据` 和 `诊断` 只展示已经配置过凭据的 provider，未配置的 provider 不再占用主界面空间；新增 provider 仍从 `添加凭据` 入口完成。
 
 ## 界面预览
 
@@ -38,7 +42,7 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 </p>
 
 <p align="center">
-  <em>主窗口以 provider 为单位展示剩余额度、总量和健康状态；截图来自真实运行画面，密钥由应用自动打码。</em>
+  <em>主窗口以 provider 为单位展示关键额度、凭据池、关键时间和额度状态；仅展示已配置 provider。截图来自真实运行画面，密钥由应用自动打码。</em>
 </p>
 
 <p align="center">
@@ -53,6 +57,7 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 
 - 状态栏磨砂玻璃弹窗，按 `AI Search` 和 `LLM` 分组展示额度。
 - 支持多个 provider、多个凭据，并按 provider 内剩余额度排序。
+- 主窗口的 `额度监控`、`配置凭据` 和 `诊断` 页面默认只显示已配置凭据的 provider，避免空 provider 占位。
 - 支持 API 密钥与网页登录授权两类凭据。
 - 可从 `.env` 或 `~/.claude/settings.json` 导入支持的凭据。
 - 支持开机自启动、自动刷新间隔配置，也可以完全关闭自动刷新。
@@ -78,13 +83,13 @@ Quota Radar 是一个 macOS 状态栏应用，用来观察搜索 API 与 LLM cod
 
 | Provider | 凭据类型 |
 | --- | --- |
-| Claude | 订阅网页登录授权，已接入 5 小时/周窗口刷新、重置时间和订阅周期结束日期；API Usage 暂不展示 |
-| Codex | 订阅网页登录授权可保存；Codex Cloud 已接入 5 小时/周窗口刷新与套餐到期日期 |
-| Kimi | 订阅网页登录授权，已接入 BillingService 用量统计和 MembershipService 订阅余额；显示 5 小时/周窗口，订阅余额存在时显示月度余额 |
+| Claude | 订阅网页登录授权；可选保存 `ANTHROPIC_API_KEY` 方便复制；已接入 5 小时/周窗口刷新、重置时间和订阅周期结束日期；API Usage 暂不展示 |
+| Codex | 订阅网页登录授权；可选保存 `OPENAI_API_KEY` 方便复制；Codex Cloud 已接入 5 小时/周窗口刷新与套餐到期日期 |
+| Kimi | 订阅网页登录授权；可选保存 `KIMI_API_KEY` 方便复制；已接入 BillingService 用量统计和 MembershipService 订阅余额；显示 5 小时/周窗口，订阅余额存在时显示月度余额 |
 | DeepSeek | API Key，展示人民币账户余额 |
 | 讯飞星火 coding plan | 网页登录授权，按 5 小时/周/月请求次数展示额度周期 |
 | 火山引擎 coding plan | 网页登录授权，已接入额度周期 |
-| OpenCode Go | 网页登录授权 |
+| OpenCode Go | 订阅网页登录授权；可选保存 `OPENCODE_GO_API_KEY` 方便复制 |
 | 阿里云 coding plan | 网页登录授权，已接入订阅状态检查；若接口暴露 5 小时/周/月请求次数则按同口径展示 |
 | 腾讯云 coding plan | 网页登录授权，已接入控制台 `cgi/capi?cmd=DescribePkg&serviceType=hunyuan` 订阅/请求次数周期 |
 
@@ -127,16 +132,16 @@ open build/QuotaRadar.dmg
 手动发布到 GitHub Release：
 
 ```bash
-gh release create v0.3.1 build/QuotaRadar.dmg \
-  --title "Quota Radar v0.3.1" \
+gh release create v0.3.2 build/QuotaRadar.dmg \
+  --title "Quota Radar v0.3.2" \
   --notes "Unsigned DMG for trusted users. macOS may require removing quarantine on first launch."
 ```
 
 也可以直接推送 tag，仓库的 GitHub Actions 会自动构建未签名 DMG 并上传到 Release：
 
 ```bash
-git tag v0.3.1
-git push origin v0.3.1
+git tag v0.3.2
+git push origin v0.3.2
 ```
 
 未签名 DMG 不需要 Apple Developer Program，但从 GitHub 下载后可能被 macOS Gatekeeper 拦截。只在信任该源码和 release 的情况下安装；如果提示“App 已损坏”或“无法打开”，先把 app 拖到 `/Applications`，再执行：
@@ -160,12 +165,14 @@ scripts/package_dmg.sh --rebuild --notarize
 
 1. 点击状态栏余量雷达图标打开额度面板。
 2. 进入 `配置凭据`，添加凭据或从 `.env` 导入。
-3. 普通服务商填 API 密钥；Exa 需要 Team Management service key 和目标 API key id；Querit 可保存 API Key 方便复制，但额度监控仍需要网页登录授权；讯飞星火 coding plan、火山引擎 coding plan 和 OpenCode Go 也使用网页登录授权。阿里云/腾讯云 coding plan 可先保存业务 API Key 方便展示和复制，但额度监控仍需要通过重新认证获取网页登录授权。
+3. 普通服务商填 API 密钥；Exa 需要 Team Management service key 和目标 API key id；Querit、Claude、Codex、Kimi、讯飞星火 coding plan、火山引擎 coding plan、OpenCode Go、阿里云/腾讯云 coding plan 可同时保存可复制 API Key 和网页登录授权。额度监控仍使用网页登录授权，API Key 只用于管理和复制。
 4. 点击单个 provider 的刷新按钮更新该 provider。
 
-在 `设置` 页面可以切换语言、调节状态栏透明度、配置开机自启动和自动刷新间隔。自动刷新支持关闭；Brave 这类会消耗真实搜索请求的 provider 会跳过自动刷新。
+在 `设置` 页面可以切换语言、调节状态栏透明度、配置开机自启动、网络代理和自动刷新间隔。自动刷新支持关闭；Brave 这类会消耗真实搜索请求的 provider 默认跳过自动刷新，只有开启“检索刷新”后才会按更长周期刷新。
 
 如果你希望常用 provider 排在更前面，可以在 `设置` 中开启 `自定义 Provider 顺序`，点击 `调整顺序` 后拖动 provider 行。排序会同时影响主窗口三个页面和状态栏弹窗；`AI Search` 与 `LLM` 仍保持分组。
+
+`额度监控`、`配置凭据` 和 `诊断` 页面只展示已经保存过凭据的 provider。还没有配置的 provider 不会在列表里占位，需要通过 `添加凭据` 新增。
 
 ## `.env` 导入
 
@@ -194,7 +201,7 @@ TENCENT_CLOUD_CODING_PLAN_API_KEY=...
 
 网页登录授权类服务商建议使用应用内“重新认证”。也可以在配置页粘贴浏览器复制的 cURL，让 Quota Radar 自动提取所需登录授权字段。不要把真实授权信息提交到 Git。
 
-Claude / Codex 拆成订阅额度和 API Usage 两类。当前主界面先隐藏 Claude/Codex API Usage，避免在没有 Admin 用量监控时显示无效占位；Claude/Codex 订阅额度使用网页登录授权。Claude Subscription 会先通过 `/api/organizations` 发现 active organization，再调用 `/api/organizations/{org_uuid}/usage` 解析 `five_hour`、`seven_day` 的剩余百分比和重置时间，并用 `/api/organizations/{org_uuid}/subscription_details` 的 `next_charge_at` 或 `next_charge_date` 显示订阅周期结束日期；当前紧凑 UI 暂不展示模型专属窗口，也不混入 Anthropic API / prepaid credits。Codex Cloud 会先通过 `/api/auth/session` 解析 ChatGPT 会话 access token，再调用 `/backend-api/wham/usage` 显示 5 小时/周窗口与重置时间，并用 `/backend-api/subscriptions?account_id=...` 的 `active_until` 显示套餐到期日期；当前响应未见月窗口。
+Claude / Codex 拆成订阅额度和 API Usage 两类。当前主界面先隐藏 Claude/Codex API Usage，避免在没有 Admin 用量监控时显示无效占位；Claude/Codex 订阅额度使用网页登录授权。配置页允许为 Claude/Codex/Kimi 订阅额外保存 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`KIMI_API_KEY`，但这些 API Key 只用于复制和管理，不参与订阅额度查询。Claude Subscription 会先通过 `/api/organizations` 发现 active organization，再调用 `/api/organizations/{org_uuid}/usage` 解析 `five_hour`、`seven_day` 的剩余百分比和重置时间，并用 `/api/organizations/{org_uuid}/subscription_details` 的 `next_charge_at` 或 `next_charge_date` 显示订阅周期结束日期；当前紧凑 UI 暂不展示模型专属窗口，也不混入 Anthropic API / prepaid credits。Codex Cloud 会先通过 `/api/auth/session` 解析 ChatGPT 会话 access token，再调用 `/backend-api/wham/usage` 显示 5 小时/周窗口与重置时间，并用 `/backend-api/subscriptions?account_id=...` 的 `active_until` 显示套餐到期日期；当前响应未见月窗口。
 
 Exa 的普通 search API key 不能查询用量。若要监控 Exa，请在 Team Management 里使用 service API key 和目标 API key id，Quota Radar 会显示该 key 在指定周期内的已用成本。
 Querit 的 `QUERIT_API_KEY` 可以作为 API 密钥保存和复制，但不能查询 dashboard account 用量；额度监控请同时配置网页登录授权。当前 Querit 账户接口只能读到月度已用量，不返回套餐上限、重置时间或结束日期。

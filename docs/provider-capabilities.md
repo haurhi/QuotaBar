@@ -26,16 +26,16 @@
 | Provider | Category | 凭据类型 | 额度来源 | 重置/窗口 | 检查消耗额度 | 诊断端点 | 备注 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Claude API Usage | LLM | API Key | 官方 Admin API | 未公开 | 否 | Admin usage report | 暂不在主界面/导入中展示；组织级用量报表需要 Anthropic Admin 权限，不等同于 Claude 订阅 5 小时/周/月额度。 |
-| Claude Subscription | LLM | 网页登录授权 | `claude.ai` Organization Usage API | 5 小时 / 周；未见月窗口 | 否 | `/api/organizations` + `/api/organizations/{org_uuid}/usage` + `/api/organizations/{org_uuid}/subscription_details` | 已接入订阅额度统计：先发现 active organization，再解析 `five_hour`、`seven_day` 的 `utilization` 和 `resets_at`，并用 `next_charge_at` 或 `next_charge_date` 作为订阅周期结束日期。模型专属窗口暂不在紧凑 UI 中展示。 |
+| Claude Subscription | LLM | 网页登录授权；可选 `ANTHROPIC_API_KEY` 仅用于保存/复制 | `claude.ai` Organization Usage API | 5 小时 / 周；未见月窗口 | 否 | `/api/organizations` + `/api/organizations/{org_uuid}/usage` + `/api/organizations/{org_uuid}/subscription_details` | 已接入订阅额度统计：先发现 active organization，再解析 `five_hour`、`seven_day` 的 `utilization` 和 `resets_at`，并用 `next_charge_at` 或 `next_charge_date` 作为订阅周期结束日期。模型专属窗口暂不在紧凑 UI 中展示；API Key 不参与订阅额度查询。 |
 | Codex API Usage | LLM | API Key | 官方 Admin API | 未公开 | 否 | OpenAI usage/costs API | 暂不在主界面/导入中展示；平台 usage/costs API 通常需要 Admin API Key，不等同于 ChatGPT/Codex 订阅窗口额度。 |
-| Codex Subscription | LLM | 网页登录授权 | ChatGPT Codex Cloud Usage API | 5 小时 / 周；未见月窗口 | 否 | `/api/auth/session` + `/backend-api/wham/usage` + `/backend-api/subscriptions?account_id=...` | 已接入 ChatGPT session access token + `/backend-api/wham/usage` 刷新，显示 5 小时/周窗口和 reset；使用 `/api/auth/session` 的 `account.id` 查询订阅生命周期并写入套餐到期日期。 |
-| Kimi | LLM | 网页登录授权 / Bearer access token | Kimi BillingService + MembershipService | 5 小时 / 周；未确认独立月限流窗口 | 否 | `BillingService/GetUsages` + `GetSubscription` | `BillingService/GetUsages` 传入 `scope:["FEATURE_CODING"]` 后返回 Kimi Code 周额度 `detail` 和 5 小时 `limits[]`，包含 `remaining/limit/resetTime`；`GetSubscription` 返回订阅余额、`next_billing_time` 或余额 `expire_time`。只有当订阅余额字段暴露 `amount/amount_left` 或 `amountUsedRatio` 时才显示月度余额，不凭空生成月额度。 |
+| Codex Subscription | LLM | 网页登录授权；可选 `OPENAI_API_KEY` 仅用于保存/复制 | ChatGPT Codex Cloud Usage API | 5 小时 / 周；未见月窗口 | 否 | `/api/auth/session` + `/backend-api/wham/usage` + `/backend-api/subscriptions?account_id=...` | 已接入 ChatGPT session access token + `/backend-api/wham/usage` 刷新，显示 5 小时/周窗口和 reset；使用 `/api/auth/session` 的 `account.id` 查询订阅生命周期并写入套餐到期日期。API Key 不参与订阅额度查询。 |
+| Kimi | LLM | 网页登录授权 / Bearer access token；可选 `KIMI_API_KEY` 仅用于保存/复制 | Kimi BillingService + MembershipService | 5 小时 / 周；未确认独立月限流窗口 | 否 | `BillingService/GetUsages` + `GetSubscription` | `BillingService/GetUsages` 传入 `scope:["FEATURE_CODING"]` 后返回 Kimi Code 周额度 `detail` 和 5 小时 `limits[]`，包含 `remaining/limit/resetTime`；`GetSubscription` 返回订阅余额、`next_billing_time` 或余额 `expire_time`。只有当订阅余额字段暴露 `amount/amount_left` 或 `amountUsedRatio` 时才显示月度余额，不凭空生成月额度。API Key 不参与订阅额度查询。 |
 | DeepSeek | LLM | API Key | 官方余额 API | 无固定周期 | 否 | `/user/balance` | 以人民币余额显示。 |
 | 讯飞星火 coding plan | LLM | 网页登录授权 | 控制台 Coding Plan API | 5 小时/周/月窗口；reset 未公开 | 否 | `/api/v1/gpt-finetune/coding-plan/list` | 按请求次数统计，展示 5 小时、周、月三个周期的剩余百分比和剩余次数/总次数。 |
 | 讯飞星火 Token plan | LLM | 隐藏扩展桩 | 控制台 Token Plan 座席/额度接口已确认，未接入 UI | 待购买样本确认 | 否 | `/api/v1/gpt-finetune/token-plan/seats` + `/api/v1/gpt-finetune/token-plan/quota` | 当前账号无座席；接口返回 seat type 的 `remainingCount/totalCount`，计量像座席次数额度，不是业务 API key 的 token 消耗。确认非空套餐字段前不展示、不导入、不刷新。 |
 | 火山引擎 coding plan | LLM | 网页登录授权 | 控制台 Coding Plan API | 5 小时/周/月窗口；返回 reset | 否 | `GetCodingPlanUsage` + `ListSubscribeTrade` | `GetCodingPlanUsage` 展示 5 小时、周、月三个周期的剩余百分比和 reset；`ListSubscribeTrade` 返回套餐开始/结束时间。直接请求需要登录 Cookie、CSRF 和项目名。 |
 | 火山引擎 Token plan | LLM | 隐藏扩展桩 | 暂未确认 | 暂未确认 | 否 | 待确认 | 已检查资源包/Token Plan 相关入口，未确认独立、稳定、可复放的用量接口；确认前不展示、不导入、不刷新。 |
-| OpenCode Go | LLM | 网页登录授权 | 控制台 Server Function | 5 小时/周/月窗口；返回 reset | 否 | `/_server` | 需要 cookie、workspace id、server id 和 server instance。 |
+| OpenCode Go | LLM | 网页登录授权；可选 `OPENCODE_GO_API_KEY` 仅用于保存/复制 | 控制台 Server Function | 5 小时/周/月窗口；返回 reset | 否 | `/_server` | 需要 cookie、workspace id、server id 和 server instance；API Key 不参与订阅额度查询。 |
 | 阿里云 coding plan | LLM | 网页登录授权 | 控制台 Coding Plan 订阅实例 API | 5 小时/周/月窗口；返回 reset 和套餐到期 | 否 | `BroadScopeAspnGateway` / `codingPlan.queryCodingPlanInstanceInfoV2` | Coding Plan 官方定位为固定月费、月度请求额度；`codingPlanInstanceInfos` 为空时显示未发现订阅套餐，有有效实例时解析 `codingPlanQuotaInfo` 的三周期请求次数、三周期 reset 和 `instanceEndTime`。业务调用 key 可保存但不用于额度监控。 |
 | 阿里云 Token plan | LLM | 隐藏扩展桩 | 控制台 Token Plan 订阅列表接口已确认，未接入 UI | 待购买样本确认 | 否 | `BroadScopeAspnGateway` / `bailian-commerce.tokenPlan.queryTokenPlanInstanceInfo` | 当前账号 `tokenPlanInstanceInfos` 为空；Token Plan 预期按积分/credits 类额度统计，但非空套餐的可用字段、reset 和 end 仍需真实样本确认。 |
 | 腾讯云 coding plan | LLM | 网页登录授权 | 控制台 Coding Plan API | 5 小时/周/月窗口；有套餐时返回 reset | 否 | `cgi/capi?cmd=DescribePkg&serviceType=hunyuan` | 按请求次数统计，展示 5 小时、周、月三个周期的剩余百分比和剩余次数/总次数；未订阅时显示“未发现订阅套餐”。业务调用 key 可保存但不用于额度监控。 |
@@ -56,6 +56,8 @@ KIMI_SUBSCRIPTION_SESSION='{"accessToken":"<bearer-token>","cookie":"kimi-auth=<
 阿里云 Coding Plan 和腾讯云 Coding Plan 的业务调用 API Key 可以保存和展示，但额度监控使用网页登录授权。阿里云 Coding Plan 通过控制台订阅实例接口查询套餐；如果账号没有套餐会显示“未发现订阅套餐”，有有效套餐时会显示 5 小时/周/月请求次数窗口、窗口重置时间和套餐到期时间，按讯飞星火和腾讯云同口径显示剩余次数/总次数。
 
 有些 provider 同时支持“业务 API Key”和“额度监控授权”。这时业务 API Key 只承担管理和复制用途，不单独生成额度监控行，也不会重复生成诊断行；额度、健康状态和 HTTP 状态都来自配对的网页登录授权。这样用户可以在一个工具里管理可复制的 API Key，同时避免把 dashboard Cookie 当成 API Key 暴露出来。
+
+主界面的 `额度监控`、`配置凭据` 和 `诊断` 只展示已经保存过凭据的 provider；隐藏扩展桩和未配置 provider 不显示空占位。多周期订阅额度在凭据行只展示一次：主行显示凭据身份、关键额度和状态，5 小时/周/月等周期细节放在展开明细里。
 
 讯飞星火 Token plan、阿里云 Token plan 和腾讯云 Token plan 已确认部分控制台/API 入口，但当前缺少非空套餐或真实 key 样本；火山引擎 Token plan 尚未确认稳定用量接口。这些 Token plan 当前仍保持隐藏扩展桩：代码中保留 provider、capability、默认凭据名和后续 parser 接口，但在非空套餐额度字段和真实凭据样本确认前不会展示在 UI、不会从 `.env` 自动导入，也不会参与刷新。
 

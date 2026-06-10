@@ -31,9 +31,11 @@ The Dock icon opens the main window; the menu bar popover gives quick quota visi
 
 Open `Credentials` from the main window sidebar.
 
-Normal providers use API keys. Exa uses a usage-query API key rather than a search invocation key. Querit API keys can be stored for copying, but quota monitoring still requires web login authorization. XFYun Spark Coding Plan, Volcengine Coding Plan, and OpenCode Go also use web login authorizations. Aliyun/Tencent Cloud Coding Plan business API keys can be stored for display/copying, but quota monitoring still requires reauthentication to capture web login authorization.
+Normal providers use API keys. Exa uses a usage-query API key rather than a search invocation key. Querit, Claude, Codex, Kimi, XFYun Spark Coding Plan, Volcengine Coding Plan, OpenCode Go, and Aliyun/Tencent Cloud Coding Plan can store both an API key and web login authorization: API keys are for management and copying, while web login authorization is for quota monitoring.
 
 The credential page separates `API Key` from `Quota monitoring authorization`: copy buttons appear only on API-key rows. Web login authorization is used only by Quota Radar to check quota and is not displayed or copied as an API key.
+
+The `Credentials` page shows only providers with saved credentials. Add new, unconfigured providers from the top-level `Add Credential` action.
 
 See the [Provider Capability Matrix](./docs/provider-capabilities.en.md) for what each provider exposes for quota, reset time, and plan end time.
 
@@ -62,13 +64,15 @@ For web-login authorization providers, prefer in-app reauthentication or paste a
 
 ## 5. Monitor Quotas
 
-The `Quota Overview` page shows provider-level quota summaries.
+The `Quota Overview` page shows quota summaries for configured providers only. Providers without saved credentials do not appear as placeholders in `Quota Overview`, `Credentials`, or `Diagnostics`.
 
 The menu bar popover groups providers by `AI Search` and `LLM`, supports collapsible providers, and refreshes one provider at a time.
 
 ## 6. Settings
 
-Use `Settings` to switch Simplified Chinese, Traditional Chinese, English, Japanese, and Korean; adjust menu bar popover transparency; configure launch at login; and set the automatic refresh interval. Automatic refresh can also be turned off.
+Use `Settings` to switch Simplified Chinese, Traditional Chinese, English, Japanese, and Korean; adjust menu bar popover transparency; configure launch at login; set the network proxy; and set automatic refresh intervals. Automatic refresh can also be turned off.
+
+Network proxy supports System, Direct, and Custom. Custom proxy accepts values such as `http://127.0.0.1:7890` or `socks5://127.0.0.1:7890`.
 
 To keep frequently used providers near the top, enable `Custom Provider Order`, click `Configure`, and drag provider rows. This order is shared by Quota Overview, Credentials, Diagnostics, and the menu bar popover.
 
