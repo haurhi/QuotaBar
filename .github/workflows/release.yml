@@ -41,18 +41,20 @@ jobs:
             Quota Radar macOS build.
 
             What's new in ${{ github.ref_name }}:
-            - Provider order can now be customized from Settings and is shared by Quota Overview, Credentials, Diagnostics, and the menu bar popover.
-            - The order editor uses direct drag-and-drop rows in a focused Settings sheet instead of taking space in the quota overview.
-            - The default product order remains locked unless Custom Provider Order is enabled.
-            - Kimi Subscription was added and documented, including web login authorization, five-hour/weekly windows, balance, and subscription-cycle boundaries.
-            - Release preparation includes behavior tests, app bundle build validation, and a secret scan.
+            - Provider order can be customized from Settings with direct drag-and-drop rows, and the same order is shared by Quota Overview, Credentials, Diagnostics, and the menu bar popover.
+            - Quota Overview, Credentials, and Diagnostics now show configured providers only, so empty provider placeholders no longer crowd the main window.
+            - Claude, Codex, Kimi, and OpenCode Go subscription providers can store companion API keys for copying and management while using web login authorization for quota checks.
+            - Added network proxy settings, immediate refresh after adding or editing credentials, and safer reauthentication target selection when multiple accounts exist.
+            - Multi-window subscription quotas no longer repeat the 5-hour/weekly/monthly text in credential rows; plan expiry dates include the year for annual plans.
+            - Added Kimi Subscription support and refreshed provider capability documentation, screenshots, and release behavior tests.
 
             中文说明：
-            - Provider 顺序现在可以在设置中自定义，并同步到额度监控、配置凭据、诊断和状态栏弹窗。
-            - 顺序编辑器改为设置页独立弹窗，支持直接拖拽 provider 行，不占用额度监控主页面。
-            - 默认仍保持锁定的产品顺序，只有开启“自定义 Provider 顺序”后才使用用户排序。
-            - 新增 Kimi 订阅 provider，并补充网页登录授权、5 小时/周窗口、余额和订阅周期边界说明。
-            - 发布前会运行行为测试、App bundle 构建校验和敏感信息扫描。
+            - Provider 顺序可以在设置中自定义，支持直接拖拽，并同步到额度监控、配置凭据、诊断和状态栏弹窗。
+            - 额度监控、配置凭据和诊断只展示已配置 provider，未配置 provider 不再占用主界面空间。
+            - Claude、Codex、Kimi、OpenCode Go 等订阅 provider 支持保存配套 API Key 便于复制和管理，额度查询仍使用网页登录授权。
+            - 新增网络代理设置；新增或编辑凭据后会立即刷新；多个账号重新认证时会明确保存目标。
+            - 多周期订阅额度不再在凭据行重复显示 5 小时/周/月文本；套餐到期日期会显示年份，适合一年期套餐。
+            - 新增 Kimi 订阅支持，并同步更新 provider 能力文档、截图和发布行为测试。
 
             This DMG is unsigned and not notarized because the project does not use a paid Apple Developer ID. macOS Gatekeeper may block the first launch after download. Only install it if you trust this repository and release.
 
