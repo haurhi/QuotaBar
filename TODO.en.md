@@ -45,13 +45,6 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 
 ## Fixed In v0.3.2
 
-- [x] Provider order can be customized and explicitly enabled or disabled in `Settings`; when disabled, Quota Radar keeps the locked default order.
-- [x] Provider-order configuration moved into a focused Settings sheet instead of occupying the `Quota Overview` page.
-- [x] Ordering now uses direct drag-and-drop provider rows instead of repetitive up/down buttons.
-- [x] Custom order is shared by `Quota Overview`, `Credentials`, `Diagnostics`, and the menu bar popover so every surface stays consistent.
-- [x] The order sheet now uses a more compact macOS preference-panel style, grouped by `AI Search` and `LLM`, reducing distraction from the main monitoring workflow.
-- [x] The default product order remains a safe fallback: hidden or removed providers are filtered, and new providers are appended in default order.
-- [x] Kimi Subscription was added and documented in README plus the provider capability matrix, including web login authorization, five-hour/weekly windows, balance, and subscription-cycle boundaries.
 - [x] Claude, Codex, Kimi, and OpenCode Go subscription providers can store companion API keys. API keys are only for copying and management; quota checks still use web login authorization.
 - [x] Added network proxy settings: system proxy, direct connection, and custom HTTP/SOCKS proxy, with centered menu controls in Settings.
 - [x] Adding or editing a credential immediately refreshes the matching provider, instead of waiting for automatic refresh or a second manual click.
@@ -60,7 +53,7 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] The main quota overview table now uses `Key Quota / Credential Pool / Critical Time / Status`, covering providers with multiple keys, subscription accounts, and multi-window quota cycles.
 - [x] `Quota Overview`, `Credentials`, and `Diagnostics` now show only providers with saved credentials. Unconfigured providers no longer appear as empty placeholders.
 - [x] Multi-window subscription quotas no longer repeat the 5-hour/weekly/monthly text in the credential row when the cycle details are shown below; plan-expiry dates include the year so annual plans are unambiguous.
-- [x] Release behavior tests now cover the provider-order entry point, draggable ordering structure, global order synchronization, and release secret scanning.
+- [x] Release behavior tests now cover companion credentials, proxy settings, immediate refresh, provider filtering, multi-window de-duplication, plan-expiry years, and release secret scanning.
 
 ## Fixed In v0.3.0
 

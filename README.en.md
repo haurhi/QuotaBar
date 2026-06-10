@@ -24,16 +24,13 @@ For credential type, usage source, and automatic-refresh constraints by provider
 
 ## What's New In v0.3.2
 
-- Provider order can now be customized. Enable `Custom Provider Order` in Settings, then open `Configure` and drag provider rows into the order you prefer.
-- The custom order is shared by `Quota Overview`, `Credentials`, `Diagnostics`, and the menu bar popover, so every surface stays consistent.
-- The product-defined order remains locked by default. Turning custom order off returns to the default order without deleting your saved custom order.
-- Provider-order editing now lives in a focused Settings sheet instead of taking over the quota overview page, and it no longer uses repetitive up/down buttons.
-- The order sheet uses a compact macOS preference-panel style and keeps `AI Search` and `LLM` grouped.
-- Kimi Subscription was added, while Claude, Codex, Aliyun/Tencent Cloud Coding Plan, and related provider quota/reset/plan-end boundaries remain documented.
 - Claude, Codex, Kimi, and OpenCode Go subscription providers can now store both quota-monitoring web login authorization and a copyable API key. Quota checks still use web login authorization; API keys are kept only for management and copying.
-- Settings now include network proxy controls: system proxy, direct connection, and custom HTTP/SOCKS proxy. Adding or editing a credential immediately refreshes that provider.
-- The menu bar popover now prioritizes `Quota Risk Today`, low-quota providers, and items needing attention instead of a full provider grid. The main quota overview table now uses `Key Quota / Credential Pool / Critical Time / Status`, which fits multi-key and multi-window subscription providers better.
+- Settings now include network proxy controls: system proxy, direct connection, and custom HTTP/SOCKS proxy.
+- Adding or editing a credential immediately refreshes that provider. When multiple web login authorizations exist, reauthentication requires an explicit save target so the wrong account is not overwritten.
+- The menu bar popover now prioritizes `Quota Risk Today`, low-quota providers, and items needing attention instead of a full provider grid.
+- The main quota overview table now uses `Key Quota / Credential Pool / Critical Time / Status`, which fits multi-key and multi-window subscription providers better.
 - `Quota Overview`, `Credentials`, and `Diagnostics` now show only providers with saved credentials. Unconfigured providers no longer take space in the main window; add them from `Add Credential`.
+- Multi-window subscription quotas no longer repeat the five-hour/weekly/monthly text in credential rows; plan-expiry dates include the year for annual plans.
 
 ## Screenshots
 
