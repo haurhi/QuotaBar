@@ -94,6 +94,8 @@ export interface AppState {
   credentials: CredentialView[];
 }
 
+export type RefreshMode = "manual" | "automatic" | "costlyAutomatic";
+
 export type RefreshInterval = "off" | "30m" | "1h" | "6h";
 
 export type ProxyMode = "system" | "direct" | "custom";

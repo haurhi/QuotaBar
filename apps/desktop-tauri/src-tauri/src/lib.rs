@@ -29,6 +29,7 @@ pub fn run() {
             commands::credentials::delete_credential,
             commands::credentials::list_credentials,
             commands::providers::list_provider_definitions,
+            commands::providers::refresh_provider,
             commands::credentials::set_credential_active,
             commands::credentials::update_credential,
             commands::settings::get_settings,

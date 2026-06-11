@@ -6,13 +6,14 @@ import { ProviderQuotaTable } from "./ProviderQuotaTable";
 interface ProviderCategorySectionProps {
   category: ProviderCategory;
   stats: ProviderStats[];
+  onRefreshProvider?: (providerId: string) => void | Promise<void>;
 }
 
 function categoryTitle(category: ProviderCategory) {
   return category === "AI Search" ? translate("category.aiSearch") : translate("category.llm");
 }
 
-export function ProviderCategorySection({ category, stats }: ProviderCategorySectionProps) {
+export function ProviderCategorySection({ category, stats, onRefreshProvider }: ProviderCategorySectionProps) {
   const [expanded, setExpanded] = useState(true);
   const credentialCount = stats.reduce((total, stat) => total + stat.credentials.length, 0);
 
@@ -26,7 +27,7 @@ export function ProviderCategorySection({ category, stats }: ProviderCategorySec
           </p>
         </div>
       </button>
-      {expanded ? <ProviderQuotaTable stats={stats} /> : null}
+      {expanded ? <ProviderQuotaTable stats={stats} onRefreshProvider={onRefreshProvider} /> : null}
     </section>
   );
 }

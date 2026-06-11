@@ -5,9 +5,10 @@ import { ProviderQuotaRow } from "./ProviderQuotaRow";
 
 interface ProviderQuotaTableProps {
   stats: ProviderStats[];
+  onRefreshProvider?: (providerId: string) => void | Promise<void>;
 }
 
-export function ProviderQuotaTable({ stats }: ProviderQuotaTableProps) {
+export function ProviderQuotaTable({ stats, onRefreshProvider }: ProviderQuotaTableProps) {
   const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
 
   return (
@@ -31,6 +32,7 @@ export function ProviderQuotaTable({ stats }: ProviderQuotaTableProps) {
             onToggle={() =>
               setExpandedProviderId((current) => (current === stat.provider.id ? null : stat.provider.id))
             }
+            onRefreshProvider={onRefreshProvider}
           />
         ))}
       </tbody>

@@ -1,6 +1,248 @@
-use crate::{domain::ProviderDefinition, providers::registry::visible_provider_definitions};
+use tauri::{AppHandle, Runtime};
+
+use crate::{
+    domain::{AppState, CredentialKind, CredentialStatus, CredentialView, ProviderDefinition},
+    providers::{
+        registry::{provider_clients, visible_provider_definitions},
+        ProviderCredential, QuotaSnapshot,
+    },
+    storage::{
+        metadata_store::{load_credentials, save_credentials, MetadataStore, TauriMetadataStore},
+        secret_store::{SecretVault, TauriSecretVault},
+    },
+};
 
 #[tauri::command]
 pub fn list_provider_definitions() -> Vec<ProviderDefinition> {
     visible_provider_definitions()
+}
+
+#[tauri::command]
+pub fn refresh_provider<R: Runtime>(
+    app: AppHandle<R>,
+    provider_id: String,
+    mode: String,
+) -> Result<AppState, String> {
+    let metadata_store = TauriMetadataStore::open(&app)?;
+    let secret_vault = TauriSecretVault::open(&app)?;
+    refresh_provider_with_stores(
+        &metadata_store,
+        &secret_vault,
+        &provider_id,
+        &mode,
+        now_rfc3339,
+    )
+}
+
+fn refresh_provider_with_stores(
+    metadata_store: &impl MetadataStore,
+    secret_vault: &impl SecretVault,
+    provider_id: &str,
+    _mode: &str,
+    now: impl Fn() -> String,
+) -> Result<AppState, String> {
+    let mut credentials = load_credentials(metadata_store)?;
+    let clients = provider_clients();
+    let client = clients
+        .iter()
+        .find(|candidate| candidate.provider_id() == provider_id)
+        .ok_or_else(|| format!("Provider client is not registered: {provider_id}"))?;
+
+    for credential in credentials
+        .iter_mut()
+        .filter(|credential| credential.provider_id == provider_id && credential.active)
+    {
+        if matches!(credential.kind, CredentialKind::StoredApiKeyOnly) {
+            continue;
+        }
+
+        let checked_at = now();
+        let result = secret_vault
+            .read(&credential.id)
+            .and_then(|secret| secret.ok_or_else(|| "Credential value was not found".to_string()))
+            .and_then(|secret| {
+                client
+                    .check_fixture_quota(ProviderCredential {
+                        provider_id: credential.provider_id.clone(),
+                        secret,
+                    })
+                    .map_err(|error| error.to_string())
+            });
+
+        match result {
+            Ok(snapshot) => apply_quota_snapshot(credential, snapshot, checked_at),
+            Err(message) => apply_refresh_failure(credential, message, checked_at),
+        }
+    }
+
+    save_credentials(metadata_store, &credentials)?;
+    Ok(super::app_state::app_state_from_credentials(credentials))
+}
+
+fn apply_quota_snapshot(
+    credential: &mut CredentialView,
+    snapshot: QuotaSnapshot,
+    checked_at: String,
+) {
+    credential.status = CredentialStatus::Healthy;
+    credential.remaining = snapshot.remaining;
+    credential.limit = snapshot.limit;
+    credential.remaining_badge_text = snapshot.remaining_badge_text;
+    credential.quota_label = snapshot.quota_label;
+    credential.quota_windows = snapshot.quota_windows;
+    credential.reset_at = snapshot.reset_at;
+    credential.last_updated = Some(checked_at);
+    credential.last_http_status = Some(200);
+    credential.diagnostic_message = None;
+}
+
+fn apply_refresh_failure(credential: &mut CredentialView, message: String, checked_at: String) {
+    credential.status = CredentialStatus::Failed;
+    credential.remaining_badge_text = "Check failed".to_string();
+    credential.quota_windows.clear();
+    credential.last_updated = Some(checked_at);
+    credential.last_http_status = None;
+    credential.diagnostic_message = Some(message);
+}
+
+fn now_rfc3339() -> String {
+    chrono::Utc::now().to_rfc3339()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        domain::{CredentialStatus, CredentialView},
+        storage::{
+            metadata_store::{load_credentials, save_credentials, MemoryMetadataStore},
+            secret_store::{save_secret, MemorySecretVault},
+        },
+    };
+
+    use super::refresh_provider_with_stores;
+
+    fn fixed_now() -> String {
+        "2026-06-11T12:40:00+08:00".to_string()
+    }
+
+    #[test]
+    fn refresh_provider_updates_active_api_key_snapshot() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::api_key(
+            "tavily-test",
+            "tavily",
+            "Tavily Test",
+            "tvly••••alue",
+            CredentialStatus::NotChecked,
+            "Saved",
+            None,
+            None,
+            Vec::new(),
+            None,
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+        save_secret(&secret_vault, "tavily-test", "tvly-fixture").expect("secret should save");
+
+        let state = refresh_provider_with_stores(
+            &metadata_store,
+            &secret_vault,
+            "tavily",
+            "manual",
+            fixed_now,
+        )
+        .expect("refresh should succeed");
+
+        let updated = state
+            .credentials
+            .iter()
+            .find(|credential| credential.id == "tavily-test")
+            .expect("credential should remain visible");
+        assert_eq!(updated.status, CredentialStatus::Healthy);
+        assert_eq!(updated.remaining, Some(920.0));
+        assert_eq!(updated.limit, Some(1000.0));
+        assert_eq!(updated.remaining_badge_text, "920 / 1000");
+        assert_eq!(
+            updated.last_updated.as_deref(),
+            Some("2026-06-11T12:40:00+08:00")
+        );
+        assert_eq!(updated.last_http_status, Some(200));
+
+        let persisted = load_credentials(&metadata_store).expect("metadata should load");
+        assert_eq!(persisted[0].status, CredentialStatus::Healthy);
+    }
+
+    #[test]
+    fn refresh_provider_skips_stored_api_key_only_credentials() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::stored_api_key(
+            "tavily-stored-key",
+            "tavily",
+            "Tavily Stored Key",
+            "tvly••••alue",
+            "Saved",
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+
+        let state = refresh_provider_with_stores(
+            &metadata_store,
+            &secret_vault,
+            "tavily",
+            "manual",
+            fixed_now,
+        )
+        .expect("refresh should leave stored keys unchanged");
+
+        let skipped = &state.credentials[0];
+        assert_eq!(skipped.status, CredentialStatus::NotChecked);
+        assert_eq!(skipped.remaining_badge_text, "Saved");
+        assert_eq!(skipped.last_updated, None);
+    }
+
+    #[test]
+    fn refresh_provider_persists_failed_diagnostics_when_secret_is_missing() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::api_key(
+            "tavily-missing",
+            "tavily",
+            "Tavily Missing",
+            "tvly••••sing",
+            CredentialStatus::NotChecked,
+            "Saved",
+            None,
+            None,
+            Vec::new(),
+            None,
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+
+        let state = refresh_provider_with_stores(
+            &metadata_store,
+            &secret_vault,
+            "tavily",
+            "manual",
+            fixed_now,
+        )
+        .expect("refresh should return updated diagnostics");
+
+        let failed = &state.credentials[0];
+        assert_eq!(failed.status, CredentialStatus::Failed);
+        assert_eq!(failed.remaining_badge_text, "Check failed");
+        assert_eq!(
+            failed.last_updated.as_deref(),
+            Some("2026-06-11T12:40:00+08:00")
+        );
+        assert_eq!(
+            failed.diagnostic_message.as_deref(),
+            Some("Credential value was not found")
+        );
+    }
 }

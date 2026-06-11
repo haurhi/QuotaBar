@@ -8,11 +8,13 @@ const categoryOrder: ProviderCategory[] = ["AI Search", "LLM"];
 interface QuotaMonitoringPageProps {
   providers?: ProviderDefinition[];
   credentials?: CredentialView[];
+  onRefreshProvider?: (providerId: string) => void | Promise<void>;
 }
 
 export function QuotaMonitoringPage({
   providers = providerRegistry,
   credentials = mockCredentials,
+  onRefreshProvider,
 }: QuotaMonitoringPageProps) {
   const stats = buildProviderStats(providers, credentials);
 
@@ -24,7 +26,14 @@ export function QuotaMonitoringPage({
           return null;
         }
 
-        return <ProviderCategorySection key={category} category={category} stats={categoryStats} />;
+        return (
+          <ProviderCategorySection
+            key={category}
+            category={category}
+            stats={categoryStats}
+            onRefreshProvider={onRefreshProvider}
+          />
+        );
       })}
     </div>
   );

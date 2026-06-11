@@ -7,6 +7,7 @@ import {
   mockSettings,
   mockUpdateState,
   moveProvider,
+  refreshProvider,
   resetProviderOrder,
   checkForUpdates,
   updateSettings,
@@ -74,6 +75,10 @@ export default function App() {
     setUpdateState(await checkForUpdates());
   }
 
+  async function handleRefreshProvider(providerId: string) {
+    setAppState(await refreshProvider(providerId, "manual"));
+  }
+
   if (new URLSearchParams(window.location.search).get("view") === "tray") {
     return (
       <main className="tray-preview">
@@ -83,7 +88,13 @@ export default function App() {
   }
 
   const page = {
-    quota: <QuotaMonitoringPage providers={providers} credentials={appState.credentials} />,
+    quota: (
+      <QuotaMonitoringPage
+        providers={providers}
+        credentials={appState.credentials}
+        onRefreshProvider={handleRefreshProvider}
+      />
+    ),
     credentials: <CredentialsPage providers={providers} credentials={appState.credentials} />,
     diagnostics: <DiagnosticsPage providers={providers} credentials={appState.credentials} />,
     settings: (

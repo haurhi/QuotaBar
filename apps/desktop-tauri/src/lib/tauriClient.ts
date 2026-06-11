@@ -5,6 +5,7 @@ import type {
   AppState,
   CredentialInput,
   CredentialView,
+  RefreshMode,
   UpdateState,
 } from "../shared/types";
 
@@ -138,6 +139,14 @@ export async function copyCredentialValue(credentialId: string): Promise<string>
   }
 
   return invoke<string>("copy_credential_value", { credentialId });
+}
+
+export async function refreshProvider(providerId: string, mode: RefreshMode = "manual"): Promise<AppState> {
+  if (!isTauriRuntime()) {
+    return mockAppState;
+  }
+
+  return invoke<AppState>("refresh_provider", { providerId, mode });
 }
 
 export async function getUpdateState(): Promise<UpdateState> {

@@ -9,9 +9,10 @@ interface ProviderQuotaRowProps {
   stat: ProviderStats;
   expanded: boolean;
   onToggle: () => void;
+  onRefreshProvider?: (providerId: string) => void | Promise<void>;
 }
 
-export function ProviderQuotaRow({ stat, expanded, onToggle }: ProviderQuotaRowProps) {
+export function ProviderQuotaRow({ stat, expanded, onToggle, onRefreshProvider }: ProviderQuotaRowProps) {
   const tone = stat.needsAttention ? "attention" : "healthy";
   const subtitle = [
     stat.provider.familyName !== stat.provider.displayName ? stat.provider.familyName : undefined,
@@ -51,7 +52,12 @@ export function ProviderQuotaRow({ stat, expanded, onToggle }: ProviderQuotaRowP
               </button>
             ) : null}
             {stat.provider.supportsRefresh ? (
-              <button aria-label={`${stat.provider.displayName} ${translate("action.refresh")}`}>
+              <button
+                aria-label={`${stat.provider.displayName} ${translate("action.refresh")}`}
+                onClick={() => {
+                  void onRefreshProvider?.(stat.provider.id);
+                }}
+              >
                 <RefreshCw size={14} />
               </button>
             ) : null}
