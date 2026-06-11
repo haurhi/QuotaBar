@@ -120,7 +120,7 @@ open 'build/Quota Radar.app'
 
 ### Tauri 跨平台预览
 
-Tauri 版本用于跨平台复刻当前 macOS App 的 UI、凭据模型和 provider 刷新逻辑。它已有源码安全扫描、前端测试、Rust provider 测试和三平台 CI 预览构建；安装包签名、自动更新和正式分发仍放在后续任务中。
+Tauri 版本用于跨平台复刻当前 macOS App 的 UI、凭据模型和 provider 刷新逻辑。它已有源码安全扫描、前端测试、Rust provider 测试和三平台 CI 预览构建；安装包签名、自动更新和正式分发仍放在后续任务中。打包与更新边界见 [Tauri 桌面发布说明](./docs/desktop-tauri-release.md)。
 
 ```bash
 bash scripts/check_tauri_sources.sh
@@ -132,7 +132,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 pnpm tauri build --no-bundle --ci
 ```
 
-`--no-bundle` 只验证 Tauri 桌面应用能编译，不生成 Windows/Linux 安装包；正式打包规则会在后续 release 任务中单独处理。
+`--no-bundle` 只验证 Tauri 桌面应用能编译，不生成 Windows/Linux 安装包；正式打包规则和未签名更新边界见 release 文档。
 
 ## DMG 打包与 Gatekeeper
 

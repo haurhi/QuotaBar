@@ -58,7 +58,7 @@ describe("update and refresh settings commands", () => {
       .mockResolvedValueOnce({
         currentVersion: "0.0.0",
         status: "notImplemented",
-        errorMessage: "Installer integration is not implemented yet.",
+        errorMessage: "Tauri desktop signed update artifacts are not configured yet.",
       });
 
     await checkForUpdates();

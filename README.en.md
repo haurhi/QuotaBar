@@ -120,7 +120,7 @@ See [Quickstart](./QUICKSTART.en.md) for the full flow.
 
 ### Tauri Cross-Platform Preview
 
-The Tauri app is the cross-platform implementation track for the current macOS UI, credential model, and provider refresh logic. It now has source safety checks, frontend tests, Rust provider tests, and a three-platform CI preview build. Signed installers, updater artifacts, and formal distribution remain follow-up work.
+The Tauri app is the cross-platform implementation track for the current macOS UI, credential model, and provider refresh logic. It now has source safety checks, frontend tests, Rust provider tests, and a three-platform CI preview build. Signed installers, updater artifacts, and formal distribution remain follow-up work. See [Tauri Desktop Release](./docs/desktop-tauri-release.md) for packaging and update boundaries.
 
 ```bash
 bash scripts/check_tauri_sources.sh
@@ -132,7 +132,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 pnpm tauri build --no-bundle --ci
 ```
 
-`--no-bundle` validates that the Tauri desktop app compiles without producing Windows/Linux installers. Packaging rules will be handled separately in a later release task.
+`--no-bundle` validates that the Tauri desktop app compiles without producing Windows/Linux installers. Packaging rules and the unsigned update boundary are documented in the release note above.
 
 ## DMG Packaging And Gatekeeper
 

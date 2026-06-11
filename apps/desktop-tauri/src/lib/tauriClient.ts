@@ -204,7 +204,7 @@ export async function downloadAndInstallUpdate(): Promise<UpdateState> {
     return {
       ...mockUpdateState,
       status: "notImplemented",
-      errorMessage: "Installer integration is not implemented yet.",
+      errorMessage: "Tauri desktop signed update artifacts are not configured yet.",
     };
   }
 

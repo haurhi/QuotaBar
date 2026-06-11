@@ -267,7 +267,8 @@ Keep this separate from Claude / Codex subscription quota. Subscription quota tr
 - [x] Choose Tauri + Rust + TypeScript as the multi-platform path. The preview code lives in `apps/desktop-tauri` and targets future macOS / Windows / Linux support.
 - [x] Add `scripts/check_tauri_sources.sh` for the Tauri preview, covering real secrets, login authorization material, i18n key completeness, non-copyable dashboard authorizations, and generic provider placeholder leakage.
 - [x] Add the `Desktop Tauri Preview` GitHub Actions workflow: macOS / Windows / Linux run source safety checks, frontend tests, TypeScript checks, Rust tests, and `tauri build --no-bundle --ci`.
-- [ ] Keep formal installers, signing, update artifacts, and GitHub Release asset rules for a later packaging task.
+- [x] Add [Tauri Desktop Release](./docs/desktop-tauri-release.md), covering platform-native package targets, the unsigned preview boundary, GitHub Release asset names, and later signing requirements.
+- [ ] Keep formal signing, update manifests, and GitHub Release upload automation for a later packaging task.
 - [ ] Centralize localization keys and avoid hardcoded business copy inside views or parsers.
 - [x] Add language options:
   - Traditional Chinese
@@ -322,6 +323,6 @@ Continue with P1 + P2. Reauthentication auto-save is already in place; the remai
 ## Not Prioritized Yet
 
 - [ ] Paid Apple Developer ID signing and notarization.
-- [ ] Windows/Linux formal installers and distribution; current work only validates the Tauri preview build.
+- [ ] Windows/Linux signed installers and formal distribution; current work validates only the Tauri preview build and local bundles.
 - [ ] Remote credential sync.
 - [ ] Multi-user team dashboards.

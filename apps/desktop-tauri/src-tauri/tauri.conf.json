@@ -23,8 +23,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["app", "dmg"],
-    "icon": []
+    "targets": "all",
+    "icon": ["icons/icon.png", "icons/icon.icns"]
   },
   "plugins": {
     "updater": {

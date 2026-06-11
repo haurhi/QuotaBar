@@ -128,4 +128,33 @@ for path in scan_files:
             sys.exit("FAIL: Dashboard/web-login authorization credentials must never be copyable")
 PY
 
+python3 - <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config = json.loads(Path("apps/desktop-tauri/src-tauri/tauri.conf.json").read_text())
+bundle = config.get("bundle", {})
+if bundle.get("targets") != "all":
+    sys.exit("FAIL: Tauri bundle targets must be 'all' so each OS builds its native package set")
+
+icons = set(bundle.get("icon", []))
+required_icons = {"icons/icon.png", "icons/icon.icns"}
+missing_icons = sorted(required_icons - icons)
+if missing_icons:
+    sys.exit(f"FAIL: Tauri bundle config is missing icon paths: {missing_icons}")
+
+updater = config.get("plugins", {}).get("updater", {})
+if updater.get("endpoints") or updater.get("pubkey"):
+    sys.exit("FAIL: Tauri preview must not enable signed updater endpoints until release signing is configured")
+
+release_doc = Path("docs/desktop-tauri-release.md")
+if not release_doc.exists():
+    sys.exit("FAIL: Tauri desktop release documentation is required")
+release_text = release_doc.read_text()
+for required in ("Unsigned preview boundary", "GitHub Release asset names", "Platform package targets"):
+    if required not in release_text:
+        sys.exit(f"FAIL: Tauri release docs must document {required}")
+PY
+
 echo "== Tauri source safety passed =="
