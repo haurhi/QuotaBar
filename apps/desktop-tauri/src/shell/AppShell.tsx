@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Sidebar, type AppPage } from "./Sidebar";
-import type { CredentialView, ProviderDefinition } from "../shared/types";
+import type { CredentialView, ProviderDefinition, UpdateState } from "../shared/types";
 
 interface AppShellProps {
   children?: ReactNode;
@@ -8,12 +8,29 @@ interface AppShellProps {
   credentials?: CredentialView[];
   onNavigate?: (page: AppPage) => void;
   providers?: ProviderDefinition[];
+  updateState?: UpdateState;
+  onCheckForUpdates?: () => void;
 }
 
-export function AppShell({ children, activePage = "quota", credentials, onNavigate, providers }: AppShellProps) {
+export function AppShell({
+  children,
+  activePage = "quota",
+  credentials,
+  onCheckForUpdates,
+  onNavigate,
+  providers,
+  updateState,
+}: AppShellProps) {
   return (
     <div className="app-shell">
-      <Sidebar activePage={activePage} credentials={credentials} onNavigate={onNavigate} providers={providers} />
+      <Sidebar
+        activePage={activePage}
+        credentials={credentials}
+        onCheckForUpdates={onCheckForUpdates}
+        onNavigate={onNavigate}
+        providers={providers}
+        updateState={updateState}
+      />
       <main className="app-main">
         {children ?? (
           <section className="app-panel">

@@ -1,6 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import { mockCredentials, providerRegistry } from "../shared/mockData";
-import type { AppSettings, AppState, CredentialInput, CredentialView } from "../shared/types";
+import type {
+  AppSettings,
+  AppState,
+  CredentialInput,
+  CredentialView,
+  UpdateState,
+} from "../shared/types";
 
 export const mockAppState: AppState = {
   providers: providerRegistry,
@@ -18,6 +24,11 @@ export const mockSettings: AppSettings = {
   },
   trayTransparency: 82,
   providerOrder: providerRegistry.map((provider) => provider.id),
+};
+
+export const mockUpdateState: UpdateState = {
+  currentVersion: "0.0.0",
+  status: "upToDate",
 };
 
 export function isTauriRuntime() {
@@ -127,6 +138,34 @@ export async function copyCredentialValue(credentialId: string): Promise<string>
   }
 
   return invoke<string>("copy_credential_value", { credentialId });
+}
+
+export async function getUpdateState(): Promise<UpdateState> {
+  if (!isTauriRuntime()) {
+    return mockUpdateState;
+  }
+
+  return invoke<UpdateState>("get_update_state");
+}
+
+export async function checkForUpdates(): Promise<UpdateState> {
+  if (!isTauriRuntime()) {
+    return mockUpdateState;
+  }
+
+  return invoke<UpdateState>("check_for_updates");
+}
+
+export async function downloadAndInstallUpdate(): Promise<UpdateState> {
+  if (!isTauriRuntime()) {
+    return {
+      ...mockUpdateState,
+      status: "notImplemented",
+      errorMessage: "Installer integration is not implemented yet.",
+    };
+  }
+
+  return invoke<UpdateState>("download_and_install_update");
 }
 
 function buildMockCredential(input: CredentialInput): CredentialView {

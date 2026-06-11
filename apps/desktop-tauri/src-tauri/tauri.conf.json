@@ -25,5 +25,11 @@
     "active": true,
     "targets": ["app", "dmg"],
     "icon": []
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": []
+    }
   }
 }

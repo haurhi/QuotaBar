@@ -4,6 +4,7 @@ import { translate } from "../i18n";
 import { mockCredentials, providerRegistry } from "../shared/mockData";
 import { buildMenuSummary, buildProviderStats } from "../shared/selectors";
 import type { CredentialView, ProviderDefinition } from "../shared/types";
+import type { UpdateState } from "../shared/types";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarUpdateFooter } from "./SidebarUpdateFooter";
 
@@ -21,13 +22,17 @@ interface SidebarProps {
   credentials?: CredentialView[];
   onNavigate?: (page: AppPage) => void;
   providers?: ProviderDefinition[];
+  updateState?: UpdateState;
+  onCheckForUpdates?: () => void;
 }
 
 export function Sidebar({
   activePage = "quota",
   credentials = mockCredentials,
   onNavigate,
+  onCheckForUpdates,
   providers = providerRegistry,
+  updateState,
 }: SidebarProps) {
   const stats = buildProviderStats(providers, credentials);
   const summary = buildMenuSummary(credentials);
@@ -76,7 +81,7 @@ export function Sidebar({
         <Activity size={14} />
         <span>{summary.failedCount + summary.lowCount} need attention</span>
       </div>
-      <SidebarUpdateFooter />
+      <SidebarUpdateFooter onCheckForUpdates={onCheckForUpdates} updateState={updateState} />
     </aside>
   );
 }

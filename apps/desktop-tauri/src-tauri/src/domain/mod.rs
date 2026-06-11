@@ -3,6 +3,7 @@ mod diagnostics;
 mod provider;
 mod quota;
 mod settings;
+mod update;
 
 pub use credential::{CredentialKind, CredentialStatus, CredentialView};
 pub use provider::{ProviderCategory, ProviderDefinition};
@@ -11,6 +12,7 @@ use serde::Serialize;
 pub use settings::{
     default_provider_order, AppSettings, ProxyMode, ProxySettings, RefreshInterval,
 };
+pub use update::{UpdateState, UpdateStatus};
 
 #[cfg(test)]
 mod tests;

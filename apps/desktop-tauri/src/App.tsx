@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import {
   getAppState,
   getSettings,
+  getUpdateState,
   mockAppState,
   mockSettings,
+  mockUpdateState,
   moveProvider,
   resetProviderOrder,
+  checkForUpdates,
   updateSettings,
 } from "./lib/tauriClient";
 import { AppShell } from "./shell/AppShell";
@@ -31,14 +34,16 @@ export default function App() {
   const [activePage, setActivePage] = useState<AppPage>("quota");
   const [appState, setAppState] = useState(mockAppState);
   const [settings, setSettings] = useState(mockSettings);
+  const [updateState, setUpdateState] = useState(mockUpdateState);
 
   useEffect(() => {
     let cancelled = false;
 
-    void Promise.all([getAppState(), getSettings()]).then(([state, loadedSettings]) => {
+    void Promise.all([getAppState(), getSettings(), getUpdateState()]).then(([state, loadedSettings, loadedUpdateState]) => {
       if (!cancelled) {
         setAppState(state);
         setSettings(loadedSettings);
+        setUpdateState(loadedUpdateState);
       }
     });
 
@@ -62,6 +67,11 @@ export default function App() {
   async function handleResetProviderOrder() {
     const nextSettings = await resetProviderOrder();
     setSettings(nextSettings);
+  }
+
+  async function handleCheckForUpdates() {
+    setUpdateState((current) => ({ ...current, status: "checking" }));
+    setUpdateState(await checkForUpdates());
   }
 
   if (new URLSearchParams(window.location.search).get("view") === "tray") {
@@ -90,8 +100,10 @@ export default function App() {
     <AppShell
       activePage={activePage}
       credentials={appState.credentials}
+      onCheckForUpdates={handleCheckForUpdates}
       onNavigate={setActivePage}
       providers={providers}
+      updateState={updateState}
     >
       {page}
     </AppShell>

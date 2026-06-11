@@ -113,3 +113,20 @@ export interface AppSettings {
   trayTransparency: number;
   providerOrder: string[];
 }
+
+export type UpdateStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "upToDate"
+  | "error"
+  | "notImplemented";
+
+export interface UpdateState {
+  currentVersion: string;
+  latestVersion?: string;
+  status: UpdateStatus;
+  releaseNotes?: string;
+  lastCheckedAt?: string;
+  errorMessage?: string;
+}

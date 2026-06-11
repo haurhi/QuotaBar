@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod domain;
 pub mod platform;
+pub mod scheduler;
 pub mod storage;
 
 use tauri::Manager;
@@ -8,6 +9,9 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_positioner::init())
         .setup(|app| {
@@ -28,7 +32,10 @@ pub fn run() {
             commands::settings::get_settings,
             commands::settings::update_settings,
             commands::settings::reset_provider_order,
-            commands::settings::move_provider
+            commands::settings::move_provider,
+            commands::updates::check_for_updates,
+            commands::updates::download_and_install_update,
+            commands::updates::get_update_state
         ])
         .run(tauri::generate_context!())
         .expect("error while running Quota Radar Tauri application");
