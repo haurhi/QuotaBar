@@ -1552,10 +1552,10 @@ For each provider:
 
 Recommended order:
 
-1. Kimi subscription.
-2. Codex subscription.
-3. Claude subscription.
-4. OpenCode Go.
+1. Kimi subscription. Done in `feat: add Kimi subscription desktop provider`.
+2. Codex subscription. Done in `feat: add Codex subscription desktop provider`.
+3. Claude subscription. Done in `feat: add Claude subscription desktop provider`.
+4. OpenCode Go. Done in `feat: add OpenCode Go desktop provider`.
 5. XFYun Spark coding plan.
 6. Volcengine coding plan.
 7. Aliyun coding plan.

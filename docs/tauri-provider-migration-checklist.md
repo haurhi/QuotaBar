@@ -28,12 +28,12 @@ implemented and verified in `apps/desktop-tauri`.
 | WeChat Search | AI Search | API key | Done | Money balance provider, CNY display. |
 | Exa | AI Search | Admin credential | Done | Plain Exa search key is insufficient; requires service key plus target API key id. |
 | Querit | AI Search | Web login plus optional API key | Pending cookie/OAuth phase | Dashboard account endpoint. |
-| Claude Subscription | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Subscription quota via `claude.ai` organization endpoints. |
-| Codex Subscription | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Subscription quota via ChatGPT session and WHAM endpoints. |
-| Kimi Subscription | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Membership plus billing endpoints. |
+| Claude Subscription | LLM | Web login plus optional API key | Done | Fixture-first parser migration for organization discovery, usage windows, and subscription details. |
+| Codex Subscription | LLM | Web login plus optional API key | Done | Fixture-first parser migration for ChatGPT session/WHAM usage and subscription lifecycle. |
+| Kimi Subscription | LLM | Web login plus optional API key | Done | Fixture-first parser migration for membership, billing usage, OAuth usage shape, and plan expiry. |
 | XFYun Spark Coding Plan | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Coding plan list endpoint. |
 | Volcengine Coding Plan | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Ark coding plan usage endpoint. |
-| OpenCode Go | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Dashboard server function endpoint. |
+| OpenCode Go | LLM | Web login plus optional API key | Done | Fixture-first parser migration for dashboard server function usage windows. |
 | Aliyun Coding Plan | LLM | Web login plus optional API key | Pending cookie/OAuth phase | Bailian coding plan gateway endpoint. |
 | Tencent Cloud Coding Plan | LLM | Web login plus optional API key | Pending cookie/OAuth phase | `DescribePkg` console endpoint. |
 | Tencent Cloud Token Plan | LLM | Cloud API credential | Hidden or pending | Swift has a parser, but this is not currently part of the visible provider set. |
