@@ -61,7 +61,23 @@ impl Default for AppSettings {
 
 pub fn default_provider_order() -> Vec<String> {
     [
-        "tavily", "brave", "serpapi", "bocha", "exa", "claude", "codex", "kimi",
+        "tavily",
+        "brave",
+        "serpapi",
+        "serper",
+        "exa",
+        "bocha",
+        "anysearch",
+        "wxmp",
+        "deepseek",
+        "claude",
+        "codex",
+        "kimi",
+        "opencode_go",
+        "xfyun_coding_plan",
+        "volcengine_coding_plan",
+        "aliyun_coding_plan",
+        "tencent_cloud_coding_plan",
     ]
     .into_iter()
     .map(ToString::to_string)

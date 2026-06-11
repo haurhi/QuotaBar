@@ -17,8 +17,16 @@ fn default_settings_include_stable_provider_order_and_refresh_policy() {
     );
     assert_eq!(
         settings.provider_order.last().map(String::as_str),
-        Some("kimi")
+        Some("tencent_cloud_coding_plan")
     );
+    assert!(settings
+        .provider_order
+        .iter()
+        .any(|provider_id| provider_id == "kimi"));
+    assert!(settings
+        .provider_order
+        .iter()
+        .any(|provider_id| provider_id == "aliyun_coding_plan"));
 }
 
 #[test]

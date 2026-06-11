@@ -4,10 +4,12 @@ use crate::{
     domain::{AppState, CredentialKind, CredentialStatus, CredentialView, ProviderDefinition},
     providers::{
         registry::{provider_clients, visible_provider_definitions},
-        ProviderCredential, QuotaSnapshot,
+        ProviderCredential, ProviderTransport, QuotaSnapshot, ReqwestProviderTransport,
     },
     storage::{
-        metadata_store::{load_credentials, save_credentials, MetadataStore, TauriMetadataStore},
+        metadata_store::{
+            load_credentials, load_settings, save_credentials, MetadataStore, TauriMetadataStore,
+        },
         secret_store::{SecretVault, TauriSecretVault},
     },
 };
@@ -25,21 +27,55 @@ pub fn refresh_provider<R: Runtime>(
 ) -> Result<AppState, String> {
     let metadata_store = TauriMetadataStore::open(&app)?;
     let secret_vault = TauriSecretVault::open(&app)?;
-    refresh_provider_with_stores(
+    let settings = load_settings(&metadata_store)?;
+    let transport = ReqwestProviderTransport::from_proxy_settings(&settings.proxy)
+        .map_err(|error| error.to_string())?;
+    refresh_provider_with_transport(
         &metadata_store,
         &secret_vault,
         &provider_id,
         &mode,
         now_rfc3339,
+        &transport,
     )
 }
 
+#[cfg(test)]
 fn refresh_provider_with_stores(
     metadata_store: &impl MetadataStore,
     secret_vault: &impl SecretVault,
     provider_id: &str,
     mode: &str,
     now: impl Fn() -> String,
+) -> Result<AppState, String> {
+    refresh_provider_core(metadata_store, secret_vault, provider_id, mode, now, None)
+}
+
+fn refresh_provider_with_transport(
+    metadata_store: &impl MetadataStore,
+    secret_vault: &impl SecretVault,
+    provider_id: &str,
+    mode: &str,
+    now: impl Fn() -> String,
+    transport: &dyn ProviderTransport,
+) -> Result<AppState, String> {
+    refresh_provider_core(
+        metadata_store,
+        secret_vault,
+        provider_id,
+        mode,
+        now,
+        Some(transport),
+    )
+}
+
+fn refresh_provider_core(
+    metadata_store: &impl MetadataStore,
+    secret_vault: &impl SecretVault,
+    provider_id: &str,
+    mode: &str,
+    now: impl Fn() -> String,
+    transport: Option<&dyn ProviderTransport>,
 ) -> Result<AppState, String> {
     let mut credentials = load_credentials(metadata_store)?;
     let clients = provider_clients();
@@ -65,12 +101,15 @@ fn refresh_provider_with_stores(
             .read(&credential.id)
             .and_then(|secret| secret.ok_or_else(|| "Credential value was not found".to_string()))
             .and_then(|secret| {
-                client
-                    .check_fixture_quota(ProviderCredential {
-                        provider_id: credential.provider_id.clone(),
-                        secret,
-                    })
-                    .map_err(|error| error.to_string())
+                let provider_credential = ProviderCredential {
+                    provider_id: credential.provider_id.clone(),
+                    secret,
+                };
+                match transport {
+                    Some(transport) => client.check_quota(provider_credential, transport),
+                    None => client.check_fixture_quota(provider_credential),
+                }
+                .map_err(|error| error.to_string())
             });
 
         match result {
@@ -122,13 +161,14 @@ fn now_rfc3339() -> String {
 mod tests {
     use crate::{
         domain::{CredentialStatus, CredentialView},
+        providers::http::{MockProviderTransport, ProviderHttpResponse},
         storage::{
             metadata_store::{load_credentials, save_credentials, MemoryMetadataStore},
             secret_store::{save_secret, MemorySecretVault},
         },
     };
 
-    use super::refresh_provider_with_stores;
+    use super::{refresh_provider_with_stores, refresh_provider_with_transport};
 
     fn fixed_now() -> String {
         "2026-06-11T12:40:00+08:00".to_string()
@@ -181,6 +221,49 @@ mod tests {
 
         let persisted = load_credentials(&metadata_store).expect("metadata should load");
         assert_eq!(persisted[0].status, CredentialStatus::Healthy);
+    }
+
+    #[test]
+    fn refresh_provider_transport_path_updates_from_http_response() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::api_key(
+            "tavily-live",
+            "tavily",
+            "Tavily Live",
+            "tvly••••live",
+            CredentialStatus::NotChecked,
+            "Saved",
+            None,
+            None,
+            Vec::new(),
+            None,
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+        save_secret(&secret_vault, "tavily-live", "tvly-live-test").expect("secret should save");
+        let transport = MockProviderTransport::responding(ProviderHttpResponse {
+            status: 200,
+            body: r#"{"key":{"usage":125,"limit":1000},"account":{"plan_usage":300,"plan_limit":5000}}"#.to_string(),
+        });
+
+        let state = refresh_provider_with_transport(
+            &metadata_store,
+            &secret_vault,
+            "tavily",
+            "manual",
+            fixed_now,
+            &transport,
+        )
+        .expect("refresh should use transport");
+
+        let updated = &state.credentials[0];
+        assert_eq!(updated.status, CredentialStatus::Healthy);
+        assert_eq!(updated.remaining, Some(875.0));
+        assert_eq!(updated.limit, Some(1000.0));
+        assert_eq!(updated.remaining_badge_text, "875 / 1000");
+        assert_eq!(transport.requests().len(), 1);
     }
 
     #[test]

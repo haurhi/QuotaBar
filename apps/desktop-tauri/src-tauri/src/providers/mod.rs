@@ -1,11 +1,12 @@
-pub mod anysearch;
 pub mod aliyun_coding_plan;
+pub mod anysearch;
 pub mod bocha;
 pub mod brave;
 pub mod claude_subscription;
 pub mod codex_subscription;
 pub mod deepseek;
 pub mod exa;
+pub mod http;
 pub mod kimi_subscription;
 pub mod opencode_go;
 pub mod registry;
@@ -18,6 +19,10 @@ pub mod wxmp;
 pub mod xfyun_coding_plan;
 
 use crate::domain::QuotaWindow;
+
+pub use http::{
+    ProviderHttpRequest, ProviderHttpResponse, ProviderTransport, ReqwestProviderTransport,
+};
 
 #[cfg(test)]
 mod aliyun_coding_plan_tests;
@@ -42,9 +47,9 @@ mod serpapi_tests;
 #[cfg(test)]
 mod serper_tests;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod tencent_cloud_coding_plan_tests;
+#[cfg(test)]
+mod tests;
 #[cfg(test)]
 mod volcengine_coding_plan_tests;
 #[cfg(test)]
@@ -94,9 +99,15 @@ impl std::fmt::Display for ProviderError {
         match self {
             Self::Parse(message) => write!(formatter, "Provider fixture parse failed: {message}"),
             Self::Unsupported(message) => write!(formatter, "Provider unsupported: {message}"),
-            Self::Unauthorized(message) => write!(formatter, "Provider authorization failed: {message}"),
-            Self::QuotaUnavailable(message) => write!(formatter, "Provider quota unavailable: {message}"),
-            Self::NoSubscribedPlan(message) => write!(formatter, "Provider has no subscribed plan: {message}"),
+            Self::Unauthorized(message) => {
+                write!(formatter, "Provider authorization failed: {message}")
+            }
+            Self::QuotaUnavailable(message) => {
+                write!(formatter, "Provider quota unavailable: {message}")
+            }
+            Self::NoSubscribedPlan(message) => {
+                write!(formatter, "Provider has no subscribed plan: {message}")
+            }
             Self::Network(message) => write!(formatter, "Provider network failed: {message}"),
         }
     }
@@ -107,6 +118,14 @@ impl std::error::Error for ProviderError {}
 pub trait ProviderClient: Send + Sync {
     fn provider_id(&self) -> &'static str;
     fn consumes_quota_on_check(&self) -> bool;
+    fn check_quota(
+        &self,
+        credential: ProviderCredential,
+        transport: &dyn ProviderTransport,
+    ) -> Result<QuotaSnapshot, ProviderError> {
+        let _ = transport;
+        self.check_fixture_quota(credential)
+    }
     fn check_fixture_quota(
         &self,
         credential: ProviderCredential,
