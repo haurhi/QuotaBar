@@ -6,9 +6,14 @@ import { ProviderQuotaRow } from "./ProviderQuotaRow";
 interface ProviderQuotaTableProps {
   stats: ProviderStats[];
   onRefreshProvider?: (providerId: string) => void | Promise<void>;
+  onStartWebAuthorization?: (providerId: string, targetCredentialId?: string) => void | Promise<void>;
 }
 
-export function ProviderQuotaTable({ stats, onRefreshProvider }: ProviderQuotaTableProps) {
+export function ProviderQuotaTable({
+  stats,
+  onRefreshProvider,
+  onStartWebAuthorization,
+}: ProviderQuotaTableProps) {
   const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
 
   return (
@@ -33,6 +38,7 @@ export function ProviderQuotaTable({ stats, onRefreshProvider }: ProviderQuotaTa
               setExpandedProviderId((current) => (current === stat.provider.id ? null : stat.provider.id))
             }
             onRefreshProvider={onRefreshProvider}
+            onStartWebAuthorization={onStartWebAuthorization}
           />
         ))}
       </tbody>

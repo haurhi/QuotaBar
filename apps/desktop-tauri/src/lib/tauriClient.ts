@@ -3,10 +3,12 @@ import { mockCredentials, providerRegistry } from "../shared/mockData";
 import type {
   AppSettings,
   AppState,
+  CapturedWebAuthorization,
   CredentialInput,
   CredentialView,
   RefreshMode,
   UpdateState,
+  WebAuthorizationSession,
 } from "../shared/types";
 
 export const mockAppState: AppState = {
@@ -147,6 +149,38 @@ export async function refreshProvider(providerId: string, mode: RefreshMode = "m
   }
 
   return invoke<AppState>("refresh_provider", { providerId, mode });
+}
+
+export async function startWebAuthorization(
+  providerId: string,
+  targetCredentialId?: string,
+): Promise<WebAuthorizationSession> {
+  if (!isTauriRuntime()) {
+    return {
+      providerId,
+      targetCredentialId,
+      loginUrl: providerRegistry.find((provider) => provider.id === providerId)?.dashboardUrl,
+      message: targetCredentialId
+        ? `Ready to update ${targetCredentialId}`
+        : "Choose an authorization target",
+    };
+  }
+
+  return invoke<WebAuthorizationSession>("start_web_authorization", { providerId, targetCredentialId });
+}
+
+export async function saveWebAuthorization(input: CapturedWebAuthorization): Promise<CredentialView> {
+  if (!isTauriRuntime()) {
+    return buildMockCredential({
+      id: input.targetCredentialId ?? `${input.providerId}-web-authorization`,
+      providerId: input.providerId,
+      name: input.name ?? `${input.providerId} Web Login`,
+      kind: "dashboardCookie",
+      secret: JSON.stringify(input.capturedFields),
+    });
+  }
+
+  return invoke<CredentialView>("save_web_authorization", { input });
 }
 
 export async function getUpdateState(): Promise<UpdateState> {

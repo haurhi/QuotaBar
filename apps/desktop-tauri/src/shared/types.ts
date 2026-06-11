@@ -72,6 +72,20 @@ export interface CredentialInput {
   note?: string;
 }
 
+export interface WebAuthorizationSession {
+  providerId: string;
+  targetCredentialId?: string;
+  loginUrl?: string;
+  message: string;
+}
+
+export interface CapturedWebAuthorization {
+  providerId: string;
+  targetCredentialId?: string;
+  name?: string;
+  capturedFields: Record<string, unknown>;
+}
+
 export interface ProviderStats {
   provider: ProviderDefinition;
   credentials: CredentialView[];

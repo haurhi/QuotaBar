@@ -10,6 +10,7 @@ import {
   refreshProvider,
   resetProviderOrder,
   checkForUpdates,
+  startWebAuthorization,
   updateSettings,
 } from "./lib/tauriClient";
 import { AppShell } from "./shell/AppShell";
@@ -79,6 +80,10 @@ export default function App() {
     setAppState(await refreshProvider(providerId, "manual"));
   }
 
+  async function handleStartWebAuthorization(providerId: string, targetCredentialId?: string) {
+    await startWebAuthorization(providerId, targetCredentialId);
+  }
+
   if (new URLSearchParams(window.location.search).get("view") === "tray") {
     return (
       <main className="tray-preview">
@@ -93,6 +98,7 @@ export default function App() {
         providers={providers}
         credentials={appState.credentials}
         onRefreshProvider={handleRefreshProvider}
+        onStartWebAuthorization={handleStartWebAuthorization}
       />
     ),
     credentials: <CredentialsPage providers={providers} credentials={appState.credentials} />,

@@ -7,13 +7,19 @@ interface ProviderCategorySectionProps {
   category: ProviderCategory;
   stats: ProviderStats[];
   onRefreshProvider?: (providerId: string) => void | Promise<void>;
+  onStartWebAuthorization?: (providerId: string, targetCredentialId?: string) => void | Promise<void>;
 }
 
 function categoryTitle(category: ProviderCategory) {
   return category === "AI Search" ? translate("category.aiSearch") : translate("category.llm");
 }
 
-export function ProviderCategorySection({ category, stats, onRefreshProvider }: ProviderCategorySectionProps) {
+export function ProviderCategorySection({
+  category,
+  stats,
+  onRefreshProvider,
+  onStartWebAuthorization,
+}: ProviderCategorySectionProps) {
   const [expanded, setExpanded] = useState(true);
   const credentialCount = stats.reduce((total, stat) => total + stat.credentials.length, 0);
 
@@ -27,7 +33,13 @@ export function ProviderCategorySection({ category, stats, onRefreshProvider }: 
           </p>
         </div>
       </button>
-      {expanded ? <ProviderQuotaTable stats={stats} onRefreshProvider={onRefreshProvider} /> : null}
+      {expanded ? (
+        <ProviderQuotaTable
+          stats={stats}
+          onRefreshProvider={onRefreshProvider}
+          onStartWebAuthorization={onStartWebAuthorization}
+        />
+      ) : null}
     </section>
   );
 }

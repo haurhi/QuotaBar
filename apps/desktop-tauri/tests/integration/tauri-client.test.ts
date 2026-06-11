@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAppState } from "../../src/lib/tauriClient";
+import { getAppState, saveWebAuthorization } from "../../src/lib/tauriClient";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -56,5 +56,38 @@ describe("tauriClient", () => {
     expect(invoke).not.toHaveBeenCalled();
     expect(state.providers.length).toBeGreaterThan(0);
     expect(state.credentials.length).toBeGreaterThan(0);
+  });
+
+  it("saves captured web authorization through Tauri in desktop runtime", async () => {
+    setTauriRuntime(true);
+    vi.mocked(invoke).mockResolvedValue({
+      id: "claude-web-pro",
+      providerId: "claude",
+      name: "Claude Pro Login",
+      kind: "dashboardCookie",
+      maskedValue: "Web login authorization saved",
+      copyable: false,
+      active: true,
+      status: "notChecked",
+      remainingBadgeText: "Authorization saved",
+      quotaWindows: [],
+    });
+
+    const credential = await saveWebAuthorization({
+      providerId: "claude",
+      targetCredentialId: "claude-web-pro",
+      name: "Claude Pro Login",
+      capturedFields: { cookie: "sessionKey=mock-session" },
+    });
+
+    expect(invoke).toHaveBeenCalledWith("save_web_authorization", {
+      input: {
+        providerId: "claude",
+        targetCredentialId: "claude-web-pro",
+        name: "Claude Pro Login",
+        capturedFields: { cookie: "sessionKey=mock-session" },
+      },
+    });
+    expect(credential.copyable).toBe(false);
   });
 });

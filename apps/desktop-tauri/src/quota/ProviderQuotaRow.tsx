@@ -10,10 +10,25 @@ interface ProviderQuotaRowProps {
   expanded: boolean;
   onToggle: () => void;
   onRefreshProvider?: (providerId: string) => void | Promise<void>;
+  onStartWebAuthorization?: (providerId: string, targetCredentialId?: string) => void | Promise<void>;
 }
 
-export function ProviderQuotaRow({ stat, expanded, onToggle, onRefreshProvider }: ProviderQuotaRowProps) {
+export function ProviderQuotaRow({
+  stat,
+  expanded,
+  onToggle,
+  onRefreshProvider,
+  onStartWebAuthorization,
+}: ProviderQuotaRowProps) {
   const tone = stat.needsAttention ? "attention" : "healthy";
+  const authorizationCredentials = stat.credentials.filter(
+    (credential) => credential.kind === "dashboardCookie",
+  );
+  const reauthorizationTarget =
+    authorizationCredentials.length === 1 ? authorizationCredentials[0] : undefined;
+  const reauthorizationLabel = reauthorizationTarget?.name ?? (
+    authorizationCredentials.length > 1 ? "choose account" : undefined
+  );
   const subtitle = [
     stat.provider.familyName !== stat.provider.displayName ? stat.provider.familyName : undefined,
     stat.provider.planType,
@@ -50,7 +65,16 @@ export function ProviderQuotaRow({ stat, expanded, onToggle, onRefreshProvider }
               </button>
             ) : null}
             {stat.provider.supportsReauth ? (
-              <button aria-label={`${stat.provider.displayName} ${translate("action.reauthorize")}`}>
+              <button
+                aria-label={[
+                  stat.provider.displayName,
+                  translate("action.reauthorize"),
+                  reauthorizationLabel,
+                ].filter(Boolean).join(" ")}
+                onClick={() => {
+                  void onStartWebAuthorization?.(stat.provider.id, reauthorizationTarget?.id);
+                }}
+              >
                 <RotateCcw size={14} />
               </button>
             ) : null}

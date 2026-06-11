@@ -9,12 +9,14 @@ interface QuotaMonitoringPageProps {
   providers?: ProviderDefinition[];
   credentials?: CredentialView[];
   onRefreshProvider?: (providerId: string) => void | Promise<void>;
+  onStartWebAuthorization?: (providerId: string, targetCredentialId?: string) => void | Promise<void>;
 }
 
 export function QuotaMonitoringPage({
   providers = providerRegistry,
   credentials = mockCredentials,
   onRefreshProvider,
+  onStartWebAuthorization,
 }: QuotaMonitoringPageProps) {
   const stats = buildProviderStats(providers, credentials);
 
@@ -32,6 +34,7 @@ export function QuotaMonitoringPage({
             category={category}
             stats={categoryStats}
             onRefreshProvider={onRefreshProvider}
+            onStartWebAuthorization={onStartWebAuthorization}
           />
         );
       })}

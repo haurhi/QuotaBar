@@ -28,6 +28,8 @@ pub fn run() {
             commands::credentials::create_credential,
             commands::credentials::delete_credential,
             commands::credentials::list_credentials,
+            commands::auth::save_web_authorization,
+            commands::auth::start_web_authorization,
             commands::providers::list_provider_definitions,
             commands::providers::refresh_provider,
             commands::credentials::set_credential_active,
