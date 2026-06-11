@@ -58,10 +58,10 @@ fn serpapi_network_failure_maps_to_network_error() {
 #[test]
 fn serpapi_live_quota_uses_account_endpoint_transport() {
     let client = SerpApiProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body: r#"{"account":{"total_searches_left":99,"monthly_searches_limit":100,"reset_at":"2026-07-01T00:00:00Z"}}"#.to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"account":{"total_searches_left":99,"monthly_searches_limit":100,"reset_at":"2026-07-01T00:00:00Z"}}"#,
+    ));
 
     let snapshot = client
         .check_quota(

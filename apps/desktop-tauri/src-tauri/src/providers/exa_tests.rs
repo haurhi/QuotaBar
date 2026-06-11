@@ -1,4 +1,8 @@
-use super::{exa::ExaProvider, ProviderClient, ProviderCredential, ProviderError};
+use super::{
+    exa::ExaProvider,
+    http::{MockProviderTransport, ProviderHttpResponse},
+    ProviderClient, ProviderCredential, ProviderError,
+};
 
 fn exa_management_credential() -> ProviderCredential {
     ProviderCredential::fake_api_key(
@@ -37,7 +41,10 @@ fn exa_camel_case_usage_fixture_is_supported() {
 fn exa_plain_api_key_maps_to_unsupported_management_credential_error() {
     let client = ExaProvider::default();
     let error = client
-        .check_fixture_quota(ProviderCredential::fake_api_key("exa", "exa-search-key-only"))
+        .check_fixture_quota(ProviderCredential::fake_api_key(
+            "exa",
+            "exa-search-key-only",
+        ))
         .expect_err("plain Exa search key should not be accepted");
 
     assert!(matches!(
@@ -80,4 +87,32 @@ fn exa_network_failure_maps_to_network_error() {
         error,
         ProviderError::Network(message) if message.contains("request timed out")
     ));
+}
+
+#[test]
+fn exa_live_quota_uses_management_usage_endpoint_transport() {
+    let client = ExaProvider::default();
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"totalCostUsd":3.21}"#,
+    ));
+
+    let snapshot = client
+        .check_quota(exa_management_credential(), &transport)
+        .expect("live response should parse");
+
+    assert_eq!(snapshot.remaining, None);
+    assert_eq!(snapshot.limit, None);
+    assert_eq!(snapshot.remaining_badge_text, "USD 3.21 used");
+    let requests = transport.requests();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "GET");
+    assert_eq!(
+        requests[0].url,
+        "https://admin-api.exa.ai/team-management/api-keys/api-key-id-placeholder/usage?numDays=30"
+    );
+    assert!(requests[0].headers.contains(&(
+        "x-api-key".to_string(),
+        "service-key-placeholder".to_string()
+    )));
 }

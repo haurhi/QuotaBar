@@ -1,6 +1,9 @@
 use serde::Deserialize;
 
-use super::{ProviderClient, ProviderCredential, ProviderError, QuotaSnapshot};
+use super::{
+    ProviderClient, ProviderCredential, ProviderError, ProviderHttpRequest, ProviderTransport,
+    QuotaSnapshot,
+};
 
 const EXA_USAGE_FIXTURE: &str = r#"{
   "total_cost_usd": 45.67
@@ -74,6 +77,44 @@ impl ProviderClient for ExaProvider {
         false
     }
 
+    fn check_quota(
+        &self,
+        credential: ProviderCredential,
+        transport: &dyn ProviderTransport,
+    ) -> Result<QuotaSnapshot, ProviderError> {
+        if credential.provider_id != self.provider_id() {
+            return Err(ProviderError::Unsupported(format!(
+                "credential belongs to {}",
+                credential.provider_id
+            )));
+        }
+
+        let management_credential = ExaManagementCredential::from_secret(&credential.secret)?;
+        let response = transport.send(
+            ProviderHttpRequest::get(&format!(
+                "https://admin-api.exa.ai/team-management/api-keys/{}/usage?numDays={}",
+                management_credential.api_key_id,
+                management_credential.days()
+            ))
+            .header("x-api-key", &management_credential.service_key)
+            .header("Accept", "application/json"),
+        )?;
+
+        if response.status == 401 || response.status == 403 {
+            return Err(ProviderError::Unauthorized(
+                "Exa service key is unauthorized".to_string(),
+            ));
+        }
+        if response.status != 200 {
+            return Err(ProviderError::QuotaUnavailable(format!(
+                "Exa management usage endpoint returned HTTP {}",
+                response.status
+            )));
+        }
+
+        parse_exa_usage(response.status, &response.body)
+    }
+
     fn check_fixture_quota(
         &self,
         credential: ProviderCredential,
@@ -85,9 +126,20 @@ impl ProviderClient for ExaProvider {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExaManagementCredential {
-    #[serde(alias = "service_key", alias = "adminApiKey", alias = "admin_api_key", alias = "adminKey")]
+    #[serde(
+        alias = "service_key",
+        alias = "adminApiKey",
+        alias = "admin_api_key",
+        alias = "adminKey"
+    )]
     service_key: String,
-    #[serde(alias = "apiKeyID", alias = "api_key_id", alias = "keyID", alias = "keyId", alias = "id")]
+    #[serde(
+        alias = "apiKeyID",
+        alias = "api_key_id",
+        alias = "keyID",
+        alias = "keyId",
+        alias = "id"
+    )]
     api_key_id: String,
     #[serde(default, alias = "numDays", alias = "num_days")]
     days: Option<u16>,
@@ -107,8 +159,11 @@ impl ExaManagementCredential {
             ));
         }
 
-        let _days = credential.days.unwrap_or(30).max(1);
         Ok(credential)
+    }
+
+    fn days(&self) -> u16 {
+        self.days.unwrap_or(30).clamp(1, 365)
     }
 }
 

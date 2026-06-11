@@ -1478,6 +1478,41 @@ git add apps/desktop-tauri/src-tauri/src/providers
 git commit -m "feat: add SerpAPI desktop quota provider"
 ```
 
+### Task 18B: Wire Real HTTP Transport For API-Key Providers
+
+**Files:**
+- Modify: `apps/desktop-tauri/src-tauri/src/providers/http.rs`
+- Modify: API-key provider implementations under
+  `apps/desktop-tauri/src-tauri/src/providers/`
+- Test: provider transport tests per provider.
+
+- [x] **Step 1: Add shared transport seam**
+
+The Rust provider layer now accepts a `ProviderTransport` and production
+refresh uses a proxy-aware Reqwest transport. Fixture paths remain available for
+unit tests and deterministic parser coverage.
+
+- [x] **Step 2: Add no-cost provider HTTP refresh**
+
+Tavily, SerpAPI, Serper, Bocha, WeChat Search, and DeepSeek use real endpoint
+requests in the production refresh path while tests use the mock transport.
+
+- [x] **Step 3: Add managed and costly provider HTTP refresh**
+
+Brave now parses monthly request quota from search-probe rate-limit headers and
+remains marked as a quota-consuming refresh. Exa now calls the management usage
+endpoint with a service key plus target API key id; plain search API keys remain
+unsupported for quota monitoring.
+
+- [x] **Step 4: Verify**
+
+Run from repo root:
+
+```bash
+cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml
+git diff --check
+```
+
 ### Task 19: Add Web Login Authorization Shell
 
 **Files:**

@@ -46,6 +46,29 @@ impl ProviderHttpRequest {
 pub struct ProviderHttpResponse {
     pub status: u16,
     pub body: String,
+    pub headers: Vec<(String, String)>,
+}
+
+impl ProviderHttpResponse {
+    pub fn new(status: u16, body: &str) -> Self {
+        Self {
+            status,
+            body: body.to_string(),
+            headers: Vec::new(),
+        }
+    }
+
+    pub fn with_header(mut self, name: &str, value: &str) -> Self {
+        self.headers.push((name.to_string(), value.to_string()));
+        self
+    }
+
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.headers
+            .iter()
+            .find(|(candidate, _)| candidate.eq_ignore_ascii_case(name))
+            .map(|(_, value)| value.as_str())
+    }
 }
 
 pub trait ProviderTransport: Send + Sync {
@@ -102,10 +125,21 @@ impl ProviderTransport for ReqwestProviderTransport {
             .send()
             .map_err(|error| ProviderError::Network(error.to_string()))?;
         let status = response.status().as_u16();
+        let headers = response
+            .headers()
+            .iter()
+            .filter_map(|(name, value)| {
+                Some((name.as_str().to_string(), value.to_str().ok()?.to_string()))
+            })
+            .collect();
         let body = response
             .text()
             .map_err(|error| ProviderError::Network(error.to_string()))?;
-        Ok(ProviderHttpResponse { status, body })
+        Ok(ProviderHttpResponse {
+            status,
+            body,
+            headers,
+        })
     }
 }
 

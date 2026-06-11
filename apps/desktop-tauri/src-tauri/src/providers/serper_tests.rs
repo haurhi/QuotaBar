@@ -71,10 +71,8 @@ fn serper_network_failure_maps_to_network_error() {
 #[test]
 fn serper_live_quota_uses_account_endpoint_transport() {
     let client = SerperProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body: r#"{"balance":42}"#.to_string(),
-    });
+    let transport =
+        MockProviderTransport::responding(ProviderHttpResponse::new(200, r#"{"balance":42}"#));
 
     let snapshot = client
         .check_quota(

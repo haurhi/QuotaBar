@@ -59,10 +59,10 @@ fn bocha_network_failure_maps_to_network_error() {
 #[test]
 fn bocha_live_quota_uses_balance_endpoint_transport() {
     let client = BochaProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body: r#"{"success":true,"code":"200","data":{"remaining":88.8}}"#.to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"success":true,"code":"200","data":{"remaining":88.8}}"#,
+    ));
 
     let snapshot = client
         .check_quota(

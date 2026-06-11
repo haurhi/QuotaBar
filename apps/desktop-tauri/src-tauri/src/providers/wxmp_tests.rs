@@ -70,10 +70,10 @@ fn wxmp_network_failure_maps_to_network_error() {
 #[test]
 fn wxmp_live_quota_uses_form_balance_endpoint_transport() {
     let client = WxmpProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body: r#"{"code":0,"remain_money":"6.66"}"#.to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"code":0,"remain_money":"6.66"}"#,
+    ));
 
     let snapshot = client
         .check_quota(

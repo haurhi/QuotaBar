@@ -2,7 +2,10 @@ use serde::Deserialize;
 
 use crate::domain::QuotaWindow;
 
-use super::{ProviderClient, ProviderCredential, ProviderError, QuotaSnapshot};
+use super::{
+    ProviderClient, ProviderCredential, ProviderError, ProviderHttpRequest, ProviderHttpResponse,
+    ProviderTransport, QuotaSnapshot,
+};
 
 const BRAVE_USAGE_FIXTURE: &str = r#"{
   "monthlyRequests": {
@@ -22,6 +25,40 @@ impl ProviderClient for BraveProvider {
 
     fn consumes_quota_on_check(&self) -> bool {
         true
+    }
+
+    fn check_quota(
+        &self,
+        credential: ProviderCredential,
+        transport: &dyn ProviderTransport,
+    ) -> Result<QuotaSnapshot, ProviderError> {
+        if credential.provider_id != self.provider_id() {
+            return Err(ProviderError::Unsupported(format!(
+                "credential belongs to {}",
+                credential.provider_id
+            )));
+        }
+
+        let response = transport.send(
+            ProviderHttpRequest::get(
+                "https://api.search.brave.com/res/v1/web/search?q=test&count=1",
+            )
+            .header("X-Subscription-Token", &credential.secret)
+            .header("Accept", "application/json"),
+        )?;
+        if response.status == 401 || response.status == 403 {
+            return Err(ProviderError::Unauthorized(
+                "Brave API key is unauthorized".to_string(),
+            ));
+        }
+        if response.status != 200 {
+            return Err(ProviderError::QuotaUnavailable(format!(
+                "Brave Search endpoint returned HTTP {}",
+                response.status
+            )));
+        }
+
+        parse_brave_rate_limit_headers(&response)
     }
 
     fn check_fixture_quota(
@@ -56,28 +93,105 @@ struct BraveMonthlyRequests {
 fn parse_brave_usage(value: &str) -> Result<QuotaSnapshot, ProviderError> {
     let usage: BraveUsageFixture =
         serde_json::from_str(value).map_err(|error| ProviderError::Parse(error.to_string()))?;
-    let percent = if usage.monthly_requests.limit > 0.0 {
-        usage.monthly_requests.remaining / usage.monthly_requests.limit * 100.0
+
+    Ok(brave_snapshot(
+        usage.monthly_requests.remaining,
+        usage.monthly_requests.limit,
+        usage.monthly_requests.reset_at,
+    ))
+}
+
+fn parse_brave_rate_limit_headers(
+    response: &ProviderHttpResponse,
+) -> Result<QuotaSnapshot, ProviderError> {
+    let remaining = header_number(
+        response,
+        &[
+            "X-RateLimit-Requests-Left",
+            "RateLimit-Remaining",
+            "X-RateLimit-Remaining",
+        ],
+    )
+    .ok_or_else(|| {
+        ProviderError::QuotaUnavailable("Brave monthly request headers are unavailable".to_string())
+    })?;
+    let limit = header_number(
+        response,
+        &[
+            "X-RateLimit-Requests-Limit",
+            "RateLimit-Limit",
+            "X-RateLimit-Limit",
+        ],
+    )
+    .ok_or_else(|| {
+        ProviderError::QuotaUnavailable("Brave monthly request headers are unavailable".to_string())
+    })?;
+    let reset_at = header_value(
+        response,
+        &[
+            "X-RateLimit-Requests-Reset",
+            "RateLimit-Reset",
+            "X-RateLimit-Reset",
+        ],
+    )
+    .and_then(parse_reset_header)
+    .unwrap_or_else(next_month_start_utc);
+
+    Ok(brave_snapshot(remaining, limit, reset_at))
+}
+
+fn brave_snapshot(remaining: f64, limit: f64, reset_at: String) -> QuotaSnapshot {
+    let percent = if limit > 0.0 {
+        remaining / limit * 100.0
     } else {
         0.0
     };
 
-    Ok(QuotaSnapshot {
+    QuotaSnapshot {
         provider_id: "brave".to_string(),
-        remaining: Some(usage.monthly_requests.remaining),
-        limit: Some(usage.monthly_requests.limit),
-        remaining_badge_text: format!(
-            "{} / {}",
-            usage.monthly_requests.remaining.round() as i64,
-            usage.monthly_requests.limit.round() as i64
-        ),
+        remaining: Some(remaining),
+        limit: Some(limit),
+        remaining_badge_text: format!("{} / {}", remaining.round() as i64, limit.round() as i64),
         quota_label: Some("requests".to_string()),
-        quota_windows: vec![QuotaWindow::percent(
-            "month",
-            percent,
-            &usage.monthly_requests.reset_at,
-        )],
-        reset_at: Some(usage.monthly_requests.reset_at),
+        quota_windows: vec![QuotaWindow::percent("month", percent, &reset_at)],
+        reset_at: Some(reset_at),
         plan_ends_at: None,
-    })
+    }
+}
+
+fn header_number(response: &ProviderHttpResponse, names: &[&str]) -> Option<f64> {
+    header_value(response, names).and_then(|value| value.parse::<f64>().ok())
+}
+
+fn header_value<'a>(response: &'a ProviderHttpResponse, names: &[&str]) -> Option<&'a str> {
+    names.iter().find_map(|name| response.header(name))
+}
+
+fn parse_reset_header(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if let Ok(timestamp) = trimmed.parse::<i64>() {
+        let seconds = if timestamp > 10_000_000_000 {
+            timestamp / 1000
+        } else {
+            timestamp
+        };
+        return chrono::DateTime::<chrono::Utc>::from_timestamp(seconds, 0)
+            .map(|date| date.to_rfc3339());
+    }
+
+    chrono::DateTime::parse_from_rfc3339(trimmed)
+        .map(|date| date.to_rfc3339())
+        .ok()
+}
+
+fn next_month_start_utc() -> String {
+    use chrono::{Datelike, Utc};
+
+    let now = Utc::now();
+    let (year, month) = if now.month() == 12 {
+        (now.year() + 1, 1)
+    } else {
+        (now.year(), now.month() + 1)
+    };
+    format!("{year:04}-{month:02}-01T00:00:00Z")
 }

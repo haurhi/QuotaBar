@@ -70,6 +70,20 @@ API can return a usable account without quota, and network error mapping.
 - Do not make Exa look like a normal API-key quota check. The stored secret is
   an admin credential object, not a plain Exa search key.
 
+### API-Key Production Transport Coverage
+
+- Done: shared `ProviderTransport`/`ProviderHttpRequest` path with proxy-aware
+  Reqwest transport.
+- Done: response headers are available to providers that expose quota through
+  rate-limit headers.
+- Done: live HTTP refresh implementations for Tavily, Brave, SerpAPI, Serper,
+  Exa, Bocha, WeChat Search, and DeepSeek.
+- Done: Brave parses monthly request quota from rate-limit headers and remains
+  marked as a quota-consuming refresh.
+- Done: Exa uses the team-management usage endpoint with the stored service key
+  plus target API key id; plain Exa search keys remain unsupported for quota
+  monitoring.
+
 ## Phase 2: Cookie/OAuth Providers
 
 These providers depend on browser login, dashboard cookies, OAuth-like session

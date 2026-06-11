@@ -243,10 +243,10 @@ mod tests {
         );
         save_credentials(&metadata_store, &[credential]).expect("metadata should save");
         save_secret(&secret_vault, "tavily-live", "tvly-live-test").expect("secret should save");
-        let transport = MockProviderTransport::responding(ProviderHttpResponse {
-            status: 200,
-            body: r#"{"key":{"usage":125,"limit":1000},"account":{"plan_usage":300,"plan_limit":5000}}"#.to_string(),
-        });
+        let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+            200,
+            r#"{"key":{"usage":125,"limit":1000},"account":{"plan_usage":300,"plan_limit":5000}}"#,
+        ));
 
         let state = refresh_provider_with_transport(
             &metadata_store,

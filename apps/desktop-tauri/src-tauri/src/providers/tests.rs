@@ -53,11 +53,10 @@ fn tavily_fixture_parses_monthly_credit_snapshot() {
 #[test]
 fn tavily_live_quota_uses_usage_endpoint_transport() {
     let client = super::tavily::TavilyProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body: r#"{"key":{"usage":80,"limit":1000},"account":{"plan_usage":300,"plan_limit":5000}}"#
-            .to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"key":{"usage":80,"limit":1000},"account":{"plan_usage":300,"plan_limit":5000}}"#,
+    ));
 
     let snapshot = client
         .check_quota(
@@ -81,10 +80,7 @@ fn tavily_live_quota_uses_usage_endpoint_transport() {
 #[test]
 fn tavily_live_quota_maps_unauthorized_status() {
     let client = super::tavily::TavilyProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 401,
-        body: "{}".to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(401, "{}"));
 
     let error = client
         .check_quota(
@@ -118,12 +114,10 @@ fn deepseek_fixture_parses_rmb_balance_snapshot() {
 #[test]
 fn deepseek_live_quota_parses_official_balance_shape() {
     let client = super::deepseek::DeepSeekProvider::default();
-    let transport = MockProviderTransport::responding(ProviderHttpResponse {
-        status: 200,
-        body:
-            r#"{"is_available":true,"balance_infos":[{"currency":"CNY","total_balance":"128.40"}]}"#
-                .to_string(),
-    });
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"is_available":true,"balance_infos":[{"currency":"CNY","total_balance":"128.40"}]}"#,
+    ));
 
     let snapshot = client
         .check_quota(
