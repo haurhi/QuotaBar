@@ -1,0 +1,64 @@
+# Desktop Tauri Parity Checklist
+
+This checklist is the gate for deciding whether the Tauri desktop app is close enough to the current Swift macOS app to ship as a preview. It is intentionally stricter than a build checklist: the app must preserve the quota-first user experience, credential safety model, and provider semantics.
+
+## Current status
+
+- Track: Tauri cross-platform preview under `apps/desktop-tauri`
+- Stable release track: Swift macOS app
+- Local platform checked: macOS arm64
+- Windows/Linux screenshot QA: pending real runner or device screenshots
+- Visual QA on 2026-06-12: local main-window and tray-popover screenshots showed no obvious top clipping, sidebar overlap, or action-button displacement.
+- Latest local verification commands:
+  - `pnpm test -- --run`
+  - `pnpm typecheck`
+  - `cargo test --manifest-path apps/desktop-tauri/src-tauri/Cargo.toml`
+  - `pnpm tauri build`
+  - `bash scripts/check_tauri_sources.sh`
+
+## Feature parity
+
+| Area | Required behavior | Status | Notes |
+| --- | --- | --- | --- |
+| Tray popover | Risk-first menu bar surface with quota risk summary and attention list | Partial | Mock route exists and screenshot test covers fixed popover size. Needs native tray positioning QA on all platforms. |
+| Main quota monitoring | Provider-first quota table with configured providers only | Partial | Mock UI and selectors cover configured-provider filtering and provider summaries. Needs visual comparison against Swift UI. |
+| Credentials | Provider-aware credential management, copy only for copyable API keys | Partial | Unit/integration tests cover credential creation, copyability, web authorization shell, and stored companion API keys. |
+| Diagnostics | Shows configured providers only, concise health/HTTP state, no duplicated quota rows | Partial | Mock diagnostics exist; needs real Tauri state verification with stored credentials. |
+| Settings | Language, launch at login, update checks, refresh intervals, costly refresh, proxy, transparency, provider order | Partial | Unit/integration tests cover settings contracts and provider ordering. Needs native autostart and proxy QA per OS. |
+| i18n | Simplified Chinese, Traditional Chinese, English, Japanese, Korean with no missing keys | Pass in source checks | `scripts/check_tauri_sources.sh` validates locale key parity and empty values. |
+| Provider order | Custom order applies to all main pages and tray popover | Partial | Selector/unit coverage exists; drag-and-drop behavior needs visual QA. |
+| Secret safety | No real secrets in source/tests/docs/screenshots; web login authorization is not copyable | Pass in source checks | Safety script scans source/docs and asserts dashboard authorization is not copyable. |
+| Costly refresh | Brave and other costly checks are skipped by normal automatic refresh | Pass in backend tests | Scheduler and provider tests cover costly refresh policy. |
+| Update/install | No silent update until signed artifacts and manifests exist | Pass in backend/config checks | Commands return informational pending state; release doc records unsigned boundary. |
+| Platform caveats | macOS, Windows, Linux package/update differences documented | Partial | Release doc covers target package names and signing gaps. Needs CI artifact policy later. |
+
+## Screenshot QA matrix
+
+Screenshots are generated under `apps/desktop-tauri/tests/e2e/screenshots/` and must remain ignored unless explicitly chosen as masked documentation assets.
+
+| Platform | Scenario | Command or route | Status | Notes |
+| --- | --- | --- | --- | --- |
+| macOS arm64 | Default language main window | `pnpm test:e2e -- main-window.spec.ts` | Pass locally | Captures `main-window.png`; verifies sidebar/content separation. |
+| macOS arm64 | Tray popover route | `pnpm test:e2e -- tray-popover.spec.ts` | Pass locally | Captures `tray-popover.png`; verifies `560 x 500` surface. |
+| macOS arm64 | Narrow minimum window | `main-window.spec.ts` layout assertion | Partial | Tests sidebar/content separation; add explicit minimum viewport regression if defects appear. |
+| macOS arm64 | Simplified Chinese | Not automated yet | Pending | Needs route or mock setting hook for language-specific screenshot. |
+| macOS arm64 | Fixture-heavy configured account | Current mock credentials | Partial | Mock data includes AI Search and LLM providers, low quota, expired login, CNY balances, subscription windows. |
+| Windows | Default language main window | CI/manual Playwright | Pending | Requires Windows runner screenshots. |
+| Windows | Tray popover route | CI/manual Playwright | Pending | Verify window chrome, fonts, and scaling. |
+| Linux | Default language main window | CI/manual Playwright | Pending | Requires WebKit/GTK rendering check. |
+| Linux | Tray popover route | CI/manual Playwright | Pending | Verify panel size and font metrics. |
+
+## Defect rules
+
+- Fix only parity defects in this phase.
+- Do not add new providers while working this checklist.
+- Do not change provider semantics without updating `docs/provider-capabilities.md` and `docs/provider-capabilities.en.md`.
+- Do not commit generated screenshots, traces, `dist`, `target`, `node_modules`, or real credential material.
+
+## Exit criteria
+
+- Local macOS e2e screenshots pass and are visually checked.
+- GitHub Actions preview passes on macOS, Windows, and Linux.
+- Windows and Linux screenshots are reviewed for layout regressions.
+- All source safety checks pass.
+- Any intentional UI divergence is recorded in `docs/desktop-tauri-ui-spec.md`.

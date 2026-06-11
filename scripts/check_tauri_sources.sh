@@ -46,6 +46,7 @@ TAURI_SOURCE_PATHS=(
   "apps/desktop-tauri/playwright.config.ts"
   "docs/desktop-tauri-ui-spec.md"
   "docs/desktop-tauri-implementation-plan.md"
+  "docs/desktop-tauri-parity-checklist.md"
   "docs/tauri-provider-migration-checklist.md"
   "docs/provider-capabilities.md"
   "docs/provider-capabilities.en.md"
