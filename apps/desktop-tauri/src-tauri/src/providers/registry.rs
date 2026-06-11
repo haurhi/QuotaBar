@@ -2,7 +2,7 @@ use crate::domain::ProviderDefinition;
 
 use super::{
     brave::BraveProvider, deepseek::DeepSeekProvider, serpapi::SerpApiProvider,
-    tavily::TavilyProvider, ProviderClient,
+    serper::SerperProvider, tavily::TavilyProvider, ProviderClient,
 };
 
 pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
@@ -10,6 +10,7 @@ pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
         Box::<TavilyProvider>::default(),
         Box::<BraveProvider>::default(),
         Box::<SerpApiProvider>::default(),
+        Box::<SerperProvider>::default(),
         Box::<DeepSeekProvider>::default(),
     ]
 }
@@ -47,6 +48,14 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
             "https://serpapi.com/dashboard",
             false,
         ),
+        ProviderDefinition::new_ai_search(
+            "serper",
+            "Serper",
+            "Serper",
+            "serper",
+            "https://serper.dev/api-key",
+            false,
+        ),
         ProviderDefinition::new_llm(
             "deepseek",
             "DeepSeek",
@@ -59,5 +68,5 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
 }
 
 pub fn visible_provider_ids() -> Vec<&'static str> {
-    vec!["tavily", "brave", "serpapi", "deepseek"]
+    vec!["tavily", "brave", "serpapi", "serper", "deepseek"]
 }

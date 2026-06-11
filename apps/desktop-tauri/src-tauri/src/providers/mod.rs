@@ -2,6 +2,7 @@ pub mod brave;
 pub mod deepseek;
 pub mod registry;
 pub mod serpapi;
+pub mod serper;
 pub mod tavily;
 
 use crate::domain::QuotaWindow;
@@ -10,6 +11,8 @@ use crate::domain::QuotaWindow;
 mod brave_tests;
 #[cfg(test)]
 mod serpapi_tests;
+#[cfg(test)]
+mod serper_tests;
 #[cfg(test)]
 mod tests;
 
