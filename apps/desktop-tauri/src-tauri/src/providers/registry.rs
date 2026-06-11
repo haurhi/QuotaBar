@@ -3,7 +3,7 @@ use crate::domain::ProviderDefinition;
 use super::{
     anysearch::AnySearchProvider, bocha::BochaProvider, brave::BraveProvider,
     deepseek::DeepSeekProvider, serpapi::SerpApiProvider,
-    serper::SerperProvider, tavily::TavilyProvider, ProviderClient,
+    serper::SerperProvider, tavily::TavilyProvider, wxmp::WxmpProvider, ProviderClient,
 };
 
 pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
@@ -14,6 +14,7 @@ pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
         Box::<SerperProvider>::default(),
         Box::<BochaProvider>::default(),
         Box::<AnySearchProvider>::default(),
+        Box::<WxmpProvider>::default(),
         Box::<DeepSeekProvider>::default(),
     ]
 }
@@ -75,6 +76,14 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
             "https://app.anysearch.ai/login",
             false,
         ),
+        ProviderDefinition::new_ai_search(
+            "wxmp",
+            "WeChat Search",
+            "WeChat Search",
+            "wxmp",
+            "https://www.dajiala.com/main/interface?actnav=1",
+            false,
+        ),
         ProviderDefinition::new_llm(
             "deepseek",
             "DeepSeek",
@@ -94,6 +103,7 @@ pub fn visible_provider_ids() -> Vec<&'static str> {
         "serper",
         "bocha",
         "anysearch",
+        "wxmp",
         "deepseek",
     ]
 }
