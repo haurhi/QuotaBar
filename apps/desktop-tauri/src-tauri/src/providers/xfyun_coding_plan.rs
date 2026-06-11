@@ -3,7 +3,13 @@ use serde_json::Value;
 
 use crate::domain::QuotaWindow;
 
-use super::{ProviderClient, ProviderCredential, ProviderError, QuotaSnapshot};
+use super::{
+    ProviderClient, ProviderCredential, ProviderError, ProviderHttpRequest, ProviderTransport,
+    QuotaSnapshot,
+};
+
+const XFYUN_CODING_PLAN_LIST_URL: &str =
+    "https://maas.xfyun.cn/api/v1/gpt-finetune/coding-plan/list?page=1&size=6";
 
 const XFYUN_CODING_PLAN_FIXTURE: &str = r#"{
   "code": 0,
@@ -107,6 +113,38 @@ impl ProviderClient for XfyunCodingPlanProvider {
         false
     }
 
+    fn check_quota(
+        &self,
+        credential: ProviderCredential,
+        transport: &dyn ProviderTransport,
+    ) -> Result<QuotaSnapshot, ProviderError> {
+        if credential.provider_id != self.provider_id() {
+            return Err(ProviderError::Unsupported(format!(
+                "credential belongs to {}",
+                credential.provider_id
+            )));
+        }
+
+        let xfyun_credential = XfyunCredential::from_secret(&credential.secret)?;
+        let response = transport.send(
+            ProviderHttpRequest::get(XFYUN_CODING_PLAN_LIST_URL)
+                .header("Accept", "application/json, text/plain, */*")
+                .header("Cookie", &xfyun_credential.cookie_header)
+                .header("Referer", "https://maas.xfyun.cn/packageSubscription"),
+        )?;
+        if response.status == 401 || response.status == 403 {
+            return Err(xfyun_login_required());
+        }
+        if response.status != 200 {
+            return Err(ProviderError::QuotaUnavailable(format!(
+                "XFYun coding plan endpoint returned HTTP {}",
+                response.status
+            )));
+        }
+
+        parse_xfyun_coding_plan(&response.body)
+    }
+
     fn check_fixture_quota(
         &self,
         credential: ProviderCredential,
@@ -115,7 +153,9 @@ impl ProviderClient for XfyunCodingPlanProvider {
     }
 }
 
-struct XfyunCredential;
+struct XfyunCredential {
+    cookie_header: String,
+}
 
 impl XfyunCredential {
     fn from_secret(secret: &str) -> Result<Self, ProviderError> {
@@ -141,7 +181,9 @@ impl XfyunCredential {
             .unwrap_or_else(|| trimmed.to_string());
 
         if cookie.contains("ssoSessionId=") && cookie.contains("tenantToken=") {
-            Ok(Self)
+            Ok(Self {
+                cookie_header: cookie,
+            })
         } else {
             Err(xfyun_login_required())
         }
@@ -174,7 +216,10 @@ fn parse_xfyun_coding_plan(value: &str) -> Result<QuotaSnapshot, ProviderError> 
     let plan = rows
         .iter()
         .find(|plan| plan.status == Some(1) && plan.coding_plan_usage_dto.is_some())
-        .or_else(|| rows.iter().find(|plan| plan.coding_plan_usage_dto.is_some()))
+        .or_else(|| {
+            rows.iter()
+                .find(|plan| plan.coding_plan_usage_dto.is_some())
+        })
         .ok_or_else(|| ProviderError::QuotaUnavailable("XFYun quota is unavailable".to_string()))?;
     let usage = plan
         .coding_plan_usage_dto

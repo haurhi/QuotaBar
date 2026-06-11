@@ -1609,8 +1609,11 @@ Production HTTP refresh status:
   details for plan expiry.
 - OpenCode Go: Done. The provider replays the dashboard `_server` request with
   the saved cookie, workspace id, server id, and server instance.
-- XFYun Spark Coding Plan, Volcengine Coding Plan, Aliyun Coding Plan, Tencent
-  Cloud Coding Plan, and Querit: Pending production HTTP transport.
+- XFYun Spark Coding Plan: Done. The provider calls the coding-plan list
+  endpoint with saved console login cookies and parses request-count windows
+  plus package expiry.
+- Volcengine Coding Plan, Aliyun Coding Plan, Tencent Cloud Coding Plan, and
+  Querit: Pending production HTTP transport.
 
 - [ ] **Step 3: Preserve credential semantics**
 
