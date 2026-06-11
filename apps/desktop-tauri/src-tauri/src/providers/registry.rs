@@ -1,13 +1,15 @@
 use crate::domain::ProviderDefinition;
 
 use super::{
-    brave::BraveProvider, deepseek::DeepSeekProvider, tavily::TavilyProvider, ProviderClient,
+    brave::BraveProvider, deepseek::DeepSeekProvider, serpapi::SerpApiProvider,
+    tavily::TavilyProvider, ProviderClient,
 };
 
 pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
     vec![
         Box::<TavilyProvider>::default(),
         Box::<BraveProvider>::default(),
+        Box::<SerpApiProvider>::default(),
         Box::<DeepSeekProvider>::default(),
     ]
 }
@@ -37,6 +39,14 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
             "https://api.search.brave.com/app/dashboard",
             true,
         ),
+        ProviderDefinition::new_ai_search(
+            "serpapi",
+            "SerpAPI",
+            "SerpAPI",
+            "serpapi",
+            "https://serpapi.com/dashboard",
+            false,
+        ),
         ProviderDefinition::new_llm(
             "deepseek",
             "DeepSeek",
@@ -49,5 +59,5 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
 }
 
 pub fn visible_provider_ids() -> Vec<&'static str> {
-    vec!["tavily", "brave", "deepseek"]
+    vec!["tavily", "brave", "serpapi", "deepseek"]
 }

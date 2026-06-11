@@ -1,12 +1,15 @@
 pub mod brave;
 pub mod deepseek;
 pub mod registry;
+pub mod serpapi;
 pub mod tavily;
 
 use crate::domain::QuotaWindow;
 
 #[cfg(test)]
 mod brave_tests;
+#[cfg(test)]
+mod serpapi_tests;
 #[cfg(test)]
 mod tests;
 
@@ -40,6 +43,9 @@ pub struct QuotaSnapshot {
 pub enum ProviderError {
     Parse(String),
     Unsupported(String),
+    Unauthorized(String),
+    QuotaUnavailable(String),
+    Network(String),
 }
 
 impl std::fmt::Display for ProviderError {
@@ -47,6 +53,9 @@ impl std::fmt::Display for ProviderError {
         match self {
             Self::Parse(message) => write!(formatter, "Provider fixture parse failed: {message}"),
             Self::Unsupported(message) => write!(formatter, "Provider unsupported: {message}"),
+            Self::Unauthorized(message) => write!(formatter, "Provider authorization failed: {message}"),
+            Self::QuotaUnavailable(message) => write!(formatter, "Provider quota unavailable: {message}"),
+            Self::Network(message) => write!(formatter, "Provider network failed: {message}"),
         }
     }
 }
