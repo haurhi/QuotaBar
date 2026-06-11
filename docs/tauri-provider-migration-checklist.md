@@ -101,6 +101,16 @@ the shared credential and refresh model is stable.
 
 ## Phase 3: Configuration And Legacy Migration
 
+Status:
+
+- Done: fixture-first migration core for Swift-shaped credential metadata,
+  secret maps, key settings, provider order, Swift `Date` numeric values,
+  companion API-key links, and QuotaBar one-way migration markers.
+- Pending: startup IO that reads macOS preference plists for
+  `com.gaorongvc.quotaradar` and `com.gaorongvc.quotabar`, reads the Swift
+  `secrets.json` files, invokes the migration core once, and writes the
+  completion marker.
+
 Swift stores metadata and secrets separately:
 
 | Swift source | Meaning | Tauri target |
@@ -130,6 +140,37 @@ Swift stores metadata and secrets separately:
   expose POSIX permissions.
 - Add fixture tests with Swift-shaped metadata and secret records before writing
   migration code.
+
+### Implemented Core Coverage
+
+- `apps/desktop-tauri/src-tauri/src/storage/migration.rs` maps supported Swift
+  providers to Tauri provider ids and skips unsupported or hidden providers.
+- `apiKeyMetadata` entries preserve credential ids, active state, notes,
+  linked authorization ids, last HTTP status, diagnostic text, quota labels,
+  remaining/limit snapshots, reset dates, and plan expiry dates.
+- Swift `Date` values encoded as seconds since `2001-01-01T00:00:00Z` are
+  converted to UTC RFC3339 strings for Tauri.
+- Dashboard-login providers migrate as non-copyable quota authorization
+  credentials, while companion invocation API keys migrate as copyable
+  `storedAPIKeyOnly` credentials linked to the authorization id.
+- Swift settings migrate `appLanguage`, `statusBarTransparency`,
+  `autoRefreshInterval`, `quotaConsumingAutoRefreshInterval`,
+  `networkProxyMode`, `customProxyURL`, `automaticallyCheckForUpdates`, and
+  custom `providerOrder`.
+- If the QuotaBar migration marker is already present, legacy QuotaBar defaults,
+  metadata, and secrets are ignored so old data cannot overwrite newer Tauri
+  edits.
+
+### Pending Startup IO
+
+- Add a macOS-only reader for `~/Library/Preferences/com.gaorongvc.quotaradar.plist`
+  and `~/Library/Preferences/com.gaorongvc.quotabar.plist`.
+- Decode `apiKeyMetadata` data values from those plists and pass their JSON
+  bytes to the migration core.
+- Read `~/Library/Application Support/QuotaRadar/secrets.json` and
+  `~/Library/Application Support/QuotaBar/secrets.json` without logging secret
+  contents.
+- Persist a Tauri-side migration marker after successful import.
 
 ## Verification Checklist
 

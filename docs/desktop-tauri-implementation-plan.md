@@ -1589,6 +1589,48 @@ git add apps/desktop-tauri/src-tauri/src/providers apps/desktop-tauri/src/shared
 git commit -m "feat: add Kimi subscription desktop provider"
 ```
 
+### Task 20B: Add Swift Configuration And Legacy Migration
+
+**Files:**
+- Create: `apps/desktop-tauri/src-tauri/src/storage/migration.rs`
+- Test: `apps/desktop-tauri/src-tauri/src/storage/migration_tests.rs`
+- Modify: `apps/desktop-tauri/src-tauri/src/storage/mod.rs`
+
+- [x] **Step 1: Add fixture-first migration core**
+
+The core accepts Swift-shaped JSON payloads rather than live local files. It
+now covers:
+
+- `apiKeyMetadata` credential metadata.
+- `QuotaRadar/secrets.json` and `QuotaBar/secrets.json` secret maps.
+- app language, tray transparency, automatic refresh, costly refresh, proxy
+  mode/custom proxy URL, automatic update checks, and custom provider order.
+- Swift `Date` numeric values encoded as seconds since `2001-01-01T00:00:00Z`.
+- dashboard authorization credentials plus linked copyable companion API keys.
+- the one-way QuotaBar migration marker.
+
+- [ ] **Step 2: Add macOS startup IO**
+
+Read without logging secrets:
+
+- `~/Library/Preferences/com.gaorongvc.quotaradar.plist`
+- `~/Library/Preferences/com.gaorongvc.quotabar.plist`
+- `~/Library/Application Support/QuotaRadar/secrets.json`
+- `~/Library/Application Support/QuotaBar/secrets.json`
+
+Then invoke the migration core once during Tauri startup and write a Tauri-side
+completion marker.
+
+- [ ] **Step 3: Verify**
+
+Run:
+
+```bash
+cd apps/desktop-tauri
+cargo test --manifest-path src-tauri/Cargo.toml storage::migration_tests
+cargo test --manifest-path src-tauri/Cargo.toml
+```
+
 ## Phase 4: Packaging, CI, And Documentation
 
 ### Task 21: Add Cross-Platform Build Scripts And CI
