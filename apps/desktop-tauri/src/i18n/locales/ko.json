@@ -12,5 +12,15 @@
   "quota.keyQuota": "핵심 할당량",
   "quota.credentialPool": "자격 증명 풀",
   "quota.criticalTime": "중요 시간",
-  "quota.status": "상태"
+  "quota.status": "상태",
+  "quota.provider": "제공자",
+  "quota.actions": "작업",
+  "quota.credential": "자격 증명",
+  "quota.remaining": "남은 양",
+  "quota.lastUpdated": "마지막 업데이트",
+  "category.aiSearch": "AI 검색",
+  "category.llm": "LLM",
+  "action.openDashboard": "대시보드",
+  "action.reauthorize": "재인증",
+  "action.refresh": "새로 고침"
 }

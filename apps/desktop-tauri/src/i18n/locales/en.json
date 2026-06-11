@@ -12,5 +12,15 @@
   "quota.keyQuota": "Key Quota",
   "quota.credentialPool": "Credential Pool",
   "quota.criticalTime": "Critical Time",
-  "quota.status": "Status"
+  "quota.status": "Status",
+  "quota.provider": "Provider",
+  "quota.actions": "Actions",
+  "quota.credential": "Credential",
+  "quota.remaining": "Remaining",
+  "quota.lastUpdated": "Last Updated",
+  "category.aiSearch": "AI Search",
+  "category.llm": "LLM",
+  "action.openDashboard": "Dashboard",
+  "action.reauthorize": "Reauthorize",
+  "action.refresh": "Refresh"
 }

@@ -12,5 +12,15 @@
   "quota.keyQuota": "關鍵額度",
   "quota.credentialPool": "憑據池",
   "quota.criticalTime": "關鍵時間",
-  "quota.status": "狀態"
+  "quota.status": "狀態",
+  "quota.provider": "服務商",
+  "quota.actions": "操作",
+  "quota.credential": "憑據",
+  "quota.remaining": "剩餘",
+  "quota.lastUpdated": "上次更新",
+  "category.aiSearch": "AI 搜尋",
+  "category.llm": "LLM",
+  "action.openDashboard": "後台",
+  "action.reauthorize": "重新認證",
+  "action.refresh": "重新整理"
 }
