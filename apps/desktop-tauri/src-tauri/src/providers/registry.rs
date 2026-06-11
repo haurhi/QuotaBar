@@ -6,6 +6,7 @@ use super::{
     codex_subscription::CodexSubscriptionProvider, deepseek::DeepSeekProvider, exa::ExaProvider,
     kimi_subscription::KimiSubscriptionProvider, opencode_go::OpenCodeGoProvider,
     serpapi::SerpApiProvider, serper::SerperProvider, tavily::TavilyProvider,
+    tencent_cloud_coding_plan::TencentCloudCodingPlanProvider,
     volcengine_coding_plan::VolcengineCodingPlanProvider, wxmp::WxmpProvider,
     xfyun_coding_plan::XfyunCodingPlanProvider, ProviderClient,
 };
@@ -28,6 +29,7 @@ pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
         Box::<XfyunCodingPlanProvider>::default(),
         Box::<VolcengineCodingPlanProvider>::default(),
         Box::<AliyunCodingPlanProvider>::default(),
+        Box::<TencentCloudCodingPlanProvider>::default(),
     ]
 }
 
@@ -168,6 +170,14 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
             "aliyun",
             "https://bailian.console.aliyun.com/cn-beijing?tab=model#/efm/coding_plan",
         ),
+        ProviderDefinition::new_llm(
+            "tencent_cloud_coding_plan",
+            "Tencent Cloud",
+            "Tencent Cloud",
+            "Coding Plan",
+            "tencent",
+            "https://console.cloud.tencent.com/tokenhub/codingplan",
+        ),
     ]
 }
 
@@ -189,5 +199,6 @@ pub fn visible_provider_ids() -> Vec<&'static str> {
         "xfyun_coding_plan",
         "volcengine_coding_plan",
         "aliyun_coding_plan",
+        "tencent_cloud_coding_plan",
     ]
 }
