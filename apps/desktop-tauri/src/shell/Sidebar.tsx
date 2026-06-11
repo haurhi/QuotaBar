@@ -1,18 +1,26 @@
 import { Activity, Gauge, KeyRound, Radar, SlidersHorizontal, Stethoscope } from "lucide-react";
+import type { ReactNode } from "react";
 import { translate } from "../i18n";
 import { mockCredentials, providerRegistry } from "../shared/mockData";
 import { buildMenuSummary, buildProviderStats } from "../shared/selectors";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarUpdateFooter } from "./SidebarUpdateFooter";
 
-const navItems = [
-  { label: translate("nav.quotaMonitoring"), icon: <Gauge size={17} /> },
-  { label: translate("nav.credentials"), icon: <KeyRound size={17} /> },
-  { label: translate("nav.diagnostics"), icon: <Stethoscope size={17} /> },
-  { label: translate("nav.settings"), icon: <SlidersHorizontal size={17} /> },
-];
+export type AppPage = "quota" | "credentials" | "diagnostics" | "settings";
 
-export function Sidebar() {
+const navItems = [
+  { id: "quota", label: translate("nav.quotaMonitoring"), icon: <Gauge size={17} /> },
+  { id: "credentials", label: translate("nav.credentials"), icon: <KeyRound size={17} /> },
+  { id: "diagnostics", label: translate("nav.diagnostics"), icon: <Stethoscope size={17} /> },
+  { id: "settings", label: translate("nav.settings"), icon: <SlidersHorizontal size={17} /> },
+] satisfies Array<{ id: AppPage; label: string; icon: ReactNode }>;
+
+interface SidebarProps {
+  activePage?: AppPage;
+  onNavigate?: (page: AppPage) => void;
+}
+
+export function Sidebar({ activePage = "quota", onNavigate }: SidebarProps) {
   const stats = buildProviderStats(providerRegistry, mockCredentials);
   const summary = buildMenuSummary(mockCredentials);
 
@@ -29,8 +37,14 @@ export function Sidebar() {
       </div>
 
       <nav className="sidebar-nav" aria-label="Primary">
-        {navItems.map((item, index) => (
-          <SidebarNavItem key={item.label} icon={item.icon} label={item.label} active={index === 0} />
+        {navItems.map((item) => (
+          <SidebarNavItem
+            key={item.id}
+            icon={item.icon}
+            label={item.label}
+            active={activePage === item.id}
+            onClick={() => onNavigate?.(item.id)}
+          />
         ))}
       </nav>
 

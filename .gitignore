@@ -24,5 +24,8 @@ DerivedData/
 
 apps/desktop-tauri/node_modules/
 apps/desktop-tauri/dist/
+apps/desktop-tauri/playwright-report/
+apps/desktop-tauri/tests/e2e/artifacts/
+apps/desktop-tauri/tests/e2e/screenshots/*.png
 apps/desktop-tauri/src-tauri/gen/
 apps/desktop-tauri/src-tauri/target/

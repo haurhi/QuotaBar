@@ -1,14 +1,16 @@
 import type { ReactNode } from "react";
-import { Sidebar } from "./Sidebar";
+import { Sidebar, type AppPage } from "./Sidebar";
 
 interface AppShellProps {
   children?: ReactNode;
+  activePage?: AppPage;
+  onNavigate?: (page: AppPage) => void;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, activePage = "quota", onNavigate }: AppShellProps) {
   return (
     <div className="app-shell">
-      <Sidebar />
+      <Sidebar activePage={activePage} onNavigate={onNavigate} />
       <main className="app-main">
         {children ?? (
           <section className="app-panel">
