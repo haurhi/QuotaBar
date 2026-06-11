@@ -4,7 +4,7 @@ use super::{
     anysearch::AnySearchProvider, bocha::BochaProvider, brave::BraveProvider,
     claude_subscription::ClaudeSubscriptionProvider, codex_subscription::CodexSubscriptionProvider,
     deepseek::DeepSeekProvider, exa::ExaProvider, kimi_subscription::KimiSubscriptionProvider,
-    serpapi::SerpApiProvider, serper::SerperProvider, tavily::TavilyProvider,
+    opencode_go::OpenCodeGoProvider, serpapi::SerpApiProvider, serper::SerperProvider, tavily::TavilyProvider,
     wxmp::WxmpProvider, ProviderClient,
 };
 
@@ -22,6 +22,7 @@ pub fn provider_clients() -> Vec<Box<dyn ProviderClient>> {
         Box::<ClaudeSubscriptionProvider>::default(),
         Box::<CodexSubscriptionProvider>::default(),
         Box::<KimiSubscriptionProvider>::default(),
+        Box::<OpenCodeGoProvider>::default(),
     ]
 }
 
@@ -130,6 +131,14 @@ pub fn visible_provider_definitions() -> Vec<ProviderDefinition> {
             "kimi",
             "https://www.kimi.com/membership/subscription?tab=quota",
         ),
+        ProviderDefinition::new_llm(
+            "opencode_go",
+            "OpenCode Go",
+            "OpenCode",
+            "Subscription",
+            "opencode",
+            "https://opencode.ai/docs/zh-cn/go",
+        ),
     ]
 }
 
@@ -147,5 +156,6 @@ pub fn visible_provider_ids() -> Vec<&'static str> {
         "claude",
         "codex",
         "kimi",
+        "opencode_go",
     ]
 }

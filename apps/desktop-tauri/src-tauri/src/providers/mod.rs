@@ -6,6 +6,7 @@ pub mod codex_subscription;
 pub mod deepseek;
 pub mod exa;
 pub mod kimi_subscription;
+pub mod opencode_go;
 pub mod registry;
 pub mod serpapi;
 pub mod serper;
@@ -28,6 +29,8 @@ mod codex_subscription_tests;
 mod exa_tests;
 #[cfg(test)]
 mod kimi_subscription_tests;
+#[cfg(test)]
+mod opencode_go_tests;
 #[cfg(test)]
 mod serpapi_tests;
 #[cfg(test)]
