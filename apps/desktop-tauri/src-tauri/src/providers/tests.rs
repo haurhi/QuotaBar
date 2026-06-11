@@ -22,8 +22,11 @@ fn tavily_and_deepseek_are_registered_provider_clients() {
 }
 
 #[test]
-fn first_api_key_providers_do_not_consume_quota_on_check() {
-    for provider in visible_provider_definitions() {
+fn no_cost_api_key_providers_do_not_consume_quota_on_check() {
+    for provider in visible_provider_definitions()
+        .into_iter()
+        .filter(|provider| provider.id != "brave")
+    {
         assert!(
             !provider.quota_check_consumes_search_quota,
             "{} should not consume quota while checking quota",

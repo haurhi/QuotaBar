@@ -110,6 +110,14 @@
   white-space: nowrap;
 }
 
+.provider-warning {
+  overflow: hidden;
+  color: var(--qr-color-warning);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .numeric-cell {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

@@ -30,6 +30,9 @@ export function ProviderQuotaRow({ stat, expanded, onToggle, onRefreshProvider }
             <div>
               <div className="provider-name">{stat.provider.displayName}</div>
               {subtitle ? <div className="provider-subtitle">{subtitle}</div> : null}
+              {stat.provider.quotaCheckConsumesSearchQuota ? (
+                <div className="provider-warning">Refresh uses one search request</div>
+              ) : null}
             </div>
           </div>
         </td>

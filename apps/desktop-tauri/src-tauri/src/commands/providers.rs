@@ -38,7 +38,7 @@ fn refresh_provider_with_stores(
     metadata_store: &impl MetadataStore,
     secret_vault: &impl SecretVault,
     provider_id: &str,
-    _mode: &str,
+    mode: &str,
     now: impl Fn() -> String,
 ) -> Result<AppState, String> {
     let mut credentials = load_credentials(metadata_store)?;
@@ -47,6 +47,10 @@ fn refresh_provider_with_stores(
         .iter()
         .find(|candidate| candidate.provider_id() == provider_id)
         .ok_or_else(|| format!("Provider client is not registered: {provider_id}"))?;
+
+    if client.consumes_quota_on_check() && !refresh_mode_allows_costly(mode) {
+        return Ok(super::app_state::app_state_from_credentials(credentials));
+    }
 
     for credential in credentials
         .iter_mut()
@@ -103,6 +107,10 @@ fn apply_refresh_failure(credential: &mut CredentialView, message: String, check
     credential.last_updated = Some(checked_at);
     credential.last_http_status = None;
     credential.diagnostic_message = Some(message);
+}
+
+fn refresh_mode_allows_costly(mode: &str) -> bool {
+    matches!(mode, "manual" | "costlyAutomatic")
 }
 
 fn now_rfc3339() -> String {
@@ -243,6 +251,81 @@ mod tests {
         assert_eq!(
             failed.diagnostic_message.as_deref(),
             Some("Credential value was not found")
+        );
+    }
+
+    #[test]
+    fn automatic_refresh_skips_costly_provider_credentials() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::api_key(
+            "brave-test",
+            "brave",
+            "Brave Test",
+            "BSA••••test",
+            CredentialStatus::NotChecked,
+            "Saved",
+            None,
+            None,
+            Vec::new(),
+            None,
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+        save_secret(&secret_vault, "brave-test", "BSA-fixture").expect("secret should save");
+
+        let state = refresh_provider_with_stores(
+            &metadata_store,
+            &secret_vault,
+            "brave",
+            "automatic",
+            fixed_now,
+        )
+        .expect("automatic refresh should not fail");
+
+        let skipped = &state.credentials[0];
+        assert_eq!(skipped.status, CredentialStatus::NotChecked);
+        assert_eq!(skipped.remaining_badge_text, "Saved");
+        assert_eq!(skipped.last_updated, None);
+    }
+
+    #[test]
+    fn costly_automatic_refresh_updates_costly_provider_credentials() {
+        let metadata_store = MemoryMetadataStore::default();
+        let secret_vault = MemorySecretVault::default();
+        let credential = CredentialView::api_key(
+            "brave-test",
+            "brave",
+            "Brave Test",
+            "BSA••••test",
+            CredentialStatus::NotChecked,
+            "Saved",
+            None,
+            None,
+            Vec::new(),
+            None,
+            None,
+            None,
+        );
+        save_credentials(&metadata_store, &[credential]).expect("metadata should save");
+        save_secret(&secret_vault, "brave-test", "BSA-fixture").expect("secret should save");
+
+        let state = refresh_provider_with_stores(
+            &metadata_store,
+            &secret_vault,
+            "brave",
+            "costlyAutomatic",
+            fixed_now,
+        )
+        .expect("costly automatic refresh should run when explicit");
+
+        let refreshed = &state.credentials[0];
+        assert_eq!(refreshed.status, CredentialStatus::Healthy);
+        assert_eq!(refreshed.remaining_badge_text, "742 / 1000");
+        assert_eq!(
+            refreshed.last_updated.as_deref(),
+            Some("2026-06-11T12:40:00+08:00")
         );
     }
 }
