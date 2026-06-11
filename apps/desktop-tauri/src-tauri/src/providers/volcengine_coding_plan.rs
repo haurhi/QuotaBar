@@ -4,7 +4,13 @@ use serde_json::Value;
 
 use crate::domain::QuotaWindow;
 
-use super::{ProviderClient, ProviderCredential, ProviderError, QuotaSnapshot};
+use super::{
+    ProviderClient, ProviderCredential, ProviderError, ProviderHttpRequest, ProviderTransport,
+    QuotaSnapshot,
+};
+
+const VOLCENGINE_CODING_PLAN_USAGE_URL: &str =
+    "https://console.volcengine.com/api/top/ark/cn-beijing/2024-01-01/GetCodingPlanUsage?";
 
 const VOLCENGINE_CODING_PLAN_FIXTURE: &str = r#"{
   "ResponseMetadata": {
@@ -79,6 +85,33 @@ impl ProviderClient for VolcengineCodingPlanProvider {
         false
     }
 
+    fn check_quota(
+        &self,
+        credential: ProviderCredential,
+        transport: &dyn ProviderTransport,
+    ) -> Result<QuotaSnapshot, ProviderError> {
+        if credential.provider_id != self.provider_id() {
+            return Err(ProviderError::Unsupported(format!(
+                "credential belongs to {}",
+                credential.provider_id
+            )));
+        }
+
+        let volcengine_credential = VolcengineCredential::from_secret(&credential.secret)?;
+        let response = transport.send(volcengine_usage_request(&volcengine_credential))?;
+        if response.status == 401 || response.status == 403 {
+            return Err(volcengine_login_required());
+        }
+        if response.status != 200 {
+            return Err(ProviderError::QuotaUnavailable(format!(
+                "Volcengine coding plan endpoint returned HTTP {}",
+                response.status
+            )));
+        }
+
+        parse_volcengine_coding_plan(&response.body)
+    }
+
     fn check_fixture_quota(
         &self,
         credential: ProviderCredential,
@@ -87,7 +120,12 @@ impl ProviderClient for VolcengineCodingPlanProvider {
     }
 }
 
-struct VolcengineCredential;
+struct VolcengineCredential {
+    cookie_header: String,
+    csrf_token: Option<String>,
+    project_name: String,
+    x_web_id: Option<String>,
+}
 
 impl VolcengineCredential {
     fn from_secret(secret: &str) -> Result<Self, ProviderError> {
@@ -96,11 +134,12 @@ impl VolcengineCredential {
             return Err(volcengine_login_required());
         }
 
-        let cookie = serde_json::from_str::<Value>(trimmed)
-            .ok()
+        let parsed = serde_json::from_str::<Value>(trimmed).ok();
+        let cookie = parsed
+            .as_ref()
             .and_then(|value| {
                 first_string(
-                    &value,
+                    value,
                     &[
                         "cookie",
                         "cookieHeader",
@@ -113,11 +152,60 @@ impl VolcengineCredential {
             .unwrap_or_else(|| trimmed.to_string());
 
         if cookie.contains("digest=") && cookie.contains("AccountID=") {
-            Ok(Self)
+            Ok(Self {
+                csrf_token: parsed
+                    .as_ref()
+                    .and_then(|value| first_string(value, &["csrfToken", "csrf", "xCsrfToken"]))
+                    .or_else(|| cookie_value(&cookie, "csrfToken")),
+                project_name: parsed
+                    .as_ref()
+                    .and_then(|value| first_string(value, &["projectName", "project"]))
+                    .unwrap_or_else(|| "default".to_string()),
+                x_web_id: parsed
+                    .as_ref()
+                    .and_then(|value| first_string(value, &["xWebId", "x-web-id", "webId"])),
+                cookie_header: cookie,
+            })
         } else {
             Err(volcengine_login_required())
         }
     }
+}
+
+fn volcengine_usage_request(credential: &VolcengineCredential) -> ProviderHttpRequest {
+    let mut request = ProviderHttpRequest::post(VOLCENGINE_CODING_PLAN_USAGE_URL)
+        .header("Accept", "application/json, text/plain, */*")
+        .header("Content-Type", "application/json")
+        .header("Cookie", &credential.cookie_header)
+        .header("Origin", "https://console.volcengine.com")
+        .header(
+            "Referer",
+            &format!(
+                "https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&advancedActiveKey=subscribe&projectName={}",
+                credential.project_name
+            ),
+        )
+        .body(&format!(r#"{{"ProjectName":"{}"}}"#, credential.project_name));
+
+    if let Some(csrf_token) = credential.csrf_token.as_deref() {
+        request = request.header("x-csrf-token", csrf_token);
+    }
+    if let Some(x_web_id) = credential.x_web_id.as_deref() {
+        request = request.header("x-web-id", x_web_id);
+    }
+
+    request
+}
+
+fn cookie_value(cookie_header: &str, name: &str) -> Option<String> {
+    cookie_header.split(';').find_map(|part| {
+        let (key, value) = part.trim().split_once('=')?;
+        if key == name {
+            Some(value.to_string())
+        } else {
+            None
+        }
+    })
 }
 
 fn volcengine_login_required() -> ProviderError {
@@ -144,7 +232,13 @@ fn parse_volcengine_coding_plan(value: &str) -> Result<QuotaSnapshot, ProviderEr
     let windows = order_windows(
         usage
             .into_iter()
-            .map(|item| percent_window(&volcengine_window_name(&item.level), 100.0 - item.percent, item.reset_timestamp))
+            .map(|item| {
+                percent_window(
+                    &volcengine_window_name(&item.level),
+                    100.0 - item.percent,
+                    item.reset_timestamp,
+                )
+            })
             .collect(),
     );
     let reset_at = tightest_window_reset(&windows);

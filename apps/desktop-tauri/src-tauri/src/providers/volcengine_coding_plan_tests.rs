@@ -1,6 +1,7 @@
 use super::{
-    volcengine_coding_plan::VolcengineCodingPlanProvider, ProviderClient, ProviderCredential,
-    ProviderError,
+    http::{MockProviderTransport, ProviderHttpResponse},
+    volcengine_coding_plan::VolcengineCodingPlanProvider,
+    ProviderClient, ProviderCredential, ProviderError,
 };
 
 fn volcengine_credential() -> ProviderCredential {
@@ -20,13 +21,13 @@ fn volcengine_fixture_parses_usage_windows_and_reset_times() {
     assert_eq!(snapshot.provider_id, "volcengine_coding_plan");
     assert_eq!(snapshot.remaining, Some(8918.0));
     assert_eq!(snapshot.limit, Some(10_000.0));
-    assert_eq!(snapshot.remaining_badge_text, "5h 100% · week 89.2% · month 94.6%");
+    assert_eq!(
+        snapshot.remaining_badge_text,
+        "5h 100% · week 89.2% · month 94.6%"
+    );
     assert_eq!(snapshot.quota_label.as_deref(), Some("subscription"));
     assert_eq!(snapshot.plan_ends_at, None);
-    assert_eq!(
-        snapshot.reset_at.as_deref(),
-        Some("2026-06-07T16:00:00Z")
-    );
+    assert_eq!(snapshot.reset_at.as_deref(), Some("2026-06-07T16:00:00Z"));
     assert_eq!(snapshot.quota_windows.len(), 3);
     assert_eq!(snapshot.quota_windows[0].name, "5h");
     assert_eq!(snapshot.quota_windows[0].percent_remaining, Some(100.0));
@@ -66,4 +67,44 @@ fn volcengine_empty_usage_maps_to_quota_unavailable() {
         error,
         ProviderError::QuotaUnavailable(message) if message.contains("Volcengine quota")
     ));
+}
+
+#[test]
+fn volcengine_live_quota_uses_coding_plan_usage_transport() {
+    let client = VolcengineCodingPlanProvider::default();
+    let transport = MockProviderTransport::responding(ProviderHttpResponse::new(
+        200,
+        r#"{"Result":{"Status":"Running","QuotaUsage":[{"Level":"session","Percent":10,"ResetTimestamp":-1},{"Level":"weekly","Percent":50,"ResetTimestamp":1780848000},{"Level":"monthly","Percent":70,"ResetTimestamp":1782921599}]}}"#,
+    ));
+
+    let snapshot = client
+        .check_quota(volcengine_credential(), &transport)
+        .expect("live Volcengine response should parse");
+
+    assert_eq!(snapshot.remaining, Some(3000.0));
+    assert_eq!(snapshot.limit, Some(10_000.0));
+    assert_eq!(
+        snapshot.remaining_badge_text,
+        "5h 90% · week 50% · month 30%"
+    );
+
+    let requests = transport.requests();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0].method, "POST");
+    assert_eq!(
+        requests[0].url,
+        "https://console.volcengine.com/api/top/ark/cn-beijing/2024-01-01/GetCodingPlanUsage?"
+    );
+    assert_eq!(
+        requests[0].body.as_deref(),
+        Some(r#"{"ProjectName":"default"}"#)
+    );
+    assert!(requests[0].headers.contains(&(
+        "Cookie".to_string(),
+        "digest=digest-placeholder; AccountID=account-placeholder; csrfToken=csrf-placeholder"
+            .to_string()
+    )));
+    assert!(requests[0]
+        .headers
+        .contains(&("x-csrf-token".to_string(), "csrf-placeholder".to_string())));
 }

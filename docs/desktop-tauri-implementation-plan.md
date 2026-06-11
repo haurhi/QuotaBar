@@ -1612,8 +1612,11 @@ Production HTTP refresh status:
 - XFYun Spark Coding Plan: Done. The provider calls the coding-plan list
   endpoint with saved console login cookies and parses request-count windows
   plus package expiry.
-- Volcengine Coding Plan, Aliyun Coding Plan, Tencent Cloud Coding Plan, and
-  Querit: Pending production HTTP transport.
+- Volcengine Coding Plan: Done. The provider posts `ProjectName` to
+  `GetCodingPlanUsage` with saved console login cookie, CSRF token, and optional
+  web id.
+- Aliyun Coding Plan, Tencent Cloud Coding Plan, and Querit: Pending production
+  HTTP transport.
 
 - [ ] **Step 3: Preserve credential semantics**
 

@@ -32,7 +32,7 @@ implemented and verified in `apps/desktop-tauri`.
 | Codex Subscription | LLM | Web login plus optional API key | Done | Production HTTP refresh resolves ChatGPT session, WHAM usage windows, and subscription lifecycle. |
 | Kimi Subscription | LLM | Web login plus optional API key | Done | Production HTTP refresh for membership plus billing usage; parser also covers OAuth usage shape and plan expiry. |
 | XFYun Spark Coding Plan | LLM | Web login plus optional API key | Done | Production HTTP refresh for coding plan list usage windows and package expiry. |
-| Volcengine Coding Plan | LLM | Web login plus optional API key | Done | Fixture-first parser migration for Ark coding plan usage windows and reset timestamps. |
+| Volcengine Coding Plan | LLM | Web login plus optional API key | Done | Production HTTP refresh for Ark coding plan usage windows and reset timestamps. |
 | OpenCode Go | LLM | Web login plus optional API key | Done | Production HTTP refresh replays dashboard server function usage windows. |
 | Aliyun Coding Plan | LLM | Web login plus optional API key | Done | Fixture-first parser migration for Bailian instance info and legacy usage-detail shapes. |
 | Tencent Cloud Coding Plan | LLM | Web login plus optional API key | Done | Fixture-first parser migration for `DescribePkg` usage windows, empty packages, and login-state failures. |
@@ -131,8 +131,9 @@ the shared credential and refresh model is stable.
 - Done: XFYun Spark Coding Plan calls the coding-plan list endpoint with saved
   console login cookies and parses 5-hour, weekly, and monthly request-count
   windows plus package expiry.
-- Pending: Volcengine Coding Plan, Aliyun Coding Plan, Tencent Cloud Coding
-  Plan, and Querit.
+- Done: Volcengine Coding Plan posts `ProjectName` to `GetCodingPlanUsage`
+  with saved console login cookie, CSRF token, and optional web id.
+- Pending: Aliyun Coding Plan, Tencent Cloud Coding Plan, and Querit.
 
 ## Phase 3: Configuration And Legacy Migration
 
