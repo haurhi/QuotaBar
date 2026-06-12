@@ -9,6 +9,16 @@ fail() {
   exit 1
 }
 
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_CMD=(python3)
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_CMD=(python)
+elif command -v py >/dev/null 2>&1; then
+  PYTHON_CMD=(py -3)
+else
+  fail "Python 3 is required for Tauri source safety checks"
+fi
+
 assert_no_match() {
   local pattern="$1"
   local message="$2"
@@ -24,7 +34,7 @@ assert_no_match() {
       --glob '!apps/desktop-tauri/tests/e2e/artifacts/**' \
       "$pattern" "$@" >/tmp/quotaradar-tauri-source-match.txt || true
   else
-    python3 - "$pattern" "$@" >/tmp/quotaradar-tauri-source-match.txt <<'PY'
+    "${PYTHON_CMD[@]}" - "$pattern" "$@" >/tmp/quotaradar-tauri-source-match.txt <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -80,7 +90,7 @@ assert_match() {
   if command -v rg >/dev/null 2>&1; then
     rg -n -- "$pattern" "$path" >/tmp/quotaradar-tauri-source-match.txt || true
   else
-    python3 - "$pattern" "$path" >/tmp/quotaradar-tauri-source-match.txt <<'PY'
+    "${PYTHON_CMD[@]}" - "$pattern" "$path" >/tmp/quotaradar-tauri-source-match.txt <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -146,7 +156,7 @@ assert_match 'dashboard_authorization_is_not_copyable' \
   "apps/desktop-tauri/src-tauri/src/storage/secret_store_tests.rs" \
   "Tauri secret-store tests must assert dashboard authorization is not copyable"
 
-python3 - <<'PY'
+"${PYTHON_CMD[@]}" - <<'PY'
 import json
 import re
 import sys
@@ -196,7 +206,7 @@ for path in scan_files:
             sys.exit("FAIL: Dashboard/web-login authorization credentials must never be copyable")
 PY
 
-python3 - <<'PY'
+"${PYTHON_CMD[@]}" - <<'PY'
 import json
 import sys
 from pathlib import Path
