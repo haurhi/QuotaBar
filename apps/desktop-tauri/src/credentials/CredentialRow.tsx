@@ -1,5 +1,10 @@
 import { Copy, Pencil } from "lucide-react";
 import { StatusPill } from "../components/StatusPill";
+import {
+  formatCredentialKind,
+  formatCredentialStatus,
+  useTranslate,
+} from "../i18n";
 import { credentialNeedsAttention } from "../shared/status";
 import type { CredentialView } from "../shared/types";
 
@@ -8,21 +13,8 @@ interface CredentialRowProps {
   onCopy?: (credential: CredentialView) => void;
 }
 
-function credentialKindLabel(kind: CredentialView["kind"]) {
-  switch (kind) {
-    case "dashboardCookie":
-      return "Web Login";
-    case "storedAPIKeyOnly":
-      return "Companion Key";
-    case "adminCredential":
-      return "Management Credential";
-    case "apiKey":
-    default:
-      return "API Key";
-  }
-}
-
 export function CredentialRow({ credential, onCopy }: CredentialRowProps) {
+  const t = useTranslate();
   const statusTone = credentialNeedsAttention(credential) ? "attention" : "healthy";
 
   return (
@@ -33,28 +25,28 @@ export function CredentialRow({ credential, onCopy }: CredentialRowProps) {
           <strong>{credential.name}</strong>
           <span>{credential.maskedValue}</span>
         </div>
-        <span className="credential-kind-badge">{credentialKindLabel(credential.kind)}</span>
+        <span className="credential-kind-badge">{formatCredentialKind(credential.kind, t)}</span>
       </div>
       <div className="credential-row-actions" aria-label={`${credential.name} actions`}>
         <span className="credential-action-slot">
-          <span data-testid="credential-action">Status</span>
-          <StatusPill tone={statusTone} label={credential.status} />
+          <span data-testid="credential-action">{t("credential.action.status")}</span>
+          <StatusPill tone={statusTone} label={formatCredentialStatus(credential.status, t)} />
         </span>
         <span className="credential-action-slot">
-          <span data-testid="credential-action">Enabled</span>
+          <span data-testid="credential-action">{t("credential.action.enabled")}</span>
           <span className="mock-switch" data-enabled={credential.active} aria-hidden="true" />
         </span>
         {credential.copyable ? (
           <span className="credential-action-slot">
-            <span data-testid="credential-action">Copy</span>
-            <button aria-label={`Copy ${credential.name}`} onClick={() => onCopy?.(credential)}>
+            <span data-testid="credential-action">{t("credential.action.copy")}</span>
+            <button aria-label={`${t("credential.action.copy")} ${credential.name}`} onClick={() => onCopy?.(credential)}>
               <Copy size={14} />
             </button>
           </span>
         ) : null}
         <span className="credential-action-slot">
-          <span data-testid="credential-action">Edit</span>
-          <button aria-label={`Edit ${credential.name}`}>
+          <span data-testid="credential-action">{t("credential.action.edit")}</span>
+          <button aria-label={`${t("credential.action.edit")} ${credential.name}`}>
             <Pencil size={14} />
           </button>
         </span>

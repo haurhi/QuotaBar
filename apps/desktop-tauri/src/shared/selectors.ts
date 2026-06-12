@@ -1,4 +1,10 @@
 import {
+  formatCompactDateTime,
+  translate,
+  type LocaleCode,
+  type MessageKey,
+} from "../i18n";
+import {
   credentialNeedsAttention,
   credentialPercentRemaining,
   isAttentionStatus,
@@ -20,23 +26,8 @@ function formatPercent(value: number) {
   return `${Math.round(value * 10) / 10}%`;
 }
 
-function formatCompactDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  const currentYear = new Date().getFullYear();
-  const includeYear = date.getFullYear() !== currentYear;
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: includeYear ? "numeric" : undefined,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+function translator(locale: LocaleCode) {
+  return (key: MessageKey) => translate(key, locale);
 }
 
 function tightestWindow(credentials: CredentialView[]): QuotaWindow | undefined {
@@ -53,7 +44,8 @@ function tightestCredential(credentials: CredentialView[]) {
     .sort((left, right) => left.percent - right.percent)[0];
 }
 
-function keyQuotaText(credentials: CredentialView[]) {
+function keyQuotaText(credentials: CredentialView[], locale: LocaleCode) {
+  const t = translator(locale);
   const tightest = tightestCredential(activeCredentials(credentials));
   if (tightest) {
     return formatPercent(tightest.percent);
@@ -61,10 +53,10 @@ function keyQuotaText(credentials: CredentialView[]) {
 
   const usableUnknown = credentials.find((credential) => credential.status === "unknownQuotaUsable");
   if (usableUnknown) {
-    return "OK";
+    return t("status.available");
   }
 
-  return "N/A";
+  return t("common.notAvailable");
 }
 
 function credentialPoolText(credentials: CredentialView[]) {
@@ -73,10 +65,11 @@ function credentialPoolText(credentials: CredentialView[]) {
   return `${healthyCount}/${active.length}`;
 }
 
-function criticalTimeText(credentials: CredentialView[]) {
+function criticalTimeText(credentials: CredentialView[], locale: LocaleCode) {
+  const t = translator(locale);
   const window = tightestWindow(activeCredentials(credentials));
   if (window?.resetAt) {
-    return formatCompactDateTime(window.resetAt);
+    return formatCompactDateTime(window.resetAt, locale);
   }
 
   const planEnd = activeCredentials(credentials)
@@ -84,16 +77,18 @@ function criticalTimeText(credentials: CredentialView[]) {
     .filter((value): value is string => Boolean(value))
     .sort()[0];
 
-  return planEnd ? formatCompactDateTime(planEnd) : "N/A";
+  return planEnd ? formatCompactDateTime(planEnd, locale) : t("common.notAvailable");
 }
 
-function statusText(credentials: CredentialView[]) {
-  return credentials.some(credentialNeedsAttention) ? "Attention" : "Available";
+function statusText(credentials: CredentialView[], locale: LocaleCode) {
+  const t = translator(locale);
+  return credentials.some(credentialNeedsAttention) ? t("tray.needsAttention") : t("tray.available");
 }
 
 export function buildProviderStats(
   registry: ProviderDefinition[],
   credentials: CredentialView[],
+  locale: LocaleCode = "en",
 ): ProviderStats[] {
   return registry
     .filter((provider) => !provider.hidden)
@@ -102,10 +97,10 @@ export function buildProviderStats(
       return {
         provider,
         credentials: providerCredentials,
-        keyQuotaText: keyQuotaText(providerCredentials),
+        keyQuotaText: keyQuotaText(providerCredentials, locale),
         credentialPoolText: credentialPoolText(providerCredentials),
-        criticalTimeText: criticalTimeText(providerCredentials),
-        statusText: statusText(providerCredentials),
+        criticalTimeText: criticalTimeText(providerCredentials, locale),
+        statusText: statusText(providerCredentials, locale),
         needsAttention: providerCredentials.some(credentialNeedsAttention),
       };
     })

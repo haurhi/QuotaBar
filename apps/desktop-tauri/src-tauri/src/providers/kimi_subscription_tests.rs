@@ -145,10 +145,9 @@ fn kimi_live_quota_uses_membership_and_billing_transports() {
         requests[1].body.as_deref(),
         Some(r#"{"scope":["FEATURE_CODING"]}"#)
     );
-    assert!(requests[0].headers.contains(&(
-        "Authorization".to_string(),
-        "Bearer tok1".to_string()
-    )));
+    assert!(requests[0]
+        .headers
+        .contains(&("Authorization".to_string(), "Bearer tok1".to_string())));
     assert!(requests[0].headers.contains(&(
         "Cookie".to_string(),
         format!("{}=session-cookie-placeholder", "kimi-auth")

@@ -8,7 +8,7 @@ This checklist is the gate for deciding whether the Tauri desktop app is close e
 - Stable release track: Swift macOS app
 - Local platform checked: macOS arm64
 - Windows/Linux screenshot QA: pending real runner or device screenshots
-- Visual QA on 2026-06-12: local main-window and tray-popover screenshots showed no obvious top clipping, sidebar overlap, or action-button displacement.
+- Visual QA on 2026-06-12: local main-window and tray-popover screenshots showed no obvious top clipping, sidebar overlap, or action-button displacement. A later real macOS bundle check confirmed the Swift-shared app mark, provider icon assets, and fixed-size menu bar popover, while also exposing a remaining main-window initial-placement issue on multi-display setups.
 - Latest local verification commands:
   - `pnpm test -- --run`
   - `pnpm typecheck`
@@ -20,8 +20,8 @@ This checklist is the gate for deciding whether the Tauri desktop app is close e
 
 | Area | Required behavior | Status | Notes |
 | --- | --- | --- | --- |
-| Tray popover | Risk-first menu bar surface with quota risk summary and attention list | Partial | Mock route exists and screenshot test covers fixed popover size. Needs native tray positioning QA on all platforms. |
-| Main quota monitoring | Provider-first quota table with configured providers only | Partial | Mock UI and selectors cover configured-provider filtering and provider summaries. Needs visual comparison against Swift UI. |
+| Tray popover | Risk-first menu bar surface with quota risk summary and attention list | Partial | Mock route and real macOS bundle QA cover fixed popover size and top clipping. Needs native tray positioning QA on Windows/Linux and more dark/transparent menu-bar checks. |
+| Main quota monitoring | Provider-first quota table with configured providers only | Partial | Mock UI and selectors cover configured-provider filtering and provider summaries. Swift-shared app/provider icons are now in place. Needs multi-display window-placement fix before broader preview. |
 | Credentials | Provider-aware credential management, copy only for copyable API keys | Partial | Unit/integration tests cover credential creation, copyability, web authorization shell, and stored companion API keys. |
 | Diagnostics | Shows configured providers only, concise health/HTTP state, no duplicated quota rows | Partial | Mock diagnostics exist; needs real Tauri state verification with stored credentials. |
 | Settings | Language, launch at login, update checks, refresh intervals, costly refresh, proxy, transparency, provider order | Partial | Unit/integration tests cover settings contracts and provider ordering. Needs native autostart and proxy QA per OS. |

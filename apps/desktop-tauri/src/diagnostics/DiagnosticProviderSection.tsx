@@ -1,4 +1,5 @@
 import { ProviderIcon } from "../components/ProviderIcon";
+import { useTranslate } from "../i18n";
 import type { CredentialView, ProviderDefinition } from "../shared/types";
 import { DiagnosticRow } from "./DiagnosticRow";
 
@@ -8,6 +9,9 @@ interface DiagnosticProviderSectionProps {
 }
 
 export function DiagnosticProviderSection({ provider, credentials }: DiagnosticProviderSectionProps) {
+  const t = useTranslate();
+  const categoryLabel = provider.category === "AI Search" ? t("category.aiSearch") : t("category.llm");
+
   return (
     <section className="diagnostic-provider-section" aria-label={`${provider.displayName} diagnostics`}>
       <header className="diagnostic-provider-header">
@@ -16,21 +20,23 @@ export function DiagnosticProviderSection({ provider, credentials }: DiagnosticP
           <div>
             <h2>{provider.displayName}</h2>
             <p>
-              {provider.category}
+              {categoryLabel}
               {provider.planType ? ` · ${provider.planType}` : ""}
             </p>
           </div>
         </div>
-        <span>{credentials.length} credential{credentials.length === 1 ? "" : "s"}</span>
+        <span>
+          {credentials.length} {t("quota.credential")}
+        </span>
       </header>
       <table className="diagnostic-table">
         <thead>
           <tr>
-            <th>Credential</th>
-            <th>Health</th>
-            <th>HTTP</th>
-            <th>Updated</th>
-            <th>Message</th>
+            <th>{t("quota.credential")}</th>
+            <th>{t("diagnostics.health")}</th>
+            <th>{t("diagnostics.http")}</th>
+            <th>{t("diagnostics.updated")}</th>
+            <th>{t("diagnostics.message")}</th>
           </tr>
         </thead>
         <tbody>

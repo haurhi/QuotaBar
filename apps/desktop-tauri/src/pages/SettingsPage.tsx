@@ -4,6 +4,7 @@ import { ProviderOrderDialog } from "../settings/ProviderOrderDialog";
 import { PreferenceRow } from "../settings/PreferenceRow";
 import { SettingsSection } from "../settings/SettingsSection";
 import type { AppSettings } from "../shared/types";
+import { useTranslate } from "../i18n";
 
 function MockSwitch({
   enabled,
@@ -41,6 +42,7 @@ export function SettingsPage({
   onMoveProvider,
   onResetProviderOrder,
 }: SettingsPageProps = {}) {
+  const t = useTranslate();
   const [providerOrderOpen, setProviderOrderOpen] = useState(false);
   const [localSettings, setLocalSettings] = useState(controlledSettings ?? mockSettings);
   const settings = controlledSettings ?? localSettings;
@@ -60,14 +62,14 @@ export function SettingsPage({
 
   return (
     <div className="settings-page">
-      <SettingsSection title="General">
+      <SettingsSection title={t("settings.general")}>
         <PreferenceRow
-          label="Language"
-          description="Select the interface language used by the desktop shell."
+          label={t("settings.language")}
+          description={t("settings.languageDescription")}
           control={
             <select
               value={settings.language}
-              aria-label="Language"
+              aria-label={t("settings.language")}
               onChange={(event) => applySettings({ ...settings, language: event.target.value })}
             >
               <option value="en">English</option>
@@ -79,50 +81,50 @@ export function SettingsPage({
           }
         />
         <PreferenceRow
-          label="Custom provider order"
-          description="Keep the same provider order across monitoring, credentials, diagnostics, and tray views."
+          label={t("settings.providerOrder")}
+          description={t("settings.providerOrderDescription")}
           control={
-            <button onClick={() => setProviderOrderOpen(true)} aria-label="Customize provider order">
-              Customize
+            <button onClick={() => setProviderOrderOpen(true)} aria-label={t("settings.customizeProviderOrder")}>
+              {t("settings.customize")}
             </button>
           }
         />
         <PreferenceRow
-          label="Launch at login"
-          description="Open Quota Radar automatically when the desktop session starts."
+          label={t("settings.launchAtLogin")}
+          description={t("settings.launchAtLoginDescription")}
           control={
             <MockSwitch
               enabled={settings.launchAtLogin}
               onChange={() =>
                 applySettings({ ...settings, launchAtLogin: !settings.launchAtLogin })
               }
-              label="Toggle launch at login"
+              label={t("settings.toggleLaunchAtLogin")}
             />
           }
         />
       </SettingsSection>
 
-      <SettingsSection title="Updates and refresh">
+      <SettingsSection title={t("settings.updatesRefresh")}>
         <PreferenceRow
-          label="Check for updates"
-          description="Check GitHub Releases and show release notes before installing."
+          label={t("settings.checkForUpdates")}
+          description={t("settings.checkForUpdatesDescription")}
           control={
             <MockSwitch
               enabled={settings.updateCheck}
               onChange={() =>
                 applySettings({ ...settings, updateCheck: !settings.updateCheck })
               }
-              label="Toggle update check"
+              label={t("settings.toggleUpdateCheck")}
             />
           }
         />
         <PreferenceRow
-          label="Auto refresh"
-          description="Refresh quota data on a schedule when the provider check is free."
+          label={t("settings.autoRefresh")}
+          description={t("settings.autoRefreshDescription")}
           control={
             <select
               value={settings.autoRefreshInterval}
-              aria-label="Auto refresh interval"
+              aria-label={t("settings.autoRefreshInterval")}
               onChange={(event) =>
                 applySettings({
                   ...settings,
@@ -131,20 +133,20 @@ export function SettingsPage({
                 })
               }
             >
-              <option value="off">Off</option>
-              <option value="30m">Every 30 minutes</option>
-              <option value="1h">Every hour</option>
-              <option value="6h">Every 6 hours</option>
+              <option value="off">{t("interval.off")}</option>
+              <option value="30m">{t("interval.30m")}</option>
+              <option value="1h">{t("interval.1h")}</option>
+              <option value="6h">{t("interval.6h")}</option>
             </select>
           }
         />
         <PreferenceRow
-          label="Costly refresh"
-          description="Allow scheduled checks for providers where refresh can consume search quota."
+          label={t("settings.costlyRefresh")}
+          description={t("settings.costlyRefreshDescription")}
           control={
             <select
               value={settings.costlyRefreshInterval}
-              aria-label="Costly refresh interval"
+              aria-label={t("settings.costlyRefreshInterval")}
               onChange={(event) =>
                 applySettings({
                   ...settings,
@@ -153,22 +155,22 @@ export function SettingsPage({
                 })
               }
             >
-              <option value="off">Off</option>
-              <option value="1h">Every hour</option>
-              <option value="6h">Every 6 hours</option>
+              <option value="off">{t("interval.off")}</option>
+              <option value="1h">{t("interval.1h")}</option>
+              <option value="6h">{t("interval.6h")}</option>
             </select>
           }
         />
       </SettingsSection>
 
-      <SettingsSection title="Network and appearance">
+      <SettingsSection title={t("settings.networkAppearance")}>
         <PreferenceRow
-          label="Network proxy"
-          description="Choose direct, system, or custom proxy routing for provider requests."
+          label={t("settings.networkProxy")}
+          description={t("settings.networkProxyDescription")}
           control={
             <select
               value={settings.proxy.mode}
-              aria-label="Network proxy"
+              aria-label={t("settings.networkProxy")}
               onChange={(event) =>
                 applySettings({
                   ...settings,
@@ -176,18 +178,18 @@ export function SettingsPage({
                 })
               }
             >
-              <option value="system">Follow system</option>
-              <option value="direct">Direct</option>
-              <option value="custom">Custom</option>
+              <option value="system">{t("proxy.system")}</option>
+              <option value="direct">{t("proxy.direct")}</option>
+              <option value="custom">{t("proxy.custom")}</option>
             </select>
           }
         />
         <PreferenceRow
-          label="Menu bar transparency"
-          description="Adjust the tray popover material opacity."
+          label={t("settings.trayTransparency")}
+          description={t("settings.trayTransparencyDescription")}
           control={
             <input
-              aria-label="Menu bar transparency"
+              aria-label={t("settings.trayTransparency")}
               type="range"
               min="60"
               max="100"

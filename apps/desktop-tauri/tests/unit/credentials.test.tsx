@@ -11,7 +11,7 @@ describe("CredentialsPage", () => {
   it("toggles provider groups from the banner", () => {
     render(<CredentialsPage />);
     expect(screen.getByText("Tavily Key 1")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Tavily 1 active 1 credential" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tavily 1 Active 1 Credential" }));
     expect(screen.queryByText("Tavily Key 1")).not.toBeInTheDocument();
   });
 
@@ -30,8 +30,8 @@ describe("CredentialsPage", () => {
 
   it("distinguishes companion API keys from web login authorization", () => {
     render(<CredentialsPage />);
-    expect(screen.getByText("Web Login Authorization")).toBeInTheDocument();
-    expect(screen.getByText("Companion API Key")).toBeInTheDocument();
+    expect(screen.getAllByText("Web Login Authorization").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Companion API Key").length).toBeGreaterThan(0);
   });
 
   it("opens editor dialog with hidden secret fields", () => {
@@ -52,7 +52,7 @@ describe("CredentialsPage", () => {
     fireEvent.change(screen.getByLabelText("API key"), {
       target: { value: "tvly-local-test-value" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add Credential" })).getByRole("button", { name: "Add Credential" }));
 
     expect(await screen.findByText("Tavily Test Key")).toBeInTheDocument();
     expect(screen.getByText("tvly••••alue")).toBeInTheDocument();

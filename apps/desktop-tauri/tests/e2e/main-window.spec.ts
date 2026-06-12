@@ -29,10 +29,17 @@ test("main window keeps sidebar and content layout separated", async ({ page }) 
 
   const sidebarBox = await page.locator(".app-sidebar").boundingBox();
   const mainBox = await page.locator(".app-main").boundingBox();
+  const appMark = page.getByTestId("app-mark");
+  const appMarkBox = await appMark.boundingBox();
 
   expect(sidebarBox).not.toBeNull();
   expect(mainBox).not.toBeNull();
+  expect(Math.round(sidebarBox!.width)).toBe(220);
   expect(mainBox!.x).toBeGreaterThanOrEqual(sidebarBox!.x + sidebarBox!.width - 1);
+  await expect(appMark.locator("img")).toHaveAttribute("src", /app-icon\.png$/);
+  expect(appMarkBox).not.toBeNull();
+  expect(Math.round(appMarkBox!.width)).toBe(42);
+  expect(Math.round(appMarkBox!.height)).toBe(42);
 
   for (const button of await page.locator(".sidebar-nav-item").all()) {
     const buttonBox = await button.boundingBox();
@@ -41,4 +48,17 @@ test("main window keeps sidebar and content layout separated", async ({ page }) 
     expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(sidebarBox!.x + sidebarBox!.width + 1);
     expect(buttonBox!.height).toBeGreaterThanOrEqual(30);
   }
+});
+
+test("main window uses the same provider icon assets as the Swift app", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator('.provider-icon[data-provider="tavily"] img').first()).toHaveAttribute(
+    "src",
+    /provider-icons\/tavily\.png$/,
+  );
+  await expect(page.locator('.provider-icon[data-provider="brave"] img').first()).toHaveAttribute(
+    "src",
+    /provider-icons\/brave\.png$/,
+  );
 });

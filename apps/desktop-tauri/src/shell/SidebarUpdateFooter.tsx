@@ -1,4 +1,5 @@
 import { RefreshCw } from "lucide-react";
+import { useTranslate } from "../i18n";
 import { mockUpdateState } from "../lib/tauriClient";
 import type { UpdateState } from "../shared/types";
 
@@ -11,16 +12,18 @@ export function SidebarUpdateFooter({
   updateState = mockUpdateState,
   onCheckForUpdates,
 }: SidebarUpdateFooterProps) {
+  const t = useTranslate();
+
   return (
     <footer className="sidebar-footer">
       <div>
-        <div className="sidebar-version">v{updateState.currentVersion} preview</div>
-        <div className="sidebar-update-status">{updateStatusLabel(updateState)}</div>
+        <div className="sidebar-version">{t("update.versionPreview").replace("{version}", updateState.currentVersion)}</div>
+        <div className="sidebar-update-status">{updateStatusLabel(updateState, t)}</div>
       </div>
       <button
         className="sidebar-icon-button"
-        aria-label="Check for updates"
-        title="Check for updates"
+        aria-label={t("update.check")}
+        title={t("update.check")}
         onClick={onCheckForUpdates}
       >
         <RefreshCw size={15} strokeWidth={2.2} />
@@ -29,20 +32,20 @@ export function SidebarUpdateFooter({
   );
 }
 
-function updateStatusLabel(updateState: UpdateState) {
+function updateStatusLabel(updateState: UpdateState, t: ReturnType<typeof useTranslate>) {
   switch (updateState.status) {
     case "available":
-      return `Update ${updateState.latestVersion ?? ""} available`.trim();
+      return t("update.available").replace("{version}", updateState.latestVersion ?? "").trim();
     case "checking":
-      return "Checking";
+      return t("update.checking");
     case "error":
-      return updateState.errorMessage ?? "Update check failed";
+      return updateState.errorMessage ?? t("update.error");
     case "notImplemented":
-      return "Installer pending";
+      return t("update.installerPending");
     case "idle":
-      return "Not checked";
+      return t("update.notChecked");
     case "upToDate":
     default:
-      return "Up to date";
+      return t("update.upToDate");
   }
 }

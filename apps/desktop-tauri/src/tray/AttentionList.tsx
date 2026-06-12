@@ -1,4 +1,9 @@
-import { translate } from "../i18n";
+import {
+  formatCompactDateTime,
+  formatCredentialStatus,
+  useLocale,
+  useTranslate,
+} from "../i18n";
 import {
   credentialNeedsAttention,
   credentialPercentRemaining,
@@ -21,36 +26,21 @@ function sortByPlanEnd(left: CredentialView, right: CredentialView) {
   return (left.planEndsAt ?? "").localeCompare(right.planEndsAt ?? "");
 }
 
-function formatCompactDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  const includeYear = date.getFullYear() !== new Date().getFullYear();
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: includeYear ? "numeric" : undefined,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function attentionReason(credential: CredentialView) {
+function attentionReason(credential: CredentialView, t: ReturnType<typeof useTranslate>) {
   if (isAttentionStatus(credential.status)) {
-    return credential.status;
+    return formatCredentialStatus(credential.status, t);
   }
 
   if (isLowCredential(credential)) {
-    return "low quota";
+    return t("attention.lowQuota");
   }
 
-  return credential.status;
+  return formatCredentialStatus(credential.status, t);
 }
 
 export function AttentionList({ credentials }: AttentionListProps) {
+  const locale = useLocale();
+  const t = useTranslate();
   const active = credentials.filter((credential) => credential.active);
   const lowCredentials = active
     .filter((credential) => !isAttentionStatus(credential.status) && isLowCredential(credential))
@@ -64,7 +54,7 @@ export function AttentionList({ credentials }: AttentionListProps) {
   return (
     <div className="attention-grid">
       <section className="attention-section">
-        <h2>{translate("tray.low")}</h2>
+        <h2>{t("tray.low")}</h2>
         {lowCredentials.map((credential) => (
           <div key={credential.id} className="attention-item" data-testid="low-quota-item">
             <span>{itemLabel(credential)}</span>
@@ -73,20 +63,20 @@ export function AttentionList({ credentials }: AttentionListProps) {
         ))}
       </section>
       <section className="attention-section">
-        <h2>{translate("tray.expiringSoon")}</h2>
+        <h2>{t("tray.expiringSoon")}</h2>
         {expiringCredentials.map((credential) => (
           <div key={credential.id} className="attention-item" data-testid="expiring-item">
             <span>{credential.name}</span>
-            <small>{credential.planEndsAt ? formatCompactDateTime(credential.planEndsAt) : ""}</small>
+            <small>{credential.planEndsAt ? formatCompactDateTime(credential.planEndsAt, locale) : ""}</small>
           </div>
         ))}
       </section>
       <section className="attention-section attention-section-wide">
-        <h2>{translate("tray.needsAttention")}</h2>
+        <h2>{t("tray.needsAttention")}</h2>
         {needsAttention.map((credential) => (
           <div key={credential.id} className="attention-item" data-testid="needs-attention-item">
             <span>{credential.name}</span>
-            <small>{attentionReason(credential)}</small>
+            <small>{attentionReason(credential, t)}</small>
           </div>
         ))}
       </section>

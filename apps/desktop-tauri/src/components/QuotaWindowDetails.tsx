@@ -1,3 +1,4 @@
+import { formatQuotaWindowName, useTranslate } from "../i18n";
 import type { QuotaWindow } from "../shared/types";
 
 interface QuotaWindowDetailsProps {
@@ -5,6 +6,8 @@ interface QuotaWindowDetailsProps {
 }
 
 export function QuotaWindowDetails({ windows }: QuotaWindowDetailsProps) {
+  const t = useTranslate();
+
   if (windows.length === 0) {
     return null;
   }
@@ -13,7 +16,7 @@ export function QuotaWindowDetails({ windows }: QuotaWindowDetailsProps) {
     <div className="quota-window-list">
       {windows.map((window) => (
         <span key={`${window.name}-${window.resetAt ?? "none"}`} className="quota-window-chip">
-          {window.name}
+          {formatQuotaWindowName(window, t)}
           {typeof window.percentRemaining === "number" ? ` ${window.percentRemaining}%` : ""}
         </span>
       ))}

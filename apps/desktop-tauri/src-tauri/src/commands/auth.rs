@@ -77,7 +77,9 @@ pub fn start_web_authorization_session(
 ) -> WebAuthorizationSession {
     let message = match target_name {
         Some(name) => format!("Ready to update {name}"),
-        None if target_credential_id.is_some() => "Ready to update selected authorization".to_string(),
+        None if target_credential_id.is_some() => {
+            "Ready to update selected authorization".to_string()
+        }
         None => "Choose an authorization target".to_string(),
     };
 
@@ -102,7 +104,8 @@ pub fn save_web_authorization_with_stores(
         .name
         .clone()
         .unwrap_or_else(|| format!("{} Web Login", input.provider_id));
-    let secret = serde_json::to_string(&input.captured_fields).map_err(|error| error.to_string())?;
+    let secret =
+        serde_json::to_string(&input.captured_fields).map_err(|error| error.to_string())?;
     let credential_input = CredentialSecretInput {
         id: credential_id,
         provider_id: input.provider_id,

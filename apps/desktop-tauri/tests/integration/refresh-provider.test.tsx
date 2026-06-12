@@ -105,7 +105,7 @@ describe("refresh provider flow", () => {
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("refresh_provider", { providerId: "tavily", mode: "manual" }));
     fireEvent.click(screen.getByText("Tavily"));
 
-    expect(await screen.findByText("2026-06-11T12:30:00+08:00")).toBeInTheDocument();
+    expect(await screen.findByText(/Jun 11.*12:30/)).toBeInTheDocument();
     expect(screen.getByText("920 / 1000")).toBeInTheDocument();
   });
 

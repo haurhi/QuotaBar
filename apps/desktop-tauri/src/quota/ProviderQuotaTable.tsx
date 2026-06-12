@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { translate } from "../i18n";
+import { useTranslate } from "../i18n";
 import type { ProviderStats } from "../shared/types";
 import { ProviderQuotaRow } from "./ProviderQuotaRow";
 
@@ -14,18 +14,19 @@ export function ProviderQuotaTable({
   onRefreshProvider,
   onStartWebAuthorization,
 }: ProviderQuotaTableProps) {
+  const t = useTranslate();
   const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
 
   return (
     <table className="provider-table">
       <thead>
         <tr>
-          <th>{translate("quota.provider")}</th>
-          <th>{translate("quota.keyQuota")}</th>
-          <th>{translate("quota.credentialPool")}</th>
-          <th>{translate("quota.criticalTime")}</th>
-          <th>{translate("quota.status")}</th>
-          <th>{translate("quota.actions")}</th>
+          <th>{t("quota.provider")}</th>
+          <th>{t("quota.keyQuota")}</th>
+          <th>{t("quota.credentialPool")}</th>
+          <th>{t("quota.criticalTime")}</th>
+          <th>{t("quota.status")}</th>
+          <th>{t("quota.actions")}</th>
         </tr>
       </thead>
       <tbody>

@@ -1,17 +1,18 @@
-import { Radar, SlidersHorizontal } from "lucide-react";
-import { translate } from "../i18n";
+import { SlidersHorizontal } from "lucide-react";
+import { AppMark } from "../components/AppMark";
+import { useTranslate } from "../i18n";
 
 export function TrayHeader() {
+  const t = useTranslate();
+
   return (
     <header className="tray-header">
-      <div className="tray-mark" aria-hidden="true">
-        <Radar size={21} strokeWidth={2.2} />
-      </div>
+      <AppMark className="tray-mark" testId="tray-app-mark" />
       <div className="tray-title-block">
-        <h1>{translate("app.name")}</h1>
-        <p>{translate("tray.quote")}</p>
+        <h1>{t("app.subtitle")}</h1>
+        <p>{t("tray.quote")}</p>
       </div>
-      <button className="tray-settings-button" aria-label={translate("nav.settings")}>
+      <button className="tray-settings-button" aria-label={t("nav.settings")}>
         <SlidersHorizontal size={16} strokeWidth={2.2} />
       </button>
     </header>

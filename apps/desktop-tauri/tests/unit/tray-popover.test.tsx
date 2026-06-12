@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { LocaleContext } from "../../src/i18n";
 import { TrayPopover } from "../../src/tray/TrayPopover";
 
 describe("TrayPopover", () => {
@@ -13,7 +14,7 @@ describe("TrayPopover", () => {
 
   it("renders header, quote, and settings action", () => {
     render(<TrayPopover />);
-    expect(screen.getByText("Quota Radar")).toBeInTheDocument();
+    expect(screen.getByText("API Quota")).toBeInTheDocument();
     expect(screen.getByText("Keep quota anxiety visible, not loud.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
   });
@@ -38,6 +39,20 @@ describe("TrayPopover", () => {
     for (const item of screen.getAllByTestId("expiring-item")) {
       expect(item).not.toHaveTextContent("T");
     }
+  });
+
+  it("localizes menu bar status and timing labels", () => {
+    render(
+      <LocaleContext.Provider value="zh-Hans">
+        <TrayPopover />
+      </LocaleContext.Provider>,
+    );
+
+    expect(screen.getAllByText("紧张").length).toBeGreaterThan(0);
+    expect(screen.getByText("即将到期")).toBeInTheDocument();
+    expect(screen.getByText("需要关注")).toBeInTheDocument();
+    expect(screen.getByText("额度紧张")).toBeInTheDocument();
+    expect(screen.queryAllByText(/Jul|low quota/i)).toHaveLength(0);
   });
 
   it("requests close when the pointer leaves the popover", () => {

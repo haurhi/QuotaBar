@@ -88,7 +88,8 @@ impl<R: Runtime> TauriSecretVault<R> {
 
 impl<R: Runtime> SecretVault for TauriSecretVault<R> {
     fn save(&self, credential_id: &str, secret: &str) -> Result<(), String> {
-        self.store.set(credential_id, Value::String(secret.to_string()));
+        self.store
+            .set(credential_id, Value::String(secret.to_string()));
         self.store.save().map_err(|error| error.to_string())
     }
 

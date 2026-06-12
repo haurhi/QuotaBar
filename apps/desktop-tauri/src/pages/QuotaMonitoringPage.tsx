@@ -1,4 +1,5 @@
 import { ProviderCategorySection } from "../quota/ProviderCategorySection";
+import { useLocale } from "../i18n";
 import { mockCredentials, providerRegistry } from "../shared/mockData";
 import { buildProviderStats } from "../shared/selectors";
 import type { CredentialView, ProviderCategory, ProviderDefinition } from "../shared/types";
@@ -18,7 +19,8 @@ export function QuotaMonitoringPage({
   onRefreshProvider,
   onStartWebAuthorization,
 }: QuotaMonitoringPageProps) {
-  const stats = buildProviderStats(providers, credentials);
+  const locale = useLocale();
+  const stats = buildProviderStats(providers, credentials, locale);
 
   return (
     <div className="quota-page">

@@ -1,7 +1,7 @@
 import { ExternalLink, RefreshCw, RotateCcw } from "lucide-react";
 import { ProviderIcon } from "../components/ProviderIcon";
 import { StatusPill } from "../components/StatusPill";
-import { translate } from "../i18n";
+import { useTranslate } from "../i18n";
 import type { ProviderStats } from "../shared/types";
 import { CredentialDetailTable } from "./CredentialDetailTable";
 
@@ -20,6 +20,7 @@ export function ProviderQuotaRow({
   onRefreshProvider,
   onStartWebAuthorization,
 }: ProviderQuotaRowProps) {
+  const t = useTranslate();
   const tone = stat.needsAttention ? "attention" : "healthy";
   const authorizationCredentials = stat.credentials.filter(
     (credential) => credential.kind === "dashboardCookie",
@@ -27,7 +28,7 @@ export function ProviderQuotaRow({
   const reauthorizationTarget =
     authorizationCredentials.length === 1 ? authorizationCredentials[0] : undefined;
   const reauthorizationLabel = reauthorizationTarget?.name ?? (
-    authorizationCredentials.length > 1 ? "choose account" : undefined
+    authorizationCredentials.length > 1 ? t("action.chooseAccount") : undefined
   );
   const subtitle = [
     stat.provider.familyName !== stat.provider.displayName ? stat.provider.familyName : undefined,
@@ -46,7 +47,7 @@ export function ProviderQuotaRow({
               <div className="provider-name">{stat.provider.displayName}</div>
               {subtitle ? <div className="provider-subtitle">{subtitle}</div> : null}
               {stat.provider.quotaCheckConsumesSearchQuota ? (
-                <div className="provider-warning">Refresh uses one search request</div>
+                <div className="provider-warning">{t("quota.refreshConsumesSearchQuota")}</div>
               ) : null}
             </div>
           </div>
@@ -60,7 +61,7 @@ export function ProviderQuotaRow({
         <td>
           <div className="quota-actions" onClick={(event) => event.stopPropagation()}>
             {stat.provider.dashboardUrl ? (
-              <button aria-label={`${stat.provider.displayName} ${translate("action.openDashboard")}`}>
+              <button aria-label={`${stat.provider.displayName} ${t("action.openDashboard")}`}>
                 <ExternalLink size={14} />
               </button>
             ) : null}
@@ -68,7 +69,7 @@ export function ProviderQuotaRow({
               <button
                 aria-label={[
                   stat.provider.displayName,
-                  translate("action.reauthorize"),
+                  t("action.reauthorize"),
                   reauthorizationLabel,
                 ].filter(Boolean).join(" ")}
                 onClick={() => {
@@ -80,7 +81,7 @@ export function ProviderQuotaRow({
             ) : null}
             {stat.provider.supportsRefresh ? (
               <button
-                aria-label={`${stat.provider.displayName} ${translate("action.refresh")}`}
+                aria-label={`${stat.provider.displayName} ${t("action.refresh")}`}
                 onClick={() => {
                   void onRefreshProvider?.(stat.provider.id);
                 }}

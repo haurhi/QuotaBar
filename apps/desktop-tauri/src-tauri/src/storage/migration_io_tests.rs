@@ -158,10 +158,8 @@ fn temp_root(name: &str) -> PathBuf {
         .duration_since(std::time::UNIX_EPOCH)
         .expect("test clock")
         .as_nanos();
-    let root = std::env::temp_dir().join(format!(
-        "quotaradar-{name}-{}-{unique}",
-        std::process::id(),
-    ));
+    let root =
+        std::env::temp_dir().join(format!("quotaradar-{name}-{}-{unique}", std::process::id(),));
     fs::remove_dir_all(&root).ok();
     fs::create_dir_all(&root).expect("temp root");
     root

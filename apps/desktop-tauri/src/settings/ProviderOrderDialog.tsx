@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, GripVertical, RotateCcw, X } from "lucide-react";
+import { useTranslate } from "../i18n";
 import { providerRegistry } from "../shared/mockData";
 import type { ProviderCategory } from "../shared/types";
 
@@ -24,6 +25,8 @@ export function ProviderOrderDialog({
   onMoveProvider,
   onResetProviderOrder,
 }: ProviderOrderDialogProps) {
+  const t = useTranslate();
+
   if (!open) {
     return null;
   }
@@ -46,25 +49,25 @@ export function ProviderOrderDialog({
 
   return (
     <div className="dialog-backdrop">
-      <section className="provider-order-dialog" role="dialog" aria-label="Provider order">
+      <section className="provider-order-dialog" role="dialog" aria-label={t("providerOrder.title")}>
         <header className="provider-order-header">
           <div>
-            <h2>Provider order</h2>
-            <p>Adjust the shared order used by monitoring, credentials, diagnostics, and tray views.</p>
+            <h2>{t("providerOrder.title")}</h2>
+            <p>{t("providerOrder.description")}</p>
           </div>
           <div className="provider-order-header-actions">
-            <button aria-label="Reset provider order" onClick={() => void onResetProviderOrder?.()}>
+            <button aria-label={t("providerOrder.reset")} onClick={() => void onResetProviderOrder?.()}>
               <RotateCcw size={15} />
             </button>
-            <button aria-label="Close provider order" onClick={onClose}>
+            <button aria-label={t("providerOrder.close")} onClick={onClose}>
               <X size={16} />
             </button>
           </div>
         </header>
         <div className="provider-order-body">
           {categories.map((category) => (
-            <fieldset className="provider-order-group" key={category} aria-label={category}>
-              <legend>{category}</legend>
+            <fieldset className="provider-order-group" key={category} aria-label={category === "AI Search" ? t("category.aiSearch") : t("category.llm")}>
+              <legend>{category === "AI Search" ? t("category.aiSearch") : t("category.llm")}</legend>
               {orderedProviders
                 .filter((provider) => provider.category === category)
                 .map((provider) => (
@@ -74,13 +77,13 @@ export function ProviderOrderDialog({
                     {provider.planType ? <small>{provider.planType}</small> : null}
                     <div className="provider-order-move-actions">
                       <button
-                        aria-label={`Move ${provider.displayName} up`}
+                        aria-label={t("providerOrder.moveUp").replace("{provider}", provider.displayName)}
                         onClick={() => moveInsideCategory(provider.id, category, -1)}
                       >
                         <ChevronUp size={14} />
                       </button>
                       <button
-                        aria-label={`Move ${provider.displayName} down`}
+                        aria-label={t("providerOrder.moveDown").replace("{provider}", provider.displayName)}
                         onClick={() => moveInsideCategory(provider.id, category, 1)}
                       >
                         <ChevronDown size={14} />
@@ -92,7 +95,7 @@ export function ProviderOrderDialog({
           ))}
         </div>
         <footer className="provider-order-footer">
-          <button onClick={onClose}>Done</button>
+          <button onClick={onClose}>{t("common.done")}</button>
         </footer>
       </section>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { translate } from "../i18n";
+import { useTranslate } from "../i18n";
 import type { ProviderCategory, ProviderStats } from "../shared/types";
 import { ProviderQuotaTable } from "./ProviderQuotaTable";
 
@@ -10,27 +10,26 @@ interface ProviderCategorySectionProps {
   onStartWebAuthorization?: (providerId: string, targetCredentialId?: string) => void | Promise<void>;
 }
 
-function categoryTitle(category: ProviderCategory) {
-  return category === "AI Search" ? translate("category.aiSearch") : translate("category.llm");
-}
-
 export function ProviderCategorySection({
   category,
   stats,
   onRefreshProvider,
   onStartWebAuthorization,
 }: ProviderCategorySectionProps) {
+  const t = useTranslate();
   const [expanded, setExpanded] = useState(true);
   const credentialCount = stats.reduce((total, stat) => total + stat.credentials.length, 0);
+  const categoryTitle = category === "AI Search" ? t("category.aiSearch") : t("category.llm");
+  const summary = t("quota.categorySummary")
+    .replace("{providers}", String(stats.length))
+    .replace("{credentials}", String(credentialCount));
 
   return (
     <section className="quota-category" data-expanded={expanded}>
       <button className="quota-category-banner" onClick={() => setExpanded((value) => !value)}>
         <div>
-          <h2>{categoryTitle(category)}</h2>
-          <p>
-            {stats.length} providers · {credentialCount} credentials
-          </p>
+          <h2>{categoryTitle}</h2>
+          <p>{summary}</p>
         </div>
       </button>
       {expanded ? (

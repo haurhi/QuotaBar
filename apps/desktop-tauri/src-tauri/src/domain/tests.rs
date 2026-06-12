@@ -11,7 +11,10 @@ fn app_state_serializes_with_frontend_contract_field_names() {
     let value = serde_json::to_value(state).expect("app state should serialize");
 
     assert_eq!(value["providers"][0]["displayName"], "Tavily");
-    assert_eq!(value["providers"][0]["quotaCheckConsumesSearchQuota"], false);
+    assert_eq!(
+        value["providers"][0]["quotaCheckConsumesSearchQuota"],
+        false
+    );
     assert_eq!(value["credentials"][0]["maskedValue"], "tvly••••9Q2a");
     assert_eq!(value["credentials"][0]["quotaWindows"][0]["name"], "month");
     assert!(value["providers"][0].get("display_name").is_none());

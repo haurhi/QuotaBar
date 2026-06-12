@@ -66,5 +66,8 @@ fn companion_api_key_links_to_authorization_id() {
     let metadata = build_credential_metadata(&input);
 
     assert!(metadata.copyable);
-    assert_eq!(metadata.linked_authorization_id.as_deref(), Some("claude-web"));
+    assert_eq!(
+        metadata.linked_authorization_id.as_deref(),
+        Some("claude-web")
+    );
 }

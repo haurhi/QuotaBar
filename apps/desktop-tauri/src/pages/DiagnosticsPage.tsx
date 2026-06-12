@@ -1,4 +1,5 @@
 import { DiagnosticProviderSection } from "../diagnostics/DiagnosticProviderSection";
+import { useTranslate } from "../i18n";
 import { mockCredentials, providerRegistry } from "../shared/mockData";
 import type { CredentialView, ProviderCategory, ProviderDefinition } from "../shared/types";
 
@@ -10,6 +11,7 @@ interface DiagnosticsPageProps {
 }
 
 export function DiagnosticsPage({ providers = providerRegistry, credentials = mockCredentials }: DiagnosticsPageProps) {
+  const t = useTranslate();
   const groups = providers
     .map((provider) => ({
       provider,
@@ -28,8 +30,8 @@ export function DiagnosticsPage({ providers = providerRegistry, credentials = mo
         return (
           <section className="diagnostic-category" key={category}>
             <header className="diagnostic-category-header">
-              <h1>{category}</h1>
-              <p>Connectivity, authorization, and last request status only.</p>
+              <h1>{category === "AI Search" ? t("category.aiSearch") : t("category.llm")}</h1>
+              <p>{t("diagnostics.description")}</p>
             </header>
             {categoryGroups.map((group) => (
               <DiagnosticProviderSection

@@ -51,6 +51,21 @@ Quota Radar's core goal is to reduce quota anxiety: users should not need to rep
 - [x] Update checks reuse the app's network proxy settings. If the unauthenticated GitHub API is rate-limited, Quota Radar falls back to the latest-release redirect to resolve the version and download URL.
 - [x] Refreshed Chinese and English README menu bar screenshots plus Quickstart / Roadmap wording, making the unsigned-release trust boundary and in-app update behavior explicit.
 
+## Tauri Multi-Platform Preview Follow-Up
+
+The `feat/tauri-multiplatform` branch now has the baseline shell, mock UI, provider/credential contracts, i18n, provider icon assets, menu bar popover, and macOS app bundle build. The next step is moving it from "previewable" to "safe for longer daily testing."
+
+- [x] Switched the Tauri main-window mark, menu-bar popover mark, and provider rows to icon assets shared with the Swift app, avoiding first-letter placeholders and mixed icon styles.
+- [x] Changed the Tauri macOS menu bar icon to template artwork and added click debouncing so mouse down/up events do not immediately open and close the popover.
+- [x] Ran Playwright and real macOS screenshot QA for the Tauri main window, menu bar popover, provider icons, and fixed 560 x 500 popover surface.
+- [ ] Fix the Tauri main window sometimes opening on an external display or negative-coordinate screen: initial opening should prefer the user's current interaction display and remember position only after the user moves it.
+- [ ] Exclude `src-tauri/target` from the Tauri dev server watch scope so Rust build symlinks do not trigger Vite watcher `ELOOP`.
+- [ ] Add a stable local ad-hoc signing / packaging step for the Tauri app bundle so manual builds do not require a separate `codesign --verify` repair.
+- [ ] Add screenshot QA for macOS dark mode, transparent menu bars, external displays, and different scaling factors for the menu bar icon and popover.
+- [ ] Run the first Windows / Linux screenshot QA pass for the main window, tray / system-tray entry, fonts, shadows, minimum size, and provider icon rendering.
+- [ ] Script the Tauri provider-icon asset sync so updates in the Swift asset catalog are not forgotten in the Tauri public directory.
+- [ ] Before the Tauri version becomes an official preview, finish real credential migration regression checks: old Swift local config, `~/.claude/settings.json` import, Stronghold / store metadata compatibility, and secret-safety scans.
+
 ## Fixed In v0.3.2
 
 - [x] Claude, Codex, Kimi, and OpenCode Go subscription providers can store companion API keys. API keys are only for copying and management; quota checks still use web login authorization.

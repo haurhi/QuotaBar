@@ -21,6 +21,7 @@ import { QuotaMonitoringPage } from "./pages/QuotaMonitoringPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { TrayPopover } from "./tray/TrayPopover";
 import type { AppSettings, ProviderDefinition } from "./shared/types";
+import { LocaleContext, normalizeLocale } from "./i18n";
 
 function orderProviders(providers: ProviderDefinition[], providerOrder: string[]) {
   const order = new Map(providerOrder.map((providerId, index) => [providerId, index]));
@@ -37,6 +38,7 @@ export default function App() {
   const [appState, setAppState] = useState(mockAppState);
   const [settings, setSettings] = useState(mockSettings);
   const [updateState, setUpdateState] = useState(mockUpdateState);
+  const isTrayView = new URLSearchParams(window.location.search).get("view") === "tray";
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +56,16 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    document.body.dataset.qrView = isTrayView ? "tray" : "main";
+
+    return () => {
+      delete document.body.dataset.qrView;
+    };
+  }, [isTrayView]);
+
   const providers = orderProviders(appState.providers, settings.providerOrder);
+  const locale = normalizeLocale(settings.language);
 
   async function handleSettingsChange(nextSettings: AppSettings) {
     setSettings(nextSettings);
@@ -84,11 +95,13 @@ export default function App() {
     await startWebAuthorization(providerId, targetCredentialId);
   }
 
-  if (new URLSearchParams(window.location.search).get("view") === "tray") {
+  if (isTrayView) {
     return (
-      <main className="tray-preview">
-        <TrayPopover credentials={appState.credentials} />
-      </main>
+      <LocaleContext.Provider value={locale}>
+        <main className="tray-preview">
+          <TrayPopover credentials={appState.credentials} />
+        </main>
+      </LocaleContext.Provider>
     );
   }
 
@@ -114,15 +127,17 @@ export default function App() {
   }[activePage];
 
   return (
-    <AppShell
-      activePage={activePage}
-      credentials={appState.credentials}
-      onCheckForUpdates={handleCheckForUpdates}
-      onNavigate={setActivePage}
-      providers={providers}
-      updateState={updateState}
-    >
-      {page}
-    </AppShell>
+    <LocaleContext.Provider value={locale}>
+      <AppShell
+        activePage={activePage}
+        credentials={appState.credentials}
+        onCheckForUpdates={handleCheckForUpdates}
+        onNavigate={setActivePage}
+        providers={providers}
+        updateState={updateState}
+      >
+        {page}
+      </AppShell>
+    </LocaleContext.Provider>
   );
 }

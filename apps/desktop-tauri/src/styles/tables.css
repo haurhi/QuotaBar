@@ -87,12 +87,17 @@
   height: 30px;
   flex: 0 0 auto;
   place-items: center;
-  color: var(--qr-color-text);
   border: 1px solid var(--qr-color-border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.provider-icon img {
+  display: block;
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
 }
 
 .provider-name,

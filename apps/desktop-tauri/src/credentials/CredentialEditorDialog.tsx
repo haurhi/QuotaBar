@@ -1,5 +1,6 @@
 import { Eye, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslate } from "../i18n";
 import { providerRegistry } from "../shared/mockData";
 import type { CredentialInput, CredentialKind, ProviderDefinition } from "../shared/types";
 
@@ -16,6 +17,7 @@ export function CredentialEditorDialog({
   providers = providerRegistry,
   onSave,
 }: CredentialEditorDialogProps) {
+  const t = useTranslate();
   const [providerId, setProviderId] = useState(providers[0]?.id ?? "");
   const [name, setName] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -34,7 +36,9 @@ export function CredentialEditorDialog({
 
   const credentialKind: CredentialKind = authorization.trim() ? "dashboardCookie" : "apiKey";
   const secret = authorization.trim() || apiKey.trim();
-  const defaultName = selectedProvider ? `${selectedProvider.displayName} Credential` : "Credential";
+  const defaultName = selectedProvider
+    ? t("credentialEditor.defaultName").replace("{provider}", selectedProvider.displayName)
+    : t("quota.credential");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,13 +65,13 @@ export function CredentialEditorDialog({
 
   return (
     <div className="dialog-backdrop">
-      <section className="credential-dialog" role="dialog" aria-label="Add Credential">
+      <section className="credential-dialog" role="dialog" aria-label={t("credentialEditor.title")}>
         <header className="credential-dialog-header">
           <div>
-            <h2>Add Credential</h2>
-            <p>Choose a provider and save the credential used by Quota Radar.</p>
+            <h2>{t("credentialEditor.title")}</h2>
+            <p>{t("credentialEditor.description")}</p>
           </div>
-          <button aria-label="Close editor" onClick={onClose}>
+          <button aria-label={t("credentialEditor.close")} onClick={onClose}>
             <X size={16} />
           </button>
         </header>
@@ -86,7 +90,7 @@ export function CredentialEditorDialog({
           </aside>
           <form className="credential-dialog-form" id="credential-editor-form" onSubmit={handleSubmit}>
             <label>
-              Credential name
+              {t("credentialEditor.name")}
               <input
                 placeholder={defaultName}
                 value={name}
@@ -94,38 +98,38 @@ export function CredentialEditorDialog({
               />
             </label>
             <label>
-              API key
+              {t("credentialEditor.apiKey")}
               <div className="secret-input">
                 <input
-                  aria-label="API key"
+                  aria-label={t("credentialEditor.apiKey")}
                   type={revealed ? "text" : "password"}
-                  placeholder="Paste API key"
+                  placeholder={t("credentialEditor.apiKeyPlaceholder")}
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
                 />
-                <button type="button" aria-label="Reveal API key" onClick={() => setRevealed((value) => !value)}>
+                <button type="button" aria-label={t("credentialEditor.revealApiKey")} onClick={() => setRevealed((value) => !value)}>
                   <Eye size={15} />
                 </button>
               </div>
             </label>
             <label>
-              Web login authorization
+              {t("credentialEditor.webAuthorization")}
               <textarea
-                placeholder="Paste captured authorization data or authenticate in a later backend phase"
+                placeholder={t("credentialEditor.webAuthorizationPlaceholder")}
                 value={authorization}
                 onChange={(event) => setAuthorization(event.target.value)}
               />
             </label>
             <label>
-              Note
-              <input placeholder="Optional" value={note} onChange={(event) => setNote(event.target.value)} />
+              {t("credentialEditor.note")}
+              <input placeholder={t("credentialEditor.optional")} value={note} onChange={(event) => setNote(event.target.value)} />
             </label>
           </form>
         </div>
         <footer className="credential-dialog-footer">
-          <button onClick={onClose}>Cancel</button>
+          <button onClick={onClose}>{t("credentialEditor.cancel")}</button>
           <button className="primary-button" disabled={!secret || saving} form="credential-editor-form" type="submit">
-            {saving ? "Saving" : "Add"}
+            {saving ? t("credentialEditor.saving") : t("credentials.add")}
           </button>
         </footer>
       </section>

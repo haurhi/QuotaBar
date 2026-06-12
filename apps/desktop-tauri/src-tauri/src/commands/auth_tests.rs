@@ -9,8 +9,7 @@ use crate::{
 };
 
 use super::auth::{
-    save_web_authorization_with_stores, start_web_authorization_session,
-    CapturedWebAuthorization,
+    save_web_authorization_with_stores, start_web_authorization_session, CapturedWebAuthorization,
 };
 
 #[test]
@@ -23,8 +22,14 @@ fn start_web_authorization_session_identifies_provider_and_target() {
     );
 
     assert_eq!(session.provider_id, "claude");
-    assert_eq!(session.target_credential_id.as_deref(), Some("claude-web-pro"));
-    assert_eq!(session.login_url.as_deref(), Some("https://claude.ai/settings/usage"));
+    assert_eq!(
+        session.target_credential_id.as_deref(),
+        Some("claude-web-pro")
+    );
+    assert_eq!(
+        session.login_url.as_deref(),
+        Some("https://claude.ai/settings/usage")
+    );
     assert!(session.message.contains("Claude Pro Login"));
 }
 
