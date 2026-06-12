@@ -242,6 +242,29 @@ release_text = release_doc.read_text(encoding="utf-8")
 for required in ("Unsigned preview boundary", "GitHub Release asset names", "Platform package targets"):
     if required not in release_text:
         sys.exit(f"FAIL: Tauri release docs must document {required}")
+
+sign_script = Path("scripts/sign_tauri_macos_app.sh")
+if not sign_script.exists():
+    sys.exit("FAIL: Tauri local macOS ad-hoc signing script is required")
+
+qa_script = Path("scripts/qa_tauri_macos_screenshots.sh")
+if not qa_script.exists():
+    sys.exit("FAIL: Tauri macOS screenshot QA script is required")
+
+package_json = json.loads(Path("apps/desktop-tauri/package.json").read_text(encoding="utf-8"))
+scripts = package_json.get("scripts", {})
+if "sign:mac" not in scripts:
+    sys.exit("FAIL: Tauri package.json must expose a sign:mac command")
+
+for required in ("scripts/sign_tauri_macos_app.sh", "codesign --verify --deep --strict"):
+    if required not in release_text:
+        sys.exit(f"FAIL: Tauri release docs must document local signing step: {required}")
+
+parity_doc = Path("docs/desktop-tauri-parity-checklist.md")
+parity_text = parity_doc.read_text(encoding="utf-8")
+for required in ("scripts/qa_tauri_macos_screenshots.sh", "/tmp/quotaradar-tauri-qa", "Dark mode"):
+    if required not in parity_text:
+        sys.exit(f"FAIL: Tauri parity checklist must document screenshot QA coverage: {required}")
 PY
 
 echo "== Tauri source safety passed =="
