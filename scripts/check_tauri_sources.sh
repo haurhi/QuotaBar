@@ -76,7 +76,7 @@ def iter_files(path: Path):
 for root in paths:
     for file_path in iter_files(root):
         try:
-            lines = file_path.read_text(errors="ignore").splitlines()
+            lines = file_path.read_text(encoding="utf-8", errors="ignore").splitlines()
         except OSError:
             continue
         for line_number, line in enumerate(lines, 1):
@@ -108,7 +108,7 @@ pattern = re.compile(sys.argv[1])
 path = Path(sys.argv[2])
 if path.exists():
     try:
-        for line_number, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
+        for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
             if pattern.search(line):
                 print(f"{path}:{line_number}:{line}")
     except OSError:
@@ -173,11 +173,11 @@ from pathlib import Path
 
 root = Path("apps/desktop-tauri")
 locale_dir = root / "src" / "i18n" / "locales"
-english = json.loads((locale_dir / "en.json").read_text())
+english = json.loads((locale_dir / "en.json").read_text(encoding="utf-8"))
 english_keys = set(english)
 
 for locale_file in sorted(locale_dir.glob("*.json")):
-    messages = json.loads(locale_file.read_text())
+    messages = json.loads(locale_file.read_text(encoding="utf-8"))
     keys = set(messages)
     missing = sorted(english_keys - keys)
     extra = sorted(keys - english_keys)
@@ -208,7 +208,7 @@ dashboard_copyable_patterns = [
 ]
 
 for path in scan_files:
-    text = path.read_text(errors="ignore")
+    text = path.read_text(encoding="utf-8", errors="ignore")
     for pattern in dashboard_copyable_patterns:
         if pattern.search(text):
             print(path, file=sys.stderr)
@@ -220,7 +220,7 @@ import json
 import sys
 from pathlib import Path
 
-config = json.loads(Path("apps/desktop-tauri/src-tauri/tauri.conf.json").read_text())
+config = json.loads(Path("apps/desktop-tauri/src-tauri/tauri.conf.json").read_text(encoding="utf-8"))
 bundle = config.get("bundle", {})
 if bundle.get("targets") != "all":
     sys.exit("FAIL: Tauri bundle targets must be 'all' so each OS builds its native package set")
@@ -238,7 +238,7 @@ if updater.get("endpoints") or updater.get("pubkey"):
 release_doc = Path("docs/desktop-tauri-release.md")
 if not release_doc.exists():
     sys.exit("FAIL: Tauri desktop release documentation is required")
-release_text = release_doc.read_text()
+release_text = release_doc.read_text(encoding="utf-8")
 for required in ("Unsigned preview boundary", "GitHub Release asset names", "Platform package targets"):
     if required not in release_text:
         sys.exit(f"FAIL: Tauri release docs must document {required}")
