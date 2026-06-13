@@ -345,11 +345,12 @@ fn ensure_tray_icon<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     {
         let menu = Menu::new(app)?;
         let _tray = builder.menu(&menu).build(app)?;
-        return Ok(());
     }
 
     #[cfg(not(target_os = "linux"))]
-    let _tray = builder.build(app)?;
+    {
+        let _tray = builder.build(app)?;
+    }
 
     Ok(())
 }

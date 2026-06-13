@@ -5,7 +5,7 @@ pub mod providers;
 pub mod scheduler;
 pub mod storage;
 
-use tauri::{AppHandle, Manager, RunEvent, Runtime};
+use tauri::{AppHandle, Manager, Runtime};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -46,12 +46,18 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("error while building Quota Radar Tauri application")
-        .run(|app_handle, event| {
-            if matches!(event, RunEvent::Reopen { .. }) {
-                let _ = platform::window::reopen_main_window(app_handle);
-            }
-        });
+        .run(|app_handle, event| handle_run_event(app_handle, event));
 }
+
+#[cfg(target_os = "macos")]
+fn handle_run_event<R: Runtime>(app_handle: &AppHandle<R>, event: tauri::RunEvent) {
+    if matches!(event, tauri::RunEvent::Reopen { .. }) {
+        let _ = platform::window::reopen_main_window(app_handle);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn handle_run_event<R: Runtime>(_app_handle: &AppHandle<R>, _event: tauri::RunEvent) {}
 
 #[cfg(target_os = "macos")]
 fn run_swift_configuration_migration<R: Runtime>(app: &AppHandle<R>) {
